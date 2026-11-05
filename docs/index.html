@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veyroq Documentation — Institutional Selective Disclosure &amp; Audit Infrastructure</title>
+  <meta name="description" content="Complete technical documentation, architecture blueprints, smart contract specifications, and GAAP compliance guides for the Veyroq Protocol.">
+  <meta name="theme-color" content="#450405">
+
+  <!-- Brand Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+  <!-- Open Graph & X Card -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Veyroq">
+  <meta property="og:title" content="Veyroq Documentation — Institutional Selective Disclosure &amp; Audit Infrastructure">
+  <meta property="og:description" content="Technical documentation, smart contract specifications, and GAAP compliance guides for the Veyroq Protocol.">
+  <meta property="og:image" content="/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="675">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Veyroq Documentation — Institutional Selective Disclosure &amp; Audit Infrastructure">
+  <meta name="twitter:description" content="Technical documentation, smart contract specifications, and GAAP compliance guides for the Veyroq Protocol.">
+  <meta name="twitter:image" content="/assets/og-image.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/docs/styles.css">
+</head>
+<body>
+
+  <!-- Top Global Header -->
+  <header class="docs-topbar">
+    <div class="topbar-left">
+      <button class="mobile-toggle-btn" id="mobile-sidebar-toggle" aria-label="Toggle Navigation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      <a href="/" class="topbar-brand">
+        <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
+        <span class="brand-title">Veyroq</span>
+        <span class="badge-tag">Docs</span>
+      </a>
+    </div>
+
+    <!-- Center Search Bar (Command Palette Trigger) -->
+    <div class="topbar-search">
+      <button class="search-trigger-btn" id="search-trigger-btn" aria-label="Search documentation">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span class="search-placeholder">Search docs, guides, APIs...</span>
+        <kbd class="search-shortcut">⌘K</kbd>
+      </button>
+    </div>
+
+    <div class="topbar-right">
+      <a href="/" class="topbar-link" target="_blank" rel="noopener noreferrer">Landing ↗</a>
+      <a href="/legal/privacy" class="topbar-link" target="_blank" rel="noopener noreferrer">Legal ↗</a>
+      <a href="/console" class="btn-cockpit-top" target="_blank" rel="noopener noreferrer">
+        <span>Auditor Cockpit</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- 3-Column Documentation Container -->
+  <div class="docs-container">
+    
+    <!-- Left Column: Navigation Sidebar -->
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <nav class="sidebar-menu">
+        <div class="menu-group">
+          <span class="menu-header">Overview</span>
+          <a href="/docs/overview" class="menu-item active" data-page="overview">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Protocol Overview</span>
+          </a>
+          <a href="/docs/architecture" class="menu-item" data-page="architecture">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            <span>Architecture & Enclaves</span>
+          </a>
+          <a href="/docs/zero-custody" class="menu-item" data-page="zero-custody">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Zero-Custody Guarantee</span>
+          </a>
+        </div>
+
+        <div class="menu-group">
+          <span class="menu-header">Getting Started</span>
+          <a href="/docs/quickstart" class="menu-item" data-page="quickstart">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>CFO Quickstart</span>
+          </a>
+          <a href="/docs/view-keys" class="menu-item" data-page="view-keys">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+            <span>Scoped View Keys</span>
+          </a>
+        </div>
+
+        <div class="menu-group">
+          <span class="menu-header">Cryptography</span>
+          <a href="/docs/merkle-proofs" class="menu-item" data-page="merkle-proofs">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <span>Merkle Proofs & Tree</span>
+          </a>
+          <a href="/docs/onchain-verification" class="menu-item" data-page="onchain-verification">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span>On-Chain Verification</span>
+          </a>
+        </div>
+
+        <div class="menu-group">
+          <span class="menu-header">Smart Contracts</span>
+          <a href="/docs/contract-spec" class="menu-item" data-page="contract-spec">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>VeyroqRegistry.sol Spec</span>
+          </a>
+          <a href="/docs/foundry-tests" class="menu-item" data-page="foundry-tests">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Foundry Test Suite</span>
+          </a>
+        </div>
+
+        <div class="menu-group">
+          <span class="menu-header">Tax & Compliance</span>
+          <a href="/docs/gaap-export" class="menu-item" data-page="gaap-export">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>GAAP / IFRS Worksheets</span>
+          </a>
+          <a href="/docs/quickbooks" class="menu-item" data-page="quickbooks">
+            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            <span>QuickBooks & Xero Sync</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Center Column: Active Document Content Area -->
+    <main class="docs-main" id="docs-main">
+      
+      <!-- Dynamic Breadcrumb -->
+      <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="/docs/overview">Docs</a>
+        <span class="sep">/</span>
+        <span class="crumb-category" id="crumb-category">Overview</span>
+        <span class="sep">/</span>
+        <span class="crumb-current" id="crumb-title">Protocol Overview</span>
+      </nav>
+
+      <!-- Center Article Container (Only ONE active at any time!) -->
+      <article class="docs-article" id="docs-article">
+
+        <!-- 1. OVERVIEW -->
+        <div class="doc-page active" id="page-overview" data-category="Overview" data-title="Protocol Overview">
+          <h1>Protocol Overview</h1>
+          <p class="lead-text">
+            Veyroq is the chain-agnostic selective disclosure, audit, and tax-compliance infrastructure layer built for <strong>institutional digital asset treasuries</strong> across EVM and confidential settlement networks.
+          </p>
+
+          <div class="callout callout-info">
+            <div class="callout-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <div class="callout-content">
+              <strong>The Core Breakthrough:</strong> Confidential transactions and private payroll allow companies to protect trade secrets and employee privacy. Veyroq provides the cryptographic bridge that allows certified accountants (PwC, EY, Deloitte, internal CFOs) to selectively audit those private records and mathematically prove zero omissions without broadcasting trade secrets to public block explorers.
+            </div>
+          </div>
+
+          <h2 id="why-enterprises-need-veyroq">Why Enterprises Need Veyroq</h2>
+          <p>
+            When an institutional treasury moves funds on a public blockchain, competitors and suppliers can analyze every transfer. However, if they operate inside a completely opaque network, traditional corporate compliance breaks down:
+          </p>
+          <ul class="styled-list">
+            <li><strong>IRS &amp; HMRC Mandates:</strong> Corporations must submit verified general ledgers backing every expense and payroll deduction under penalty of perjury.</li>
+            <li><strong>Audit Certification:</strong> External auditors cannot sign off on balance sheets if transactions could have been selectively deleted from an off-chain spreadsheet.</li>
+            <li><strong>Mixing &amp; Anonymity Red Flags:</strong> Pure anonymity pools or mixers trigger severe compliance penalties from banking partners and regulatory bodies.</li>
+          </ul>
+
+          <h2 id="multi-network-architecture">Chain-Agnostic Multi-Network Design</h2>
+          <p>
+            Veyroq is independent of any single Layer-1 or Layer-2 network. The same <code>VeyroqRegistry.sol</code> settlement contract, Scoped View Key specification, and client-side Merkle reconciliation engine operate identically across EVM networks—including Base, Monad, Arbitrum, Ethereum, and confidential EVM enclaves—allowing corporate treasuries to unify multi-chain audit exports inside a single cockpit.
+          </p>
+        </div>
+
+        <!-- 2. ARCHITECTURE -->
+        <div class="doc-page" id="page-architecture" data-category="Overview" data-title="Architecture & Enclaves">
+          <h1>Architecture &amp; Enclaves</h1>
+          <p class="lead-text">
+            Veyroq operates across two strictly separated execution domains to guarantee both mathematical integrity and absolute confidentiality: the on-chain settlement registry and the local client runtime.
+          </p>
+
+          <h2 id="privacy-enabled-execution">Dual-Domain Execution Model</h2>
+          <p>
+            Confidential payment rails encrypt transaction amounts, counterparties, and business memos before state settlement. Veyroq bridges this encrypted on-chain state with institutional audit requirements across any supported EVM network.
+          </p>
+
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Layer</th>
+                  <th>Environment</th>
+                  <th>Responsibility</th>
+                  <th>Data Exposure</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Settlement Registry</strong></td>
+                  <td>Multi-Chain EVM / Enclave</td>
+                  <td>Maintains <code>VeyroqRegistry.sol</code> across supported chains (Base, Monad, Arbitrum, Arc), validates Merkle root commitments, enforces auditor scopes.</td>
+                  <td>Only root hashes &amp; timestamped auditor authorizations. Zero plaintexts.</td>
+                </tr>
+                <tr>
+                  <td><strong>Local Client Runtime</strong></td>
+                  <td>In-browser Web Crypto API / WASM</td>
+                  <td>Accepts Scoped View Key, decrypts encrypted RPC transaction logs, builds local Merkle tree, generates GAAP CSVs.</td>
+                  <td>100% ephemeral in local RAM. Zero keys or financial data leave browser.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="execution-boundaries">Execution Boundaries & Information Flow</h2>
+          <p>
+            Corporate treasuries retain complete cryptographic sovereignty. View Keys and decrypted ledgers exist purely within ephemeral browser RAM and are never transmitted across untrusted external networks.
+          </p>
+        </div>
+
+        <!-- 3. ZERO CUSTODY -->
+        <div class="doc-page" id="page-zero-custody" data-category="Overview" data-title="Zero-Custody Guarantee">
+          <h1>The Zero-Custody Guarantee</h1>
+          <p class="lead-text">
+            Veyroq is engineered on a strict zero-knowledge, zero-custody foundation: no backend databases, no key custody, and zero plaintexts stored off-device.
+          </p>
+
+          <div class="callout callout-warning">
+            <div class="callout-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <div class="callout-content">
+              <strong>Zero-Custody Architecture:</strong> Veyroq servers never see, handle, or store your private spending keys or Scoped View Keys. All cryptographic operations occur client-side in your local browser sandbox.
+            </div>
+          </div>
+
+          <h2 id="zero-database">Zero Central Database</h2>
+          <p>
+            Traditional SaaS accounting tools store corporate financial statements on centralized cloud databases vulnerable to subpoenas and data breaches. Veyroq operates completely stateless: the application is delivered as a client-side web application that speaks directly to the blockchain RPC node.
+          </p>
+
+          <h2 id="ephemeral-memory">Ephemeral In-Memory Execution</h2>
+          <p>
+            Decrypted transaction records exist solely within volatile JavaScript RAM. Closing or refreshing the browser tab immediately purges all plaintext data and cryptographic session keys.
+          </p>
+        </div>
+
+        <!-- 4. CFO QUICKSTART -->
+        <div class="doc-page" id="page-quickstart" data-category="Getting Started" data-title="CFO Quickstart">
+          <h1>CFO Quickstart: 4-Step Audit Run</h1>
+          <p class="lead-text">
+            Follow this streamlined 4-step workflow to conduct a certified audit reconciliation session using the Veyroq Auditor Cockpit.
+          </p>
+
+          <h2 id="step-1-authenticate">1. Authenticate Institutional Session</h2>
+          <p>
+            Launch the <a href="/console" target="_blank" rel="noopener noreferrer">Auditor Cockpit ↗</a>, select your target settlement network (e.g., Base, Monad, Arbitrum, or Arc), and click <strong>"Connect Wallet"</strong> to authenticate via WebAuthn Passkeys or enterprise SSO OTP. No seed phrases are required.
+          </p>
+
+          <h2 id="step-2-enter-view-key">2. Enter Scoped View Key</h2>
+          <p>
+            Paste your quarterly Scoped View Key (e.g. <code>vk_live_7a9f...</code>). You can also click <strong>"Load Demo Credentials"</strong> to populate pre-configured enterprise test accounts.
+          </p>
+
+          <h2 id="step-3-run-decryption">3. Run Local Decryption &amp; Proof Verification</h2>
+          <p>
+            Click <strong>"Decrypt &amp; Verify Ledger"</strong>. The engine queries encrypted logs from your selected network RPC, decrypts all transactions in local browser memory, computes SHA-256 leaves, and matches the root against <code>VeyroqRegistry.sol</code>.
+          </p>
+
+          <h2 id="step-4-export-gaap">4. Export 1-Click GAAP Ledger</h2>
+          <p>
+            Download standard double-entry journal CSVs pre-mapped for QuickBooks, Xero, or an immutable cryptographic Audit Certificate JSON signed with Merkle inclusion proofs.
+          </p>
+        </div>
+
+        <!-- 5. VIEW KEYS -->
+        <div class="doc-page" id="page-view-keys" data-category="Getting Started" data-title="Scoped View Keys">
+          <h1>Understanding Scoped View Keys</h1>
+          <p class="lead-text">
+            A Veyroq Scoped View Key is an asymmetric cryptographic credential derived from an institution's master treasury account. It possesses strict <strong>read-only decryption capability</strong>.
+          </p>
+
+          <h2 id="view-key-structure">Scoped View Key Structure</h2>
+          <p>
+            View Keys can be restricted to specific settlement networks, calendar quarters, block boundaries, or counterparty classifications:
+          </p>
+
+          <pre><code>// Scoped View Key Specification
+struct ScopedViewKey {
+    uint256 chainId;          // Target EVM network (Base, Monad, Arbitrum, Arc, etc.)
+    bytes32 masterKeyId;      // Derived enterprise account identifier
+    uint256 validFromBlock;   // Starting block boundary (e.g. Q3 2026)
+    uint256 validUntilBlock;  // Ending block boundary
+    bytes32 allowedScopeHash; // Restricts decryption to Payroll or Supplier scopes
+}</code></pre>
+
+          <h2 id="spending-inability">Spending Inability Guarantee</h2>
+          <p>
+            Unlike a private spending key, a Scoped View Key cannot sign transfers, authorize smart contracts, or move funds. Even if an auditor's machine were compromised, zero treasury assets can be moved.
+          </p>
+        </div>
+
+        <!-- 6. MERKLE PROOFS -->
+        <div class="doc-page" id="page-merkle-proofs" data-category="Cryptography" data-title="Merkle Proofs & Tree">
+          <h1>Cryptographic Completeness Proofs</h1>
+          <p class="lead-text">
+            Tax authorities reject arbitrary spreadsheets because rows could be deleted to conceal taxable events. Veyroq mathematically guarantees <strong>Merkle Completeness</strong>.
+          </p>
+
+          <h2 id="the-zero-omissions-dilemma">The Zero-Omissions Dilemma</h2>
+          <p>
+            In traditional accounting, proving that an enterprise has not omitted transactions is difficult. Veyroq solves this by hashing every transaction leaf and committing the Merkle root on-chain before the audit period closes.
+          </p>
+
+          <pre><code>// 1. Each decrypted transaction is hashed as a unique leaf
+bytes32 leaf = keccak256(abi.encodePacked(txId, blockNumber, grossAmountUSDC, recipient));
+
+// 2. The Merkle root is verified against on-chain block commitment
+bool isVerified = MerkleProof.verify(proof, onChainRoot, leaf);
+require(isVerified, "Veyroq: Proof of completeness mismatch");</code></pre>
+
+          <h2 id="mathematical-root-verification">Mathematical Root Verification</h2>
+          <p>
+            If any party modifies a single cent in the ledger or omits a transaction, the calculated Merkle root fails to match the immutable hash committed to <code>VeyroqRegistry.sol</code>.
+          </p>
+        </div>
+
+        <!-- 7. ON-CHAIN VERIFICATION -->
+        <div class="doc-page" id="page-onchain-verification" data-category="Cryptography" data-title="On-Chain Verification">
+          <h1>On-Chain Proof Verification</h1>
+          <p class="lead-text">
+            Any regulator, lender, or tax auditor can verify an inclusion proof without possessing the organization's private keys or sensitive payroll data.
+          </p>
+
+          <h2 id="verification-flow">Verification Flow</h2>
+          <p>
+            External verifiers query the public smart contract method with the cryptographic proof path:
+          </p>
+
+          <pre><code>// Call VeyroqRegistry.verifyTransactionInclusion
+bool valid = registry.verifyTransactionInclusion(
+    0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec, // Organization
+    1,                                          // Proof ID (Q3 FY2026)
+    0xa1e4f9b8c2d11099432857492cdaee11b40289..., // Transaction leaf hash
+    proofPath                                   // Merkle sibling hashes
+);
+// Returns true if transaction was part of the certified ledger</code></pre>
+        </div>
+
+        <!-- 8. CONTRACT SPEC -->
+        <div class="doc-page" id="page-contract-spec" data-category="Smart Contracts" data-title="VeyroqRegistry.sol Spec">
+          <h1>VeyroqRegistry.sol Specification</h1>
+          <p class="lead-text">
+            <code>VeyroqRegistry.sol</code> is a standard, chain-agnostic Solidity settlement contract deployable on any EVM-compatible network (Base, Monad, Arbitrum, Ethereum, Arc). It governs auditor authorizations, Merkle root commitments, and public inclusion proofs.
+          </p>
+
+          <h2 id="core-interfaces">Core Function Interfaces</h2>
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Function</th>
+                  <th>Caller</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>authorizeAuditor(address auditor, uint256 validUntil, bytes32 scopeHash)</code></td>
+                  <td>Organization</td>
+                  <td>Authorizes an accounting firm to commit audit proofs for an organization until timestamp expiry.</td>
+                </tr>
+                <tr>
+                  <td><code>revokeAuditor(address auditor)</code></td>
+                  <td>Organization</td>
+                  <td>Immediately terminates auditor permissions on-chain.</td>
+                </tr>
+                <tr>
+                  <td><code>commitAuditProof(address org, bytes32 root, uint256 start, uint256 end, uint256 txCount, bytes32 meta)</code></td>
+                  <td>Authorized Auditor or Org</td>
+                  <td>Anchors immutable Merkle root proof, transfers 25 USDC protocol fee to treasury.</td>
+                </tr>
+                <tr>
+                  <td><code>verifyTransactionInclusion(...)</code></td>
+                  <td>Public (View)</td>
+                  <td>Verifies that an individual transaction leaf hash is included in a committed audit proof.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="network-deployments">Supported Networks &amp; Registry Deployments</h2>
+          <p>
+            Adding a new EVM network requires zero changes to the client decryption engine—only deploying <code>VeyroqRegistry.sol</code> and registering the chain RPC and USDC token address:
+          </p>
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Network</th>
+                  <th>Settlement Rail</th>
+                  <th>Registry Status / Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Base</strong></td>
+                  <td>Native USDC (EVM L2)</td>
+                  <td>Supported · Deterministic Deployment</td>
+                </tr>
+                <tr>
+                  <td><strong>Monad</strong></td>
+                  <td>Native USDC (Parallel EVM L1)</td>
+                  <td>Supported · Deterministic Deployment</td>
+                </tr>
+                <tr>
+                  <td><strong>Arbitrum &amp; Ethereum</strong></td>
+                  <td>Native USDC (EVM)</td>
+                  <td>Supported · Deterministic Deployment</td>
+                </tr>
+                <tr>
+                  <td><strong>Circle Arc (Testnet)</strong></td>
+                  <td>Native USDC Gas &amp; Confidential Rail (<code>5042002</code>)</td>
+                  <td><a href="https://testnet.arcscan.app/address/0x9636Bb8EAcAa6EB93e695a6dEA6a83596062612A" target="_blank" rel="noopener noreferrer"><code>0x9636Bb8E...612A</code> ↗</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 9. FOUNDRY TESTS -->
+        <div class="doc-page" id="page-foundry-tests" data-category="Smart Contracts" data-title="Foundry Test Suite">
+          <h1>Foundry Automated Testing Suite</h1>
+          <p class="lead-text">
+            The smart contract suite is thoroughly tested with Foundry, achieving 100% test pass rates across authorization, commitments, and Merkle verification.
+          </p>
+
+          <h2 id="test-execution">Test Suite Execution</h2>
+          <pre><code>$ cd contracts && forge test -vvv
+[PASS] test_AuthorizeAuditor() (gas: 111547)
+[PASS] test_CommitAuditProof_ByAuthorizedAuditor() (gas: 358579)
+[PASS] test_CommitAuditProof_ByOrganization() (gas: 307172)
+[PASS] test_MerkleInclusionVerification() (gas: 256818)
+[PASS] test_RevertIf_ExpiredAuditor() (gas: 120114)
+[PASS] test_RevertIf_UnauthorizedSubmitter() (gas: 47631)
+[PASS] test_RevokeAuditor() (gas: 150141)
+Suite result: ok. 7 passed; 0 failed; 0 skipped</code></pre>
+        </div>
+
+        <!-- 10. GAAP EXPORT -->
+        <div class="doc-page" id="page-gaap-export" data-category="Tax & Compliance" data-title="GAAP / IFRS Worksheets">
+          <h1>GAAP / IFRS Worksheets</h1>
+          <p class="lead-text">
+            Veyroq translates on-chain confidential transaction hashes into standard double-entry journal entries recognized by corporate accounting frameworks.
+          </p>
+
+          <h2 id="double-entry-mapping">Double-Entry Journal Translation</h2>
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Transaction Classification</th>
+                  <th>GAAP Debit Account</th>
+                  <th>GAAP Credit Account</th>
+                  <th>Tax Treatment</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>CONFIDENTIAL_PAYROLL</code></td>
+                  <td>Payroll Expense (W-2 / 1099)</td>
+                  <td>Digital Assets (USDC Operating)</td>
+                  <td>Ordinary Business Expense</td>
+                </tr>
+                <tr>
+                  <td><code>SUPPLIER_SETTLEMENT</code></td>
+                  <td>Accounts Payable / COGS</td>
+                  <td>Digital Assets (USDC Operating)</td>
+                  <td>Vendor Deductible Expense</td>
+                </tr>
+                <tr>
+                  <td><code>TREASURY_REBALANCE</code></td>
+                  <td>Short-Term Investment (BUIDL)</td>
+                  <td>Digital Assets (USDC Operating)</td>
+                  <td>Balance Sheet Asset Transfer</td>
+                </tr>
+                <tr>
+                  <td><code>GAS_AND_NETWORK_FEES</code></td>
+                  <td>Blockchain Transaction Expenses</td>
+                  <td>Digital Assets (USDC Gas)</td>
+                  <td>Operating Expense</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 11. QUICKBOOKS & XERO -->
+        <div class="doc-page" id="page-quickbooks" data-category="Tax & Compliance" data-title="QuickBooks & Xero Sync">
+          <h1>QuickBooks & Xero Sync</h1>
+          <p class="lead-text">
+            The Veyroq Exporter engine dynamically formats verified ledger records into native CSV templates recognized by enterprise ERPs.
+          </p>
+
+          <h2 id="supported-formats">Supported Accounting Formats</h2>
+          <ul class="styled-list">
+            <li><strong>QuickBooks Online:</strong> Generates General Journal format with automated Debit/Credit balancing and transaction reference IDs.</li>
+            <li><strong>Xero Accounting:</strong> Formatted with Xero Manual Journal headers (<code>*Date</code>, <code>*AccountCode</code>, <code>*TaxType</code>, <code>Reference</code>).</li>
+            <li><strong>Cryptographic Audit Certificate:</strong> Exports a self-contained JSON file containing the root hash, block range, and transaction signatures suitable for digital submission to the SEC or IRS.</li>
+          </ul>
+        </div>
+
+      </article>
+
+      <!-- Pagination Footer Cards (Previous / Next - Tower Exchange Style!) -->
+      <footer class="docs-pagination">
+        <a href="#" class="pagination-card pagination-prev" id="pagination-prev">
+          <span class="pagination-sub">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span>Previous</span>
+          </span>
+          <span class="pagination-title" id="prev-page-title">Previous Page</span>
+        </a>
+
+        <a href="#" class="pagination-card pagination-next" id="pagination-next">
+          <span class="pagination-sub">
+            <span>Next</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </span>
+          <span class="pagination-title" id="next-page-title">Next Page</span>
+        </a>
+      </footer>
+
+    </main>
+
+    <!-- Right Column: "ON THIS PAGE" Table of Contents -->
+    <aside class="docs-toc" id="docs-toc">
+      <div class="toc-sticky">
+        <div class="toc-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span>On this page</span>
+        </div>
+        
+        <nav class="toc-nav" id="toc-nav">
+          <!-- Dynamically populated from the current active doc-page headings -->
+        </nav>
+
+        <a href="#docs-main" class="toc-back-to-top" id="toc-back-to-top">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <span>Back to top</span>
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Command Palette Modal (⌘K Search) -->
+  <div class="search-modal-backdrop" id="search-modal" aria-hidden="true">
+    <div class="search-modal-box" role="dialog" aria-modal="true" aria-label="Search Documentation">
+      <div class="search-modal-header">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="command-search-input" placeholder="Search documentation, guides, APIs..." autocomplete="off">
+        <kbd class="kbd-badge" id="search-close-btn">ESC</kbd>
+      </div>
+
+      <div class="search-results-list" id="search-results-list">
+        <!-- Live search matches populated here -->
+      </div>
+
+      <div class="search-modal-footer">
+        <div class="shortcut-tip"><kbd>↑</kbd> <kbd>↓</kbd> <span>to navigate</span></div>
+        <div class="shortcut-tip"><kbd>↵</kbd> <span>to select</span></div>
+        <div class="shortcut-tip"><kbd>ESC</kbd> <span>to close</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/docs/app.js"></script>
+</body>
+</html>

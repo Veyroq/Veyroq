@@ -1,0 +1,32 @@
+{
+  "name": "untapped-market",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node server.js",
+    "serve:landing": "python3 -m http.server 3000 --directory landing",
+    "serve:console": "python3 -m http.server 3001 --directory console",
+    "serve:docs": "python3 -m http.server 3002 --directory docs",
+    "test": "npm run test:coverage",
+    "test:unit": "node --test test/unit/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=60 test/unit/*.test.js test/integration/*.test.js",
+    "test:contracts": "cd contracts && forge test",
+    "test:all": "npm run test:coverage && npm run test:contracts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "ethers": "^6.17.0",
+    "hardhat": "^3.19.0",
+    "solc": "^0.8.37"
+  },
+  "type": "module",
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^10.8.1",
+    "dotenv": "^18.0.9"
+  }
+}

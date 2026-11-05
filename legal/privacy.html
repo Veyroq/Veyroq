@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy (Zero-Custody) — Veyroq</title>
+  <meta name="theme-color" content="#450405">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Privacy Policy (Zero-Custody) — Veyroq">
+  <meta property="og:image" content="/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="/assets/og-image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/legal/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="legal-nav">
+    <a href="/" class="brand-link" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
+      <span class="brand-title">Veyroq</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="/" target="_blank" rel="noopener noreferrer">Home ↗</a>
+      <a href="/console" target="_blank" rel="noopener noreferrer">Cockpit ↗</a>
+      <a href="/docs" target="_blank" rel="noopener noreferrer">Documentation ↗</a>
+      <a href="/legal/privacy" class="active">Legal</a>
+    </nav>
+  </header>
+
+  <!-- Content Container -->
+  <main class="legal-container">
+    
+    <!-- Legal Navigation Tabs -->
+    <div class="legal-tabs">
+      <a href="/legal/privacy" class="legal-tab-pill active">Privacy Policy</a>
+      <a href="/legal/terms" class="legal-tab-pill">Terms of Service</a>
+      <a href="/legal/refund" class="legal-tab-pill">Refund & Billing</a>
+      <a href="/legal/disclaimer" class="legal-tab-pill">Regulatory Disclaimer</a>
+    </div>
+
+    <article class="legal-card">
+      <header class="legal-header">
+        <span class="legal-eyebrow">Institutional Compliance Document</span>
+        <h1 class="legal-title">Privacy Policy & Zero-Custody Architecture</h1>
+        <div class="legal-meta">
+          <span><strong>Effective Date:</strong> November 1, 2026</span>
+          <span><strong>Entity:</strong> Veyroq Protocol & Veyroq Labs</span>
+        </div>
+      </header>
+
+      <div class="legal-body">
+        <h2>1. Foundational Principle: Client-Side Zero-Custody</h2>
+        <p>
+          Veyroq provides institutional auditability, selective disclosure, and compliance infrastructure for digital asset treasuries across supported blockchain networks and enterprise stablecoin rails.
+        </p>
+        <div class="legal-callout">
+          <strong>Non-Custodial Architecture:</strong> We do not collect, view, store, transmit, or custody your private spending keys, read-only Scoped View Keys, or decrypted corporate transaction records. All cryptographic operations occur exclusively in local browser RAM.
+        </div>
+
+        <h2>2. Data We Do NOT Collect</h2>
+        <ul>
+          <li><strong>No Cryptographic Keys:</strong> Your Scoped View Keys, passkey credentials, seed phrases, and private keys remain strictly within your local computing environment. Decryption occurs exclusively in volatile client memory.</li>
+          <li><strong>No Financial Plaintext:</strong> We do not store or transmit decrypted financial amounts, counterparty addresses, payroll records, or commercial contract data to our servers.</li>
+          <li><strong>No Custodial Balances:</strong> Veyroq is a software utility and never takes custody of funds, stablecoins, or treasury assets.</li>
+        </ul>
+
+        <h2>3. Minimal Operational Data Processed</h2>
+        <ul>
+          <li><strong>Public Network Metadata:</strong> Publicly broadcast on-chain transaction hashes, block timestamps, and smart contract event logs.</li>
+          <li><strong>Anonymous Telemetry (Opt-In):</strong> High-level performance metrics (page load latency, user-agent) with IP addresses anonymized. We never correlate web analytics with on-chain wallet addresses.</li>
+        </ul>
+
+        <h2>4. Local Ephemeral Decryption Workflow</h2>
+        <p>When an enterprise CFO, accountant, or auditor utilizes the Veyroq Compliance Console:</p>
+        <ol>
+          <li>The Scoped View Key is loaded into local browser volatile memory (RAM) only.</li>
+          <li>Encrypted transaction payloads are retrieved directly from network RPC nodes.</li>
+          <li>Cryptographic decryption and Merkle completeness proofs execute locally via WebAssembly and the native Web Crypto API.</li>
+          <li>When the browser tab is closed, all plaintext and key representations are immediately cleared from local memory.</li>
+        </ol>
+
+        <h2>5. Global Privacy Standards (GDPR & CCPA)</h2>
+        <p>
+          Because Veyroq does not store personal financial records or corporate identity profiles on central databases, Veyroq adheres to the principles of "Privacy by Design" and data minimization under the EU General Data Protection Regulation (GDPR) and the California Consumer Privacy Act (CCPA).
+        </p>
+
+        <h2>6. Contact & Legal Inquiries</h2>
+        <p>
+          For questions regarding Veyroq software security, contact our compliance desk at <strong>legal@veyroq.xyz</strong>.
+        </p>
+      </div>
+    </article>
+
+    <footer class="legal-footer">
+      © 2026 Veyroq Protocol. Client-side zero-custody verified.
+    </footer>
+  </main>
+
+</body>
+</html>

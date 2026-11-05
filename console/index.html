@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veyroq Cockpit — Institutional Audit &amp; Decryption Console</title>
+  <meta name="description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
+  <meta name="theme-color" content="#450405">
+
+  <!-- Brand Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+  <!-- Open Graph & X Card -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Veyroq">
+  <meta property="og:title" content="Veyroq Cockpit — Institutional Audit &amp; Decryption Console">
+  <meta property="og:description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
+  <meta property="og:image" content="/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="675">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Veyroq Cockpit — Institutional Audit &amp; Decryption Console">
+  <meta name="twitter:description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
+  <meta name="twitter:image" content="/assets/og-image.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/console/styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="cockpit-nav">
+    <div class="nav-left">
+      <a href="/" class="brand-link" target="_blank" rel="noopener noreferrer">
+        <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
+        <span class="brand-title">Veyroq</span>
+        <span class="brand-sub">Cockpit</span>
+      </a>
+      <div class="network-badge">
+        <span class="dot-live"></span>
+        <span id="active-network-label">Circle Arc L1</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="security-indicator">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Client-Side Zero-Custody</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-wallet-connect">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span id="wallet-btn-text">Connect Wallet</span>
+      </button>
+      <a href="/docs" class="doc-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
+      <a href="/legal/privacy" class="doc-link" target="_blank" rel="noopener noreferrer">Privacy ↗</a>
+    </div>
+  </header>
+
+  <!-- Main Cockpit Layout -->
+  <main class="cockpit-layout">
+    
+    <!-- Left Configuration Sidebar (Intake Form Slip) -->
+    <aside class="cockpit-sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">1. AUDIT CONFIGURATION</h3>
+
+        <div class="input-group">
+          <label for="network-select">Settlement Network</label>
+          <select id="network-select">
+            <option value="Arc">Circle Arc L1 (Chain ID: 5042002)</option>
+            <option value="Base">Base Mainnet (EVM L2)</option>
+            <option value="Monad">Monad (Parallel EVM)</option>
+            <option value="Arbitrum">Arbitrum One</option>
+            <option value="Ethereum">Ethereum Mainnet</option>
+          </select>
+        </div>
+        
+        <div class="input-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label for="org-address" style="margin-bottom:0;">Treasury Wallet Address</label>
+            <span class="badge-tag" id="connected-wallet-pill" style="display:none; cursor:pointer;" title="Click to use connected wallet">Use Connected</span>
+          </div>
+          <input type="text" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
+        </div>
+
+        <div class="input-group">
+          <label for="view-key">Scoped View Key (Read-Only Decryption)</label>
+          <textarea id="view-key" rows="2" placeholder="Enter Scoped View Key..." spellcheck="false">vk_live_7a9f4102d84c17e8b625c4ef190a33190</textarea>
+          <button class="btn-text" id="btn-load-demo-key">Load Demo Credentials</button>
+        </div>
+
+        <div class="input-group">
+          <label for="period-select">Audit Period Scope</label>
+          <select id="period-select">
+            <option value="2026-Q3">FY 2026 - Q3 (July - Sept)</option>
+            <option value="2026-Q2">FY 2026 - Q2 (Apr - June)</option>
+            <option value="2026-Q1">FY 2026 - Q1 (Jan - Mar)</option>
+            <option value="custom">Custom Date Range...</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="btn-run-decryption">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          <span>Decrypt &amp; Verify Ledger</span>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">2. VERIFICATION STATUS</h3>
+        <div class="status-box" id="status-card">
+          <div class="status-row">
+            <span class="label">Network Node:</span>
+            <span class="val text-green" id="network-rpc-status">RPC Connected</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Completeness:</span>
+            <span class="val" id="merkle-status">Awaiting Execution</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Verified Leaves:</span>
+            <span class="val font-mono" id="verified-count">0</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Gross Reconciled:</span>
+            <span class="val font-mono" id="reconciled-sum">$0.00 USDC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">3. INSTITUTIONAL EXPORT</h3>
+        <button class="btn btn-secondary btn-block mb-10" id="btn-export-csv" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export QuickBooks Online CSV</span>
+        </button>
+
+        <button class="btn btn-secondary btn-block mb-10" id="btn-export-xero" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export Xero Manual Journal CSV</span>
+        </button>
+
+        <button class="btn btn-secondary btn-block" id="btn-export-cert" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Download Audit Certificate (JSON)</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Right Workspace Area -->
+    <section class="cockpit-workspace">
+      
+      <!-- Top Metrics Bar -->
+      <div class="metrics-bar">
+        <div class="metric-card">
+          <div class="metric-title">TOTAL RECONCILED VOLUME</div>
+          <div class="metric-number" id="stat-volume">$0.00 <small>USDC</small></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">VERIFIED LINE ITEMS</div>
+          <div class="metric-number" id="stat-items">0 <small>Transactions</small></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">MERKLE ROOT COMMITMENT</div>
+          <div class="metric-number" style="font-size:1rem; font-family:var(--font-mono);" id="stat-root">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">COMPLIANCE ASSURANCE</div>
+          <div class="metric-number" style="font-size:1.05rem; color:var(--green-verified);" id="stat-assurance">READY TO VERIFY</div>
+        </div>
+      </div>
+
+      <!-- Proof Banner (revealed after verification) -->
+      <div class="proof-banner" id="banner-proof" style="display:none;">
+        <div class="banner-left">
+          <div class="proof-icon">✔</div>
+          <div>
+            <div class="banner-title">CRYPTOGRAPHIC COMPLETENESS ESTABLISHED</div>
+            <div class="banner-hash">On-Chain Root: <strong id="banner-root-hash">0x00...</strong></div>
+          </div>
+        </div>
+        <div class="auditor-stamp">
+          <span class="stamp-badge">VERIFIED</span>
+          <span class="stamp-date">ZERO OMISSIONS</span>
+        </div>
+      </div>
+
+      <!-- Tab Navigation & Selective Disclosure Scope Control Bar -->
+      <div class="workspace-controls-bar">
+        <div class="workspace-tabs">
+          <button class="tab-btn active" id="tab-btn-ledger">Reconciliation Ledger</button>
+          <button class="tab-btn" id="tab-btn-policies">On-Chain Auditor Policies</button>
+        </div>
+
+        <!-- The Core Innovation: Selective Disclosure Toggle -->
+        <div class="disclosure-toggle-group" id="disclosure-controls">
+          <span class="toggle-label">Disclosure Scope:</span>
+          <div class="segmented-control">
+            <button class="segment-btn active" id="btn-scope-full" title="Reveals decrypted business counterparties to certified auditor">
+              <span>👁 Full Auditor View</span>
+            </button>
+            <button class="segment-btn" id="btn-scope-redacted" title="Masks counterparty names while proving amount and tax category on-chain">
+              <span>🔒 Redacted (Zero-Leak)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="tab-content">
+        <!-- View 1: Ledger -->
+        <div id="view-ledger">
+          <div class="table-wrapper">
+            <table class="ledger-table" id="transactions-table">
+              <thead>
+                <tr>
+                  <th>Timestamp / Date</th>
+                  <th>Network Block</th>
+                  <th>Transaction Classification</th>
+                  <th id="th-counterparty">Counterparty (Decrypted)</th>
+                  <th>Gross Amount</th>
+                  <th>Asset</th>
+                  <th>Merkle Completeness</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding: 48px; color: var(--ink-muted);">
+                    Click <strong>"Decrypt &amp; Verify Ledger"</strong> in the sidebar to decrypt transactions locally in volatile browser RAM.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Printable Certified Audit Certificate Slip Preview -->
+          <div class="workspace-slip-card" id="slip-card-preview" style="display:none;">
+            <div>
+              <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--ink-muted); text-transform:uppercase;">Certified Audit Certificate Slip · GAAP &amp; IFRS</span>
+              <h4 style="font-family:var(--font-heading); font-size:1.15rem; margin-top:2px;">FY2026-Q3 Corporate Treasury Reconciliation</h4>
+              <p style="font-size:0.85rem; color:var(--ink-secondary); margin-top:4px;">All line items cryptographically anchored to <code>VeyroqRegistry.sol</code>. Zero omissions, alterations, or leaks.</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px;">
+              <button class="btn btn-secondary btn-sm" onclick="window.print()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>Print Official Slip</span>
+              </button>
+              <div class="auditor-stamp">
+                <span class="stamp-badge">SEALED</span>
+                <span class="stamp-date">IFRS / GAAP COMPLIANT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Policies -->
+        <div id="view-policies" style="display: none;">
+          <div class="policies-container">
+            <div class="policy-card">
+              <h3>Authorize New External Auditor</h3>
+              <p>Authorize an external accounting firm (PwC, EY, Deloitte, or internal CPA) to commit audit proofs on-chain.</p>
+              
+              <div class="input-group">
+                <label for="auditor-addr-input">Auditor EVM Address</label>
+                <input type="text" id="auditor-addr-input" placeholder="0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7" spellcheck="false">
+              </div>
+
+              <div class="input-group">
+                <label for="auditor-expiry-input">Authorization Expiration Date</label>
+                <input type="date" id="auditor-expiry-input" value="2026-12-31">
+              </div>
+
+              <div class="input-group">
+                <label for="auditor-scope-input">Audit Engagement Scope</label>
+                <select id="auditor-scope-input">
+                  <option value="ALL_TRANSACTIONS">All Transactions (Comprehensive)</option>
+                  <option value="PAYROLL_ONLY">Confidential Payroll Only</option>
+                  <option value="SUPPLIERS_ONLY">Supplier Settlements Only</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary btn-block" id="btn-submit-policy">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Authorize Auditor Policy On-Chain</span>
+              </button>
+            </div>
+
+            <div class="policy-card">
+              <h3>Currently Authorized Auditors</h3>
+              <p>Active cryptographic permissions anchored to your treasury smart contract.</p>
+              
+              <div class="auditor-list" id="auditor-list-container">
+                <div class="auditor-item">
+                  <div class="auditor-meta">
+                    <strong>PricewaterhouseCoopers (PwC Global Digital Assets)</strong>
+                    <span>0x5A3A...43e7</span>
+                    <small>Scope: All Transactions · Valid until 2026-12-31</small>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'PwC Global')">Revoke</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Universal Institutional Wallet Modal (Supports Safe, Ledger, SCA, EOA, or Manual Mode) -->
+  <div class="modal-overlay" id="wallet-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Connect Treasury Wallet</h3>
+        <button class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      <p class="modal-desc">
+        Connect any existing corporate treasury wallet. Veyroq never custodies or transfers your funds.
+      </p>
+      
+      <div class="wallet-options-list">
+        <!-- Option 1: Browser Web3 (MetaMask, Rabby, Coinbase) -->
+        <button class="wallet-option-btn" id="btn-connect-injected">
+          <div class="wallet-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-name">Browser Extension</span>
+            <span class="wallet-detail">MetaMask, Rabby, Coinbase Wallet, Brave</span>
+          </div>
+          <span class="wallet-badge" id="detected-ext-badge">Auto-Detect</span>
+        </button>
+
+        <!-- Option 2: Safe Multi-Sig (app.safe.global) -->
+        <button class="wallet-option-btn" id="btn-connect-safe">
+          <div class="wallet-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-name">Safe Multi-Sig</span>
+            <span class="wallet-detail">app.safe.global corporate multi-signers</span>
+          </div>
+          <span class="wallet-badge">Institutional</span>
+        </button>
+
+        <!-- Option 3: Hardware Wallet (Ledger / Trezor) -->
+        <button class="wallet-option-btn" id="btn-connect-hardware">
+          <div class="wallet-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-name">Hardware Cold Storage</span>
+            <span class="wallet-detail">Ledger, Trezor offline treasury</span>
+          </div>
+          <span class="wallet-badge">Cold Storage</span>
+        </button>
+
+        <!-- Option 4: Smart Contract Account / Passkey -->
+        <button class="wallet-option-btn" id="btn-connect-sca">
+          <div class="wallet-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a6 6 0 0 0-6 6h2a4 4 0 0 1 8 0h2a6 6 0 0 0-6-6z"/></svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-name">Smart Account / Passkey</span>
+            <span class="wallet-detail">ERC-4337, Coinbase Smart Wallet, WebAuthn</span>
+          </div>
+          <span class="wallet-badge">ERC-4337</span>
+        </button>
+
+        <!-- Option 5: Manual Read-Only Mode (Auditors) -->
+        <button class="wallet-option-btn" id="btn-connect-manual">
+          <div class="wallet-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-name">Auditor Read-Only Mode</span>
+            <span class="wallet-detail">Paste any treasury address without signing</span>
+          </div>
+          <span class="wallet-badge">Read-Only</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/console/exporter.js"></script>
+  <script type="module" src="/console/app.js"></script>
+</body>
+</html>

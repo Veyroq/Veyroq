@@ -1,0 +1,237 @@
+/* Veyroq Legal Documentation — Curated Editorial Postcard Aesthetic */
+:root {
+  --sage-grey: #A5A79B;
+  --sage-dark: #8C8F81;
+  --sage-light: #B8B9AF;
+  --sage-hairline: rgba(140, 143, 129, 0.45);
+  
+  --cream-beige: #E0D2B5;
+  --cream-light: #F4EEDF;
+  --cream-canvas: #EAE3D2;
+  
+  --burgundy: #590907;
+  --burgundy-hover: #3E0604;
+  --burgundy-tint: rgba(89, 9, 7, 0.12);
+  
+  --ink-primary: #151716;
+  --ink-secondary: #3A3D3B;
+  --ink-muted: #5C605D;
+
+  --font-main: 'Plus Jakarta Sans', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--cream-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-main);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.legal-nav {
+  height: 64px;
+  background: var(--cream-beige);
+  border-bottom: 1.5px solid var(--sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink-primary);
+}
+
+.brand-mark-img {
+  width: 32px;
+  height: 26px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.2rem;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  transition: color 0.15s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--burgundy);
+  font-weight: 700;
+}
+
+/* Main Container */
+.legal-container {
+  max-width: 860px;
+  margin: 48px auto 96px;
+  padding: 0 24px;
+}
+
+.legal-card {
+  background: var(--cream-light);
+  border: 1.5px solid var(--sage-dark);
+  border-radius: var(--radius-sm);
+  padding: 48px 40px;
+  box-shadow: 0 12px 32px rgba(21, 23, 22, 0.08);
+}
+
+.legal-header {
+  border-bottom: 2px solid var(--ink-primary);
+  padding-bottom: 24px;
+  margin-bottom: 36px;
+}
+
+.legal-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--burgundy);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.legal-title {
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--ink-primary);
+  margin-bottom: 12px;
+}
+
+.legal-meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-secondary);
+}
+
+.legal-meta span {
+  margin-right: 18px;
+}
+
+/* Content Typography */
+.legal-body h2 {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--ink-primary);
+  margin: 32px 0 12px;
+  padding-top: 16px;
+  border-top: 1.5px dashed var(--sage-dark);
+}
+
+.legal-body h2:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.legal-body p {
+  color: var(--ink-primary);
+  font-size: 0.96rem;
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+
+.legal-body ul, .legal-body ol {
+  padding-left: 24px;
+  margin-bottom: 20px;
+  color: var(--ink-primary);
+}
+
+.legal-body li {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.legal-body strong {
+  color: var(--ink-primary);
+}
+
+.legal-callout {
+  background: var(--sage-grey);
+  border-left: 3.5px solid var(--burgundy);
+  padding: 16px 20px;
+  border-radius: var(--radius-xs);
+  margin: 24px 0;
+  font-size: 0.92rem;
+  color: var(--ink-primary);
+}
+
+/* Tab Pill Navigation */
+.legal-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.legal-tab-pill {
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--sage-grey);
+  color: var(--ink-primary);
+  border: 1px solid var(--sage-dark);
+  transition: all 0.15s;
+}
+
+.legal-tab-pill:hover {
+  background: var(--cream-light);
+}
+
+.legal-tab-pill.active {
+  background: var(--burgundy);
+  color: var(--cream-light);
+  border-color: var(--burgundy);
+}
+
+/* Footer */
+.legal-footer {
+  text-align: center;
+  border-top: 1px solid var(--sage-dark);
+  padding: 32px 0;
+  font-size: 0.82rem;
+  color: var(--ink-secondary);
+}
