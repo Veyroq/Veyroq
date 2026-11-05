@@ -83,6 +83,7 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     /**
      * @notice Commits an audited Merkle root hash for an organization.
      * Must be called either by the organization itself or by an authorized auditor.
+     * Strictly enforces Checks-Effects-Interactions (CEI).
      */
     function commitAuditProof(
         address organization,
@@ -92,12 +93,13 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         uint256 transactionCount,
         bytes32 metadataHash
     ) external payable override nonReentrant returns (uint256 proofId) {
+        // 1. CHECKS
         require(organization != address(0), "VeyroqRegistry: Invalid organization");
         require(auditRootHash != bytes32(0), "VeyroqRegistry: Invalid root hash");
         require(periodEnd >= periodStart, "VeyroqRegistry: Invalid period range");
         require(transactionCount > 0, "VeyroqRegistry: Zero transactions");
 
-        // Authorization check: Submitter must be organization or an authorized auditor
+        // Submitter authorization: must be organization itself or an authorized auditor
         if (msg.sender != organization) {
             AuditorPermission memory perm = auditorPermissions[organization][msg.sender];
             require(
@@ -106,17 +108,18 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
             );
         }
 
-        // Protocol fee settlement
-        if (protocolFee > 0) {
-            if (address(usdcToken) != address(0)) {
-                usdcToken.safeTransferFrom(msg.sender, treasury, protocolFee);
+        // Validate value transfer semantics to prevent trapped native coins
+        if (address(usdcToken) != address(0)) {
+            require(msg.value == 0, "VeyroqRegistry: Value not accepted for ERC20 fee");
+        } else {
+            if (protocolFee > 0) {
+                require(msg.value == protocolFee, "VeyroqRegistry: Incorrect native fee paid");
             } else {
-                require(msg.value >= protocolFee, "VeyroqRegistry: Insufficient fee paid");
-                (bool success, ) = treasury.call{value: msg.value}("");
-                require(success, "VeyroqRegistry: Fee transfer failed");
+                require(msg.value == 0, "VeyroqRegistry: Zero fee expected");
             }
         }
 
+        // 2. EFFECTS (Update state prior to external token/coin transfers)
         AuditCommitment memory commitment = AuditCommitment({
             auditRootHash: auditRootHash,
             periodStart: periodStart,
@@ -139,6 +142,16 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
             transactionCount,
             protocolFee
         );
+
+        // 3. INTERACTIONS (Token transfers or native fee forwarding)
+        if (protocolFee > 0) {
+            if (address(usdcToken) != address(0)) {
+                usdcToken.safeTransferFrom(msg.sender, treasury, protocolFee);
+            } else {
+                (bool success, ) = treasury.call{value: protocolFee}("");
+                require(success, "VeyroqRegistry: Fee transfer failed");
+            }
+        }
     }
 
     /**
@@ -153,10 +166,29 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         uint256 proofId,
         bytes32 leafHash,
         bytes32[] calldata merkleProof
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         require(proofId < _auditHistory[organization].length, "VeyroqRegistry: Proof ID out of bounds");
         bytes32 root = _auditHistory[organization][proofId].auditRootHash;
         return MerkleProof.verify(merkleProof, root, leafHash);
+    }
+
+    /**
+     * @notice Verifies batch line-item inclusions in a single on-chain call.
+     */
+    function verifyBatchInclusion(
+        address organization,
+        uint256 proofId,
+        bytes32[] calldata leafHashes,
+        bytes32[][] calldata merkleProofs
+    ) external view override returns (bool[] memory results) {
+        require(proofId < _auditHistory[organization].length, "VeyroqRegistry: Proof ID out of bounds");
+        require(leafHashes.length == merkleProofs.length, "VeyroqRegistry: Length mismatch");
+
+        bytes32 root = _auditHistory[organization][proofId].auditRootHash;
+        results = new bool[](leafHashes.length);
+        for (uint256 i = 0; i < leafHashes.length; i++) {
+            results[i] = MerkleProof.verify(merkleProofs[i], root, leafHashes[i]);
+        }
     }
 
     /**
@@ -182,6 +214,30 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Paginated retrieval of audit commitments for corporate treasury exports.
+     */
+    function getAuditCommitments(
+        address organization,
+        uint256 offset,
+        uint256 limit
+    ) external view override returns (AuditCommitment[] memory) {
+        uint256 total = _auditHistory[organization].length;
+        if (offset >= total) {
+            return new AuditCommitment[](0);
+        }
+        uint256 end = offset + limit;
+        if (end > total) {
+            end = total;
+        }
+        uint256 size = end - offset;
+        AuditCommitment[] memory batch = new AuditCommitment[](size);
+        for (uint256 i = 0; i < size; i++) {
+            batch[i] = _auditHistory[organization][offset + i];
+        }
+        return batch;
+    }
+
+    /**
      * @notice Returns total number of audit commitments registered for an organization.
      */
     function getCommitmentCount(address organization) external view override returns (uint256) {
@@ -202,5 +258,24 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
 
     function setUSDCToken(address newUsdc) external onlyOwner {
         usdcToken = IERC20(newUsdc);
+        emit USDCTokenUpdated(newUsdc);
+    }
+
+    /**
+     * @notice Emergency rescue for accidentally sent ERC-20 tokens.
+     */
+    function rescueToken(address token, address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "VeyroqRegistry: Invalid recipient");
+        IERC20(token).safeTransfer(to, amount);
+    }
+
+    /**
+     * @notice Emergency rescue for accidentally sent native gas coins.
+     */
+    function rescueNative(address payable to) external onlyOwner {
+        require(to != address(0), "VeyroqRegistry: Invalid recipient");
+        uint256 balance = address(this).balance;
+        (bool success, ) = to.call{value: balance}("");
+        require(success, "VeyroqRegistry: Rescue failed");
     }
 }

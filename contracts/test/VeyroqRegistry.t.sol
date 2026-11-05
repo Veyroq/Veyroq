@@ -156,4 +156,215 @@ contract VeyroqRegistryTest is Test {
         bool isFakeIncluded = registry.verifyTransactionInclusion(organization, proofId, fakeLeaf, proofForLeaf1);
         assertFalse(isFakeIncluded);
     }
+
+    function test_BatchInclusionVerification() public {
+        bytes32 leaf1 = keccak256(abi.encodePacked("Tx1: Payroll"));
+        bytes32 leaf2 = keccak256(abi.encodePacked("Tx2: Vendor"));
+
+        bytes32 root = leaf1 < leaf2
+            ? keccak256(abi.encodePacked(leaf1, leaf2))
+            : keccak256(abi.encodePacked(leaf2, leaf1));
+
+        vm.prank(organization);
+        uint256 proofId = registry.commitAuditProof(organization, root, 1000, 2000, 2, bytes32(0));
+
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = leaf1;
+        leaves[1] = keccak256("Forged Tx");
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+        proofs[0] = new bytes32[](1);
+        proofs[0][0] = leaf2;
+        proofs[1] = new bytes32[](1);
+        proofs[1][0] = leaf2;
+
+        bool[] memory results = registry.verifyBatchInclusion(organization, proofId, leaves, proofs);
+        assertEq(results.length, 2);
+        assertTrue(results[0]);
+        assertFalse(results[1]);
+    }
+
+    function test_GetAuditCommitmentsPagination() public {
+        bytes32 root = keccak256("ROOT");
+        vm.startPrank(organization);
+        registry.commitAuditProof(organization, root, 100, 200, 10, bytes32(0));
+        registry.commitAuditProof(organization, root, 200, 300, 20, bytes32(0));
+        registry.commitAuditProof(organization, root, 300, 400, 30, bytes32(0));
+        vm.stopPrank();
+
+        assertEq(registry.getCommitmentCount(organization), 3);
+
+        IVeyroqRegistry.AuditCommitment[] memory page1 = registry.getAuditCommitments(organization, 0, 2);
+        assertEq(page1.length, 2);
+        assertEq(page1[0].transactionCount, 10);
+        assertEq(page1[1].transactionCount, 20);
+
+        IVeyroqRegistry.AuditCommitment[] memory page2 = registry.getAuditCommitments(organization, 2, 2);
+        assertEq(page2.length, 1);
+        assertEq(page2[0].transactionCount, 30);
+
+        IVeyroqRegistry.AuditCommitment[] memory emptyPage = registry.getAuditCommitments(organization, 5, 2);
+        assertEq(emptyPage.length, 0);
+    }
+
+    function test_NativeFeeCommitment() public {
+        // Deploy registry configured for native gas USDC (usdcToken = address(0))
+        uint256 nativeFee = 1 ether / 100; // 0.01 native gas
+        vm.prank(owner);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee);
+
+        vm.deal(organization, 1 ether);
+        uint256 treasuryBefore = treasury.balance;
+
+        vm.prank(organization);
+        uint256 proofId = nativeRegistry.commitAuditProof{value: nativeFee}(
+            organization,
+            keccak256("NATIVE_ROOT"),
+            100,
+            200,
+            5,
+            bytes32(0)
+        );
+
+        assertEq(proofId, 0);
+        assertEq(treasury.balance, treasuryBefore + nativeFee);
+    }
+
+    function test_RevertIf_IncorrectNativeFeePaid() public {
+        uint256 nativeFee = 1 ether / 100;
+        vm.prank(owner);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee);
+
+        vm.deal(organization, 1 ether);
+
+        // Underpayment
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Incorrect native fee paid");
+        nativeRegistry.commitAuditProof{value: nativeFee - 1}(
+            organization,
+            keccak256("NATIVE_ROOT"),
+            100,
+            200,
+            5,
+            bytes32(0)
+        );
+
+        // Overpayment
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Incorrect native fee paid");
+        nativeRegistry.commitAuditProof{value: nativeFee + 1}(
+            organization,
+            keccak256("NATIVE_ROOT"),
+            100,
+            200,
+            5,
+            bytes32(0)
+        );
+    }
+
+    function test_RevertIf_ValueSentWhenUSDCRequired() public {
+        vm.deal(organization, 1 ether);
+
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Value not accepted for ERC20 fee");
+        registry.commitAuditProof{value: 1000}(
+            organization,
+            keccak256("ROOT"),
+            100,
+            200,
+            5,
+            bytes32(0)
+        );
+    }
+
+    function test_RevertIf_ZeroAddressOrganization() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Invalid organization");
+        registry.commitAuditProof(address(0), keccak256("ROOT"), 100, 200, 5, bytes32(0));
+    }
+
+    function test_RevertIf_EmptyRootHash() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Invalid root hash");
+        registry.commitAuditProof(organization, bytes32(0), 100, 200, 5, bytes32(0));
+    }
+
+    function test_RevertIf_InvalidPeriodRange() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Invalid period range");
+        registry.commitAuditProof(organization, keccak256("ROOT"), 200, 100, 5, bytes32(0));
+    }
+
+    function test_RevertIf_ZeroTransactionCount() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Zero transactions");
+        registry.commitAuditProof(organization, keccak256("ROOT"), 100, 200, 0, bytes32(0));
+    }
+
+    function test_Admin_SetProtocolFee() public {
+        vm.prank(owner);
+        registry.setProtocolFee(50 * 10 ** 6);
+        assertEq(registry.protocolFee(), 50 * 10 ** 6);
+
+        // Non-owner revert
+        vm.prank(unauthorized);
+        vm.expectRevert();
+        registry.setProtocolFee(10);
+    }
+
+    function test_Admin_SetTreasury() public {
+        address newTreasury = address(0x777);
+        vm.prank(owner);
+        registry.setTreasury(newTreasury);
+        assertEq(registry.treasury(), newTreasury);
+
+        // Revert on zero address
+        vm.prank(owner);
+        vm.expectRevert("VeyroqRegistry: Invalid treasury");
+        registry.setTreasury(address(0));
+    }
+
+    function test_Admin_SetUSDCToken() public {
+        address newUsdc = address(0x888);
+        vm.prank(owner);
+        registry.setUSDCToken(newUsdc);
+        assertEq(address(registry.usdcToken()), newUsdc);
+    }
+
+    function test_Admin_RescueTokenAndNative() public {
+        // Test token rescue
+        MockUSDC extraToken = new MockUSDC();
+        extraToken.mint(address(registry), 500 * 10 ** 6);
+
+        address recipient = address(0x555);
+        vm.prank(owner);
+        registry.rescueToken(address(extraToken), recipient, 500 * 10 ** 6);
+        assertEq(extraToken.balanceOf(recipient), 500 * 10 ** 6);
+
+        // Test native rescue
+        vm.deal(address(registry), 2 ether);
+        uint256 recBefore = recipient.balance;
+        vm.prank(owner);
+        registry.rescueNative(payable(recipient));
+        assertEq(recipient.balance, recBefore + 2 ether);
+    }
+
+    // Property-based Fuzz Test: Merkle inclusion for arbitrary fuzzed leaves
+    function testFuzz_MerkleInclusion(bytes32 leaf1, bytes32 leaf2) public {
+        vm.assume(leaf1 != bytes32(0) && leaf2 != bytes32(0));
+        vm.assume(leaf1 != leaf2);
+
+        bytes32 root = leaf1 < leaf2
+            ? keccak256(abi.encodePacked(leaf1, leaf2))
+            : keccak256(abi.encodePacked(leaf2, leaf1));
+
+        vm.prank(organization);
+        uint256 proofId = registry.commitAuditProof(organization, root, 1000, 2000, 2, bytes32(0));
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = leaf2;
+
+        bool verified = registry.verifyTransactionInclusion(organization, proofId, leaf1, proof);
+        assertTrue(verified);
+    }
 }
