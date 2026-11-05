@@ -95,3 +95,4 @@ export async function verifyEmailOtp(email, code) {
   setAuthState(address, 'privy_email', user);
   return { user, address };
 }
+

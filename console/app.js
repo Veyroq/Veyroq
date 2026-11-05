@@ -150,9 +150,11 @@ if (typeof document !== 'undefined') {
     const pill = $('connected-wallet-pill');
     if (pill) {
       pill.style.display = 'inline-block';
-      pill.textContent = `Using ${label}`;
+      pill.textContent = `${label} Verified`;
       pill.classList.add('badge-tag-connected');
     }
+    if ($('display-treasury-addr')) $('display-treasury-addr').textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+    if ($('cert-display-vault')) $('cert-display-vault').textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
     if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
   }
 
@@ -240,7 +242,12 @@ if (typeof document !== 'undefined') {
     if ($('stat-items')) $('stat-items').innerHTML = `${loadedTransactions.length} <small>Transactions</small>`;
     if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="text-green">✔ Live Synced</span>`;
     if ($('stat-root')) $('stat-root').innerText = `${calculatedMerkleRoot.slice(0, 10)}...${calculatedMerkleRoot.slice(-4)}`;
-    if ($('stat-assurance')) $('stat-assurance').innerHTML = `<span style="color:var(--green-verified);">✔ VERIFIED</span>`;
+    if ($('stat-assurance')) $('stat-assurance').innerHTML = `<span style="color:var(--green-verified);">✔ GAAP Proof Active</span>`;
+
+    if ($('cert-display-outflow')) $('cert-display-outflow').textContent = formattedTotal;
+    if ($('cert-display-items')) $('cert-display-items').textContent = `${loadedTransactions.length} Verified (100% On-Chain)`;
+    if ($('cert-display-proof')) $('cert-display-proof').textContent = `${calculatedMerkleRoot.slice(0, 10)}... (Valid Merkle Proof)`;
+    if ($('synced-tx-count')) $('synced-tx-count').textContent = `(${loadedTransactions.length} Synced)`;
 
     if ($('banner-proof')) $('banner-proof').style.display = 'flex';
     if ($('banner-root-hash')) $('banner-root-hash').innerText = calculatedMerkleRoot;

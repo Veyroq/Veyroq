@@ -91,3 +91,4 @@ test('Unit: verifyEmailOtp sets auth state with embedded wallet address', async 
   assert.equal(getAuthState().isAuthenticated, true);
   assert.equal(getAuthState().method, 'privy_email');
 });
+

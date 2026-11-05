@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veyroq Cockpit — Bento Minimal Edition (Perfected)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* User's Exact Brand Palette from landing/styles.css */
+      --sage-grey: #A5A79B;
+      --sage-dark: #8C8F81;
+      --sage-light: #B8B9AF;
+      --sage-tint: rgba(165, 167, 155, 0.22);
+      --sage-hairline: rgba(140, 143, 129, 0.35);
+
+      --cream-beige: #E0D2B5;
+      --cream-light: #F4EEDF;
+      --cream-deep: #D4C3A3;
+      --cream-canvas: #EAE3D2;
+      --cream-surface: #FAF7F0;
+
+      --burgundy: #590907;
+      --burgundy-hover: #3E0604;
+      --burgundy-light: #7A0C0A;
+      --burgundy-tint: rgba(89, 9, 7, 0.08);
+
+      --ink-primary: #151716;
+      --ink-secondary: #3A3D3B;
+      --ink-muted: #5C605D;
+
+      --green-live: #15803D;
+      --green-tint: #DCFCE7;
+      --gold-accent: #C5A059;
+
+      --radius-bento: 18px;
+      --radius-card: 14px;
+      --shadow-bento: 0 4px 20px rgba(21, 23, 22, 0.04);
+      --shadow-hover: 0 8px 30px rgba(89, 9, 7, 0.08);
+
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--cream-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* 1. TOP FLOATING ISLAND NAV (Concept 2 Bento Minimal) */
+    .header-wrapper {
+      padding: 18px 32px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .header-island {
+      background: rgba(250, 247, 240, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 16px;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-bento);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand img { height: 28px; width: 28px; }
+    .brand-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+      color: var(--burgundy);
+    }
+
+    .badge-edition {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--ink-secondary);
+      background: var(--sage-grey);
+      border: 1px solid var(--sage-dark);
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+
+    .network-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-live);
+      box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.2);
+    }
+
+    .btn-connect {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--burgundy);
+      color: #FAF6ED;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(89, 9, 7, 0.2);
+    }
+
+    .btn-connect:hover {
+      background: var(--burgundy-hover);
+      transform: translateY(-1px);
+    }
+
+    /* 2. MAIN BENTO CONTAINER */
+    .bento-container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 32px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Title & Action Row (Concept 2) */
+    .concept-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 4px 2px;
+    }
+
+    .concept-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--burgundy);
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .concept-title {
+      font-family: var(--font-display);
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--ink-primary);
+      letter-spacing: -0.8px;
+    }
+
+    .concept-desc {
+      font-size: 0.92rem;
+      color: var(--ink-secondary);
+      margin-top: 4px;
+    }
+
+    .btn-outline-slip {
+      background: var(--cream-light);
+      color: var(--burgundy);
+      border: 1.5px solid var(--burgundy);
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-slip:hover {
+      background: var(--burgundy);
+      color: #FAF6ED;
+    }
+
+    /* 3. HERO BENTO GRID (2fr 1fr 1fr from Concept 2) */
+    .bento-top-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.1fr 1.2fr;
+      gap: 18px;
+    }
+
+    .bento-card {
+      background: var(--cream-surface);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: var(--radius-bento);
+      padding: 22px 26px;
+      box-shadow: var(--shadow-bento);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .bento-card:hover {
+      border-color: var(--burgundy);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .bento-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--ink-muted);
+    }
+
+    .bento-hero-stat {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--burgundy);
+      letter-spacing: -1px;
+      line-height: 1;
+      margin: 10px 0 6px;
+    }
+
+    .bento-sub {
+      font-size: 0.82rem;
+      color: var(--ink-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn-pill {
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      margin-top: 10px;
+      transition: all 0.15s;
+    }
+
+    .action-btn-pill:hover {
+      background: var(--sage-grey);
+      border-color: var(--ink-primary);
+    }
+
+    /* 4. BALANCED TWO-CARD WORKSPACE (Equal Pixel Heights) */
+    .two-card-workspace {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .workspace-card {
+      background: var(--cream-surface);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: var(--radius-bento);
+      box-shadow: var(--shadow-bento);
+      display: flex;
+      flex-direction: column;
+      height: 420px; /* Equal calibrated pixel height for both cards! */
+      overflow: hidden;
+    }
+
+    .workspace-card:hover {
+      border-color: var(--burgundy);
+    }
+
+    .card-title-bar {
+      padding: 14px 20px;
+      background: var(--cream-light);
+      border-bottom: 1px solid var(--sage-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .card-title-text {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--burgundy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-inner-body {
+      padding: 18px 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* LEFT CARD: Audit Configuration */
+    .view-segmented-toggle {
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 9px;
+      padding: 3px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .segment-btn {
+      text-align: center;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 7px;
+      cursor: pointer;
+      color: var(--ink-secondary);
+      transition: all 0.2s;
+    }
+
+    .segment-btn.active {
+      background: var(--burgundy);
+      color: #FAF6ED;
+      box-shadow: 0 2px 6px rgba(89, 9, 7, 0.15);
+    }
+
+    .field-row {
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-secondary);
+      margin-bottom: 5px;
+    }
+
+    .field-control {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--ink-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field-control:focus {
+      border-color: var(--burgundy);
+    }
+
+    .btn-fetch-rpc {
+      margin-top: auto;
+      width: 100%;
+      background: var(--burgundy);
+      color: #FAF6ED;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 3px 10px rgba(89, 9, 7, 0.18);
+    }
+
+    .btn-fetch-rpc:hover {
+      background: var(--burgundy-hover);
+    }
+
+    /* RIGHT CARD: Decrypted Treasury Transactions (Balanced Height) */
+    .table-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+      gap: 10px;
+    }
+
+    .search-pill-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 8px;
+      padding: 6px 12px;
+      flex: 1;
+      max-width: 280px;
+    }
+
+    .search-pill-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 12px;
+      width: 100%;
+      color: var(--ink-primary);
+    }
+
+    .cat-filters {
+      display: flex;
+      gap: 5px;
+    }
+
+    .cat-btn {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      cursor: pointer;
+      color: var(--ink-secondary);
+      transition: all 0.15s;
+    }
+
+    .cat-btn.active {
+      background: var(--burgundy);
+      color: #FAF6ED;
+      border-color: var(--burgundy);
+    }
+
+    .table-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid var(--sage-dark);
+      border-radius: 10px;
+      background: var(--cream-light);
+    }
+
+    .compact-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .compact-table th {
+      position: sticky;
+      top: 0;
+      background: var(--sage-grey);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-primary);
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--sage-dark);
+      z-index: 2;
+    }
+
+    .compact-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--sage-hairline);
+    }
+
+    .compact-table tr:hover {
+      background: var(--cream-surface);
+    }
+
+    .hash-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--burgundy);
+      background: var(--burgundy-tint);
+      border: 1px solid rgba(89, 9, 7, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .tag-chip {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 5px;
+      display: inline-block;
+    }
+
+    .tag-chip.payroll { background: #FDE8E8; color: #9B1C1C; border: 1px solid rgba(155, 28, 28, 0.2); }
+    .tag-chip.supplier { background: #DEF7EC; color: #03543F; border: 1px solid rgba(3, 84, 63, 0.2); }
+    .tag-chip.treasury { background: #E1EFFE; color: #1E429F; border: 1px solid rgba(30, 66, 159, 0.2); }
+
+    .btn-edit-row {
+      background: var(--cream-surface);
+      border: 1px solid var(--sage-dark);
+      color: var(--burgundy);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-edit-row:hover {
+      background: var(--burgundy);
+      color: #FAF6ED;
+    }
+
+    /* BOTTOM POPUP TRIGGER FOR LIVE COMPLIANCE MODAL */
+    .compliance-footer-strip {
+      margin-top: 10px;
+      background: var(--cream-light);
+      border: 1.5px dashed var(--burgundy);
+      border-radius: 9px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .compliance-footer-strip:hover {
+      background: var(--burgundy-tint);
+      transform: translateY(-1px);
+    }
+
+    .strip-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .strip-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--burgundy);
+      letter-spacing: -0.01em;
+    }
+
+    .strip-meta {
+      font-size: 11px;
+      color: var(--ink-secondary);
+    }
+
+    .btn-open-compliance {
+      background: var(--burgundy);
+      color: #FAF6ED;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* 5. LIVE COMPLIANCE MODAL (Popout) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(21, 23, 22, 0.65);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .compliance-modal-box {
+      width: 540px;
+      background: var(--cream-surface);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 24px 60px rgba(89, 9, 7, 0.2);
+      position: relative;
+      animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.95) translateY(6px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .btn-close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    .btn-close-modal:hover {
+      background: var(--burgundy);
+      color: #FAF6ED;
+    }
+
+    .cert-display-card {
+      background: var(--cream-light);
+      border: 1.5px dashed var(--burgundy);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 16px 0;
+    }
+
+    .cert-title-badge {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--burgundy);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .cert-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--sage-hairline);
+      font-size: 12px;
+    }
+
+    .cert-detail-row .lbl { color: var(--ink-secondary); }
+    .cert-detail-row .val { font-family: var(--font-mono); font-weight: 700; color: var(--ink-primary); }
+
+    .redacted-badge {
+      background: var(--ink-primary);
+      color: #FAF6ED;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .modal-export-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn-export-p {
+      background: var(--burgundy);
+      color: #FAF6ED;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-export-p:hover { background: var(--burgundy-hover); }
+
+    .btn-export-s {
+      background: var(--cream-light);
+      color: var(--burgundy);
+      border: 1px solid var(--sage-dark);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-export-s:hover {
+      border-color: var(--burgundy);
+      background: var(--cream-beige);
+    }
+
+    /* 6. PRIVY AUTH MODAL (Porcelain + Multi-Chain EVM Fix) */
+    .privy-box {
+      width: 480px;
+      background: var(--cream-surface);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 22px;
+      padding: 30px;
+      box-shadow: 0 24px 60px rgba(89, 9, 7, 0.18);
+      position: relative;
+    }
+
+    .auth-option-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .auth-option-card:hover {
+      border-color: var(--burgundy);
+      background: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(89, 9, 7, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .auth-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auth-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--cream-surface);
+      border: 1px solid var(--sage-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--burgundy);
+    }
+
+    .email-container-card {
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .email-input-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .email-input-bar input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--sage-dark);
+      background: var(--cream-surface);
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .email-input-bar input:focus {
+      border-color: var(--burgundy);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Floating Island Nav (Concept 2 Bento Minimal) -->
+  <div class="header-wrapper">
+    <header class="header-island">
+      <div class="brand">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq">
+        <span class="brand-title">Veyroq</span>
+        <span class="badge-edition">Bento Minimal</span>
+      </div>
+
+      <!-- Multi-Chain EVM RPC (Not locked to Arc) -->
+      <div class="network-pill">
+        <span class="dot-pulse"></span>
+        <span>Multi-Chain EVM (RPC Synced)</span>
+      </div>
+
+      <button class="btn-connect" onclick="openPrivyModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Connected: 0x71C8...22Ec</span>
+      </button>
+    </header>
+  </div>
+
+  <!-- 2. Main Bento Content Area -->
+  <main class="bento-container">
+
+    <!-- Concept Header (Concept 2) -->
+    <div class="concept-header">
+      <div>
+        <span class="concept-badge">STYLE 2 · BENTO BOX SWISS MINIMALIST</span>
+        <h1 class="concept-title">Treasury Tagging &amp; Audit Ledger</h1>
+        <p class="concept-desc">Apple &amp; Vercel-inspired clean modular cards, generous breathing room, and soft elevated surfaces.</p>
+      </div>
+      <div>
+        <button class="btn-outline-slip" onclick="openComplianceModal()">
+          <span>Download Audit Slip (PDF)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Bento Top Grid (3 Tiles from Concept 2) -->
+    <div class="bento-top-grid">
+      <!-- Card 1: Balance & Reconciled Volume -->
+      <div class="bento-card">
+        <div>
+          <span class="bento-label">RECONCILED TREASURY DISBURSEMENTS</span>
+          <div class="bento-hero-stat">$148,250.00</div>
+          <div class="bento-sub">
+            <span style="color:var(--green-live); font-weight:700;">✔ 100% On-Chain Match</span>
+            <span>· All 4 line items tagged &amp; categorized</span>
+          </div>
+        </div>
+        <button class="action-btn-pill">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Refresh Live RPC</span>
+        </button>
+      </div>
+
+      <!-- Card 2: Wallet Identity -->
+      <div class="bento-card">
+        <div>
+          <span class="bento-label">TREASURY IDENTITY</span>
+          <h3 style="font-family:var(--font-display); font-size:1.15rem; margin-top:8px; color:var(--ink-primary);">Acme Foundation Vault</h3>
+          <p style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ink-secondary); margin-top:4px;">0x71C8...22Ec</p>
+        </div>
+        <div style="font-size:0.75rem; color:var(--ink-muted); font-family:var(--font-mono); margin-top:12px;">
+          Connected via Privy Web3
+        </div>
+      </div>
+
+      <!-- Card 3: Institutional Export -->
+      <div class="bento-card" style="background:var(--burgundy); color:#FAF6ED; border-color:var(--burgundy);">
+        <div>
+          <span class="bento-label" style="color:rgba(250,246,237,0.7);">INSTITUTIONAL EXPORT</span>
+          <h3 style="font-family:var(--font-display); font-size:1.2rem; color:#FAF6ED; margin-top:8px;">1-Click Accounting</h3>
+          <p style="font-size:0.82rem; color:rgba(250,246,237,0.85); margin-top:4px;">Direct sync with QuickBooks, Xero, and GAAP tax reports.</p>
+        </div>
+        <button class="action-btn-pill" style="background:#FAF6ED; color:var(--burgundy); border:none; margin-top:8px;" onclick="openComplianceModal()">
+          <span>Export QuickBooks CSV →</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. EQUAL-HEIGHT TWO-CARD CORE WORKSPACE -->
+    <div class="two-card-workspace">
+
+      <!-- Left Card: Audit Configuration (Calibrated 420px height) -->
+      <aside class="workspace-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Audit Configuration
+          </span>
+          <span style="font-size:10px; font-weight:700; color:var(--ink-secondary); background:var(--sage-grey); padding:2px 6px; border-radius:4px;">v2.4 Pro</span>
+        </div>
+
+        <div class="card-inner-body">
+          <!-- Full Auditor vs Redacted Client Toggle -->
+          <div class="view-segmented-toggle">
+            <div class="segment-btn active" id="tabAuditor" onclick="setAuditMode('auditor')">Full Auditor</div>
+            <div class="segment-btn" id="tabRedacted" onclick="setAuditMode('redacted')">Redacted Client</div>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Target Network</label>
+            <select class="field-control">
+              <option>Arc Testnet (50)</option>
+              <option>Base Mainnet (8453)</option>
+              <option>Ethereum Mainnet (1)</option>
+              <option>Monad Devnet (20143)</option>
+              <option>Arbitrum One (42161)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Treasury Address</label>
+            <input type="text" class="field-control" value="0x71C8b46B08639f70efA4C34Db895C984c" readonly style="font-family:var(--font-mono); font-size:11px;">
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Accounting Period Scope</label>
+            <select class="field-control">
+              <option>Q4 2026 (Statutory Audit)</option>
+              <option>Q3 2026</option>
+              <option>Full FY 2026</option>
+            </select>
+          </div>
+
+          <button class="btn-fetch-rpc">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Fetch Real On-Chain History
+          </button>
+        </div>
+      </aside>
+
+      <!-- Right Card: Decrypted Treasury Transactions (Exact Same 420px Height!) -->
+      <section class="workspace-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            Decrypted Treasury Transactions <span style="font-size:11px; font-weight:500; color:var(--ink-secondary);">(4 Synced)</span>
+          </span>
+          <button class="btn-edit-row" onclick="openComplianceModal()">Export Audit JSON</button>
+        </div>
+
+        <div class="card-inner-body">
+          <!-- Search & Filter Controls -->
+          <div class="table-top-bar">
+            <div class="search-pill-box">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" placeholder="Search recipient, block, hash...">
+            </div>
+
+            <div class="cat-filters">
+              <span class="cat-btn active">All (4)</span>
+              <span class="cat-btn">Payroll (2)</span>
+              <span class="cat-btn">Suppliers (1)</span>
+              <span class="cat-btn">Treasury (1)</span>
+            </div>
+          </div>
+
+          <!-- Balanced Scrolling Table (fits inside card cleanly) -->
+          <div class="table-scroll-area">
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Tx Hash</th>
+                  <th>Counterparty</th>
+                  <th>Category</th>
+                  <th>Scope Note</th>
+                  <th>Amount</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody">
+                <tr>
+                  <td><span class="hash-code">0x7a3f...91bc</span></td>
+                  <td style="font-weight:700;">Dr. Elena Rostova</td>
+                  <td><span class="tag-chip payroll">Officer Comp (W-2)</span></td>
+                  <td style="color:var(--ink-secondary); font-size:11px;">Chief AI Scientist Comp</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;">$35,000.00</td>
+                  <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x7a3f...91bc')">Edit Tag</button></td>
+                </tr>
+                <tr>
+                  <td><span class="hash-code">0x4c81...22ea</span></td>
+                  <td style="font-weight:700;">Lambda Compute Corp</td>
+                  <td><span class="tag-chip supplier">Supplier Settlement</span></td>
+                  <td style="color:var(--ink-secondary); font-size:11px;">A100 GPU Cluster</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;">$48,500.00</td>
+                  <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x4c81...22ea')">Edit Tag</button></td>
+                </tr>
+                <tr>
+                  <td><span class="hash-code">0x91df...044a</span></td>
+                  <td style="font-weight:700;">Securitize / BlackRock</td>
+                  <td><span class="tag-chip treasury">Treasury Yield Sweep</span></td>
+                  <td style="color:var(--ink-secondary); font-size:11px;">Yield Allocation</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;">$50,000.00</td>
+                  <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x91df...044a')">Edit Tag</button></td>
+                </tr>
+                <tr>
+                  <td><span class="hash-code">0x12bb...88fd</span></td>
+                  <td style="font-weight:700;">Core Protocol Engineers</td>
+                  <td><span class="tag-chip payroll">Contractor Payroll</span></td>
+                  <td style="color:var(--ink-secondary); font-size:11px;">8 Engineering Contractors</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;">$14,750.00</td>
+                  <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x12bb...88fd')">Edit Tag</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- BOTTOM MODAL POPUP TRIGGER FOR LIVE COMPLIANCE OUTPUT -->
+          <div class="compliance-footer-strip" onclick="openComplianceModal()">
+            <div class="strip-left">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--burgundy);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <div>
+                <div class="strip-title">Live Compliance Output &amp; Zero-Knowledge Audit Scope</div>
+                <div class="strip-meta">Click to inspect redacted certificate, GAAP accounting proofs, and statutory exports</div>
+              </div>
+            </div>
+            <button class="btn-open-compliance">
+              <span>Inspect Certificate Modal →</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- 5. LIVE COMPLIANCE OUTPUT MODAL (Pops out from bottom strip) -->
+  <div class="modal-backdrop" id="complianceModal" style="display: none;">
+    <div class="compliance-modal-box">
+      <button class="btn-close-modal" onclick="closeComplianceModal()">✕</button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span style="font-family:var(--font-display); font-weight:800; font-size:18px; color:var(--burgundy);">Live Compliance Output</span>
+      </div>
+
+      <p style="font-size:12px; color:var(--ink-secondary); line-height:1.45;">
+        This is the cryptographic zero-knowledge redacted certificate that statutory tax auditors and external reviewers receive. Counterparty names and internal compensation are cryptographically shielded.
+      </p>
+
+      <div class="cert-display-card">
+        <div class="cert-title-badge">Veyroq Audit Certificate</div>
+        <div style="font-size:11px; color:var(--ink-muted); margin-bottom:10px;">GAAP Ledger Redaction Verification Scope</div>
+
+        <div class="cert-detail-row">
+          <span class="lbl">Treasury Vault Address:</span>
+          <span class="val">0x71C8...22Ec</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Accounting Period:</span>
+          <span class="val">Q4 2026 (Statutory Audit)</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Total Reconciled Outflow:</span>
+          <span class="val">$148,250.00 USDC</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Reconciled Items:</span>
+          <span class="val">4 Verified (100% On-Chain)</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Recipient Names &amp; Details:</span>
+          <span class="redacted-badge">REDACTED [ZERO-LEAF]</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Cryptographic Proof:</span>
+          <span class="val" style="font-size:11px; color:var(--green-live);">0x9df8...e021 (Valid Merkle Proof)</span>
+        </div>
+      </div>
+
+      <div class="modal-export-buttons">
+        <button class="btn-export-p">Download QuickBooks CSV</button>
+        <button class="btn-export-s">Download Xero Journal</button>
+      </div>
+      <button class="btn-export-s" style="width:100%; margin-top:8px;">Download Cryptographic Audit JSON</button>
+    </div>
+  </div>
+
+  <!-- 6. REDESIGNED PRIVY AUTH MODAL (Porcelain + Multi-Chain EVM Fix) -->
+  <div class="modal-backdrop" id="privyModal" style="display: none;">
+    <div class="privy-box">
+      <button class="btn-close-modal" onclick="closePrivyModal()">✕</button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span style="font-family:var(--font-display); font-weight:800; font-size:16px; color:var(--burgundy);">VEYROQ</span>
+        <span class="badge-edition">Bento Minimal</span>
+      </div>
+
+      <h3 style="font-family:var(--font-display); font-size:20px; font-weight:800; color:var(--burgundy); margin-bottom:4px;">
+        Connect Treasury Wallet
+      </h3>
+      <p style="font-size:12px; color:var(--ink-secondary); line-height:1.45; margin-bottom:20px;">
+        Non-custodial cryptographic audit authentication via Privy Core or EIP-1193 Web3 extensions. Private keys are never touched.
+      </p>
+
+      <!-- Option 1: Web3 Extension -->
+      <div class="auth-option-card" onclick="alert('Connecting via Web3 Extension (MetaMask / Rabby / Brave)...')">
+        <div class="auth-left-cluster">
+          <div class="auth-icon-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:var(--ink-primary);">Browser Web3 Wallet</div>
+            <div style="font-size:11px; color:var(--ink-muted);">MetaMask, Rabby, Rainbow, Brave</div>
+          </div>
+        </div>
+        <span style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; background:#DEF7EC; color:#03543F; border:1px solid rgba(3,84,63,0.2);">Ready</span>
+      </div>
+
+      <!-- Option 2: Privy Email OTP -->
+      <div class="email-container-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-secondary);">Privy Email OTP</span>
+          <span style="font-size:10px; font-weight:700; color:var(--burgundy); background:var(--cream-beige); padding:2px 6px; border-radius:4px;">Privy Core</span>
+        </div>
+        <div class="email-input-bar">
+          <input type="email" placeholder="treasury@fund.xyz" value="treasury@fund.xyz">
+          <button style="background:var(--burgundy); color:#FAF6ED; font-weight:700; font-size:12px; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;" onclick="alert('OTP Code Sent to Email via Privy Core!')">Send Code</button>
+        </div>
+      </div>
+
+      <!-- Option 3: Auditor Read-Only -->
+      <div class="auth-option-card" onclick="alert('Opening Auditor Read-Only Inspection...')">
+        <div class="auth-left-cluster">
+          <div class="auth-icon-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:var(--ink-primary);">Auditor Read-Only Mode</div>
+            <div style="font-size:11px; color:var(--ink-muted);">Safe multisig or address inspection</div>
+          </div>
+        </div>
+        <span style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; background:var(--sage-grey); color:var(--ink-primary); border:1px solid var(--sage-dark);">Inspect</span>
+      </div>
+
+      <!-- Footnote explicitly changed to generic multi-chain EVM RPC connection -->
+      <div style="text-align:center; font-size:11px; color:var(--ink-muted); margin-top:16px;">
+        Zero custody of private keys • Verified Multi-Chain EVM RPC connection
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openPrivyModal() {
+      document.getElementById('privyModal').style.display = 'flex';
+    }
+
+    function closePrivyModal() {
+      document.getElementById('privyModal').style.display = 'none';
+    }
+
+    function openComplianceModal() {
+      document.getElementById('complianceModal').style.display = 'flex';
+    }
+
+    function closeComplianceModal() {
+      document.getElementById('complianceModal').style.display = 'none';
+    }
+
+    function setAuditMode(mode) {
+      const tabAuditor = document.getElementById('tabAuditor');
+      const tabRedacted = document.getElementById('tabRedacted');
+      const tbody = document.getElementById('txTableBody');
+
+      if (mode === 'redacted') {
+        tabAuditor.classList.remove('active');
+        tabRedacted.classList.add('active');
+        tbody.innerHTML = `
+          <tr>
+            <td><span class="hash-code">0x7a3f...91bc</span></td>
+            <td><span class="redacted-badge">REDACTED [ZERO-LEAF]</span></td>
+            <td><span class="tag-chip payroll">Officer Comp (W-2)</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Cryptographically Shielded</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$35,000.00</td>
+            <td><span style="font-size:11px; color:var(--ink-muted);">Shielded</span></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x4c81...22ea</span></td>
+            <td><span class="redacted-badge">REDACTED [ZERO-LEAF]</span></td>
+            <td><span class="tag-chip supplier">Cloud Infrastructure</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Cryptographically Shielded</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$48,500.00</td>
+            <td><span style="font-size:11px; color:var(--ink-muted);">Shielded</span></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x91df...044a</span></td>
+            <td><span class="redacted-badge">REDACTED [ZERO-LEAF]</span></td>
+            <td><span class="tag-chip treasury">Treasury Yield Sweep</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Cryptographically Shielded</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$50,000.00</td>
+            <td><span style="font-size:11px; color:var(--ink-muted);">Shielded</span></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x12bb...88fd</span></td>
+            <td><span class="redacted-badge">REDACTED [ZERO-LEAF]</span></td>
+            <td><span class="tag-chip payroll">Contractor Payroll</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Cryptographically Shielded</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$14,750.00</td>
+            <td><span style="font-size:11px; color:var(--ink-muted);">Shielded</span></td>
+          </tr>
+        `;
+      } else {
+        tabRedacted.classList.remove('active');
+        tabAuditor.classList.add('active');
+        tbody.innerHTML = `
+          <tr>
+            <td><span class="hash-code">0x7a3f...91bc</span></td>
+            <td style="font-weight:700;">Dr. Elena Rostova</td>
+            <td><span class="tag-chip payroll">Officer Comp (W-2)</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Chief AI Scientist Comp</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$35,000.00</td>
+            <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x7a3f...91bc')">Edit Tag</button></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x4c81...22ea</span></td>
+            <td style="font-weight:700;">Lambda Compute Corp</td>
+            <td><span class="tag-chip supplier">Supplier Settlement</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">A100 GPU Cluster</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$48,500.00</td>
+            <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x4c81...22ea')">Edit Tag</button></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x91df...044a</span></td>
+            <td style="font-weight:700;">Securitize / BlackRock</td>
+            <td><span class="tag-chip treasury">Treasury Yield Sweep</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">Yield Allocation</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$50,000.00</td>
+            <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x91df...044a')">Edit Tag</button></td>
+          </tr>
+          <tr>
+            <td><span class="hash-code">0x12bb...88fd</span></td>
+            <td style="font-weight:700;">Core Protocol Engineers</td>
+            <td><span class="tag-chip payroll">Contractor Payroll</span></td>
+            <td style="color:var(--ink-secondary); font-size:11px;">8 Engineering Contractors</td>
+            <td style="font-family:var(--font-mono); font-weight:700;">$14,750.00</td>
+            <td><button class="btn-edit-row" onclick="alert('Editing tag for 0x12bb...88fd')">Edit Tag</button></td>
+          </tr>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>
+

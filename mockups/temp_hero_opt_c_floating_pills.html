@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veyroq Cockpit — Hero Card Style Comparison &amp; Plan Selector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* EXACT Brand Colors from console/styles.css & landing/styles.css */
+      --sage-grey: #A5A79B;
+      --sage-dark: #8C8F81;
+      --sage-light: #B8B9AF;
+      --sage-tint: rgba(165, 167, 155, 0.25);
+      --sage-hairline: rgba(140, 143, 129, 0.45);
+
+      --cream-beige: #E0D2B5;
+      --cream-light: #F4EEDF;
+      --cream-deep: #D4C3A3;
+      --cream-canvas: #EAE3D2;
+
+      --burgundy: #590907;
+      --burgundy-hover: #3E0604;
+      --burgundy-light: #7A0C0A;
+      --burgundy-tint: rgba(89, 9, 7, 0.12);
+
+      --ink-primary: #151716;
+      --ink-secondary: #3A3D3B;
+      --ink-muted: #5C605D;
+
+      --green-verified: #15803D;
+      --green-tint: rgba(21, 128, 61, 0.12);
+
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--cream-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 60px;
+    }
+
+    /* TOP NAV WITH DYNAMIC PLAN BADGE */
+    .nav-wrapper {
+      padding: 16px 32px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .island-nav {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      padding: 10px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(21, 23, 22, 0.04);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-group img {
+      width: 28px;
+      height: 28px;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+      color: var(--burgundy);
+    }
+
+    /* Plan Badge (Dynamic) */
+    .plan-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--ink-primary);
+      background: var(--sage-grey);
+      border: 1px solid var(--sage-dark);
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+    }
+
+    .network-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .dot-live {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-verified);
+      box-shadow: 0 0 0 3px var(--green-tint);
+    }
+
+    .nav-right-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .plan-switcher-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .plan-switcher-box select {
+      background: transparent;
+      border: none;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--burgundy);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn-wallet-connect {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--burgundy);
+      color: #FAF6ED;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(89, 9, 7, 0.2);
+    }
+
+    /* PAGE CONTAINER */
+    .content-container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+
+    /* SELECTOR HEADER */
+    .section-selector-banner {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-selector-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--burgundy);
+    }
+
+    .option-switcher-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .opt-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      cursor: pointer;
+      color: var(--ink-secondary);
+      transition: all 0.15s;
+    }
+
+    .opt-btn.active {
+      background: var(--burgundy);
+      color: #FAF6ED;
+      border-color: var(--burgundy);
+    }
+
+    /* STYLE OPTION WRAPPERS */
+    .style-sample-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sample-label-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .sample-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--burgundy);
+      background: var(--cream-beige);
+      border: 1px solid var(--sage-dark);
+      padding: 3px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .sample-desc {
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    /* ---------------------------------------------------- */
+    /* OPTION A: UNIFIED EDITORIAL METRIC STRIP (True Veyroq) */
+    /* ---------------------------------------------------- */
+    .unified-metric-strip {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      display: grid;
+      grid-template-columns: 1.4fr 1.1fr 1.3fr 1.2fr;
+      box-shadow: 0 4px 16px rgba(21, 23, 22, 0.03);
+      overflow: hidden;
+    }
+
+    .metric-cell {
+      padding: 18px 22px;
+      border-right: 1.5px solid var(--sage-hairline);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .metric-cell:last-child {
+      border-right: none;
+    }
+
+    .cell-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--ink-muted);
+      margin-bottom: 6px;
+    }
+
+    .cell-stat-big {
+      font-family: var(--font-display);
+      font-size: 1.95rem;
+      font-weight: 800;
+      color: var(--burgundy);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .cell-meta-row {
+      font-size: 0.8rem;
+      color: var(--ink-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cell-btn-compact {
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      color: var(--ink-primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      align-self: flex-start;
+      margin-top: 6px;
+    }
+
+    .cell-btn-compact:hover {
+      background: var(--sage-grey);
+    }
+
+    /* ---------------------------------------------------- */
+    /* OPTION B: COLOR-MATCHED SAGE & CREAM BENTO CARDS     */
+    /* ---------------------------------------------------- */
+    .bento-matched-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.1fr 1.2fr;
+      gap: 16px;
+    }
+
+    .matched-card {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(21, 23, 22, 0.03);
+    }
+
+    .matched-card.accent {
+      background: var(--cream-light);
+      border-color: var(--burgundy);
+    }
+
+    /* ---------------------------------------------------- */
+    /* OPTION C: LOW-PROFILE FLOATING METRIC PILLS         */
+    /* ---------------------------------------------------- */
+    .floating-pills-bar {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .pill-data-chip {
+      background: var(--cream-light);
+      border: 1px solid var(--sage-dark);
+      border-radius: 9px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .pill-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--sage-grey);
+      border: 1px solid var(--sage-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--burgundy);
+    }
+
+    .pill-texts {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pill-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      color: var(--ink-muted);
+    }
+
+    .pill-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink-primary);
+      font-family: var(--font-display);
+    }
+
+    /* ---------------------------------------------------- */
+    /* OPTION D: BALANCED DUAL-CARD HERO (Matches 2-card)   */
+    /* ---------------------------------------------------- */
+    .dual-hero-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+    }
+
+    .dual-hero-card {
+      background: var(--cream-beige);
+      border: 1.5px solid var(--sage-dark);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* SHARED LOWER 2-CARD PREVIEW FOR CONTEXT */
+    .preview-context-divider {
+      margin-top: 10px;
+      border-top: 1.5px dashed var(--sage-dark);
+      padding-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Floating Nav with Dynamic Plan Badge -->
+  <div class="nav-wrapper">
+    <header class="island-nav">
+      <div class="brand-group">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq">
+        <span class="brand-title">Veyroq</span>
+        <!-- Plan Badge dynamically updated -->
+        <span class="plan-badge" id="planBadgeDisplay">Single Org · Free</span>
+      </div>
+
+      <div class="network-badge">
+        <span class="dot-live"></span>
+        <span>Multi-Chain EVM (RPC Synced)</span>
+      </div>
+
+      <div class="nav-right-controls">
+        <div class="plan-switcher-box">
+          <span>Active Plan:</span>
+          <select id="planSelector" onchange="switchPlanBadge(this.value)">
+            <option value="single">Single Org (Free Developer)</option>
+            <option value="enterprise" selected>Enterprise Treasury ($499/mo)</option>
+            <option value="audit_firm">Audit Firm Partner ($1,499/mo)</option>
+          </select>
+        </div>
+
+        <button class="btn-wallet-connect">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Connected: 0x71C8...22Ec</span>
+        </button>
+      </div>
+    </header>
+  </div>
+
+  <main class="content-container">
+
+    <!-- Interactive Option Switcher -->
+    <div class="section-selector-banner">
+      <div>
+        <div class="section-selector-title">Top 3-Box Hero Card Style Comparison</div>
+        <div style="font-size: 12px; color: var(--ink-secondary); margin-top: 2px;">
+          All options below strictly use your authentic palette: <strong>Muted Sage Grey (#A5A79B)</strong>, <strong>Cream Beige (#E0D2B5)</strong>, <strong>Deep Burgundy (#590907)</strong>, and <strong>Deep Ink (#151716)</strong>.
+        </div>
+      </div>
+      <div class="option-switcher-buttons">
+        <button class="opt-btn" onclick="showOption('optA')">Option A: Unified Strip</button>
+        <button class="opt-btn" onclick="showOption('optB')">Option B: Matched Bento</button>
+        <button class="opt-btn" onclick="showOption('optC')" class="opt-btn active">Option C: Low-Profile Pills</button>
+        <button class="opt-btn" onclick="showOption('optD')">Option D: Balanced 2-Card</button>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ -->
+    <!-- OPTION A: UNIFIED EDITORIAL METRIC STRIP (True Veyroq Evolution) -->
+    <!-- ------------------------------------------------ -->
+    <div class="style-sample-box" id="panelOptA">
+      <div class="sample-label-strip">
+        <span class="sample-badge">Option A · Unified Editorial Metric Strip (Authentic Console Evolution)</span>
+        <span class="sample-desc">Single cohesive horizontal card with 4 columns in Sage &amp; Cream. Zero color clashes.</span>
+      </div>
+
+      <div class="unified-metric-strip">
+        <!-- Col 1 -->
+        <div class="metric-cell">
+          <div>
+            <div class="cell-title">Reconciled Treasury Volume</div>
+            <div class="cell-stat-big">$148,250.00 <span style="font-size: 14px; font-weight:600; color:var(--ink-secondary);">USDC</span></div>
+          </div>
+          <div class="cell-meta-row">
+            <span style="color:var(--green-verified); font-weight:700;">✔ 100% On-Chain Balanced</span>
+          </div>
+        </div>
+
+        <!-- Col 2 -->
+        <div class="metric-cell">
+          <div>
+            <div class="cell-title">Verified Line Items</div>
+            <div class="cell-stat-big" style="color:var(--ink-primary);">4 <span style="font-size: 15px; font-weight:600; color:var(--ink-secondary);">/ 4 Classified</span></div>
+          </div>
+          <div class="cell-meta-row">
+            <span style="font-size:11px; color:var(--ink-secondary);">Zero Unclassified Leaves</span>
+          </div>
+        </div>
+
+        <!-- Col 3 -->
+        <div class="metric-cell">
+          <div>
+            <div class="cell-title">Treasury Identity &amp; Auth</div>
+            <div style="font-family:var(--font-display); font-size:16px; font-weight:800; color:var(--ink-primary); margin-top:2px;">
+              Acme Foundation Vault
+            </div>
+            <div style="font-family:var(--font-mono); font-size:11px; color:var(--ink-secondary); margin-top:3px;">
+              0x71C8...22Ec
+            </div>
+          </div>
+          <div class="cell-meta-row" style="margin-top:6px;">
+            <span style="font-size:10px; font-weight:700; color:var(--burgundy); background:var(--cream-light); border:1px solid var(--sage-dark); padding:2px 6px; border-radius:4px;">Privy Core Verified</span>
+          </div>
+        </div>
+
+        <!-- Col 4 -->
+        <div class="metric-cell" style="background:var(--cream-light);">
+          <div>
+            <div class="cell-title">Statutory Compliance</div>
+            <div style="font-family:var(--font-display); font-size:15px; font-weight:800; color:var(--burgundy);">
+              GAAP Proof Active
+            </div>
+            <div style="font-size:11px; color:var(--ink-secondary); margin-top:2px;">
+              Direct sync for QuickBooks &amp; Xero
+            </div>
+          </div>
+          <button class="cell-btn-compact" style="background:var(--burgundy); color:#FAF6ED; border:none; margin-top:8px;">
+            Export QuickBooks CSV →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ -->
+    <!-- OPTION B: COLOR-MATCHED SAGE & CREAM BENTO CARDS -->
+    <!-- ------------------------------------------------ -->
+    <div class="style-sample-box" id="panelOptB" style="display: none;">
+      <div class="sample-label-strip">
+        <span class="sample-badge">Option B · Color-Matched Sage &amp; Cream Bento Cards</span>
+        <span class="sample-desc">3 distinct cards, but styled strictly in warm Cream Beige and Sage Grey (no stark white, no dark block).</span>
+      </div>
+
+      <div class="bento-matched-grid">
+        <!-- Card 1 -->
+        <div class="matched-card">
+          <div>
+            <div class="cell-title">RECONCILED TREASURY DISBURSEMENTS</div>
+            <div class="cell-stat-big">$148,250.00 <span style="font-size:15px; font-weight:600; color:var(--ink-secondary);">USDC</span></div>
+            <div style="font-size:12px; color:var(--green-verified); font-weight:700; margin-top:4px;">
+              ✔ 100% On-Chain Match · 4 Items Tagged
+            </div>
+          </div>
+          <button class="cell-btn-compact">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Refresh Live RPC</span>
+          </button>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="matched-card">
+          <div>
+            <div class="cell-title">TREASURY IDENTITY</div>
+            <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--ink-primary); margin-top:6px;">
+              Acme Foundation Vault
+            </div>
+            <div style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ink-secondary); margin-top:4px;">
+              0x71C8...22Ec
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--ink-muted); font-family:var(--font-mono); margin-top:10px;">
+            Connected via Privy Web3
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="matched-card accent">
+          <div>
+            <div class="cell-title" style="color:var(--burgundy);">INSTITUTIONAL EXPORT</div>
+            <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--burgundy); margin-top:6px;">
+              1-Click Accounting
+            </div>
+            <div style="font-size:11px; color:var(--ink-secondary); margin-top:4px;">
+              Direct sync with QuickBooks, Xero, and IRS Form 8949.
+            </div>
+          </div>
+          <button class="cell-btn-compact" style="background:var(--burgundy); color:#FAF6ED; border:none; margin-top:8px;">
+            Export QuickBooks CSV →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ -->
+    <!-- OPTION C: LOW-PROFILE COMPACT METRIC PILLS       -->
+    <!-- ------------------------------------------------ -->
+    <div class="style-sample-box" id="panelOptC" style="display: none;">
+      <div class="sample-label-strip">
+        <span class="sample-badge">Option C · Low-Profile Floating Metric Pills</span>
+        <span class="sample-desc">Ultra-compact horizontal bar. Keeps everything visible on one screen without scrolling.</span>
+      </div>
+
+      <div class="floating-pills-bar">
+        <div class="pill-data-chip">
+          <div class="pill-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="pill-texts">
+            <span class="pill-lbl">Reconciled Outflow</span>
+            <span class="pill-val">$148,250.00 USDC <span style="font-size:11px; color:var(--green-verified); font-weight:700;">(100% Balanced)</span></span>
+          </div>
+        </div>
+
+        <div class="pill-data-chip">
+          <div class="pill-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="pill-texts">
+            <span class="pill-lbl">Active Treasury Vault</span>
+            <span class="pill-val">Acme Foundation <span style="font-family:var(--font-mono); font-size:11px; color:var(--ink-secondary);">(0x71C8...22Ec)</span></span>
+          </div>
+        </div>
+
+        <div class="pill-data-chip">
+          <div class="pill-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="pill-texts">
+            <span class="pill-lbl">Statutory Assurance</span>
+            <span class="pill-val">GAAP Cryptographic Certificate Active</span>
+          </div>
+        </div>
+
+        <button class="cell-btn-compact" style="background:var(--burgundy); color:#FAF6ED; border:none; padding:8px 14px; margin:0;">
+          Export CSV →
+        </button>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ -->
+    <!-- OPTION D: BALANCED DUAL-CARD HERO                -->
+    <!-- ------------------------------------------------ -->
+    <div class="style-sample-box" id="panelOptD" style="display: none;">
+      <div class="sample-label-strip">
+        <span class="sample-badge">Option D · Balanced Two-Card Hero (Matches 2-Card Layout Below)</span>
+        <span class="sample-desc">Two wide cards matching the 2-column structure of Audit Config &amp; Decrypted Transactions.</span>
+      </div>
+
+      <div class="dual-hero-grid">
+        <!-- Left Wide Card -->
+        <div class="dual-hero-card">
+          <div class="cell-title">RECONCILED TREASURY DISBURSEMENTS &amp; BREAKDOWN</div>
+          <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0;">
+            <div class="cell-stat-big" style="margin:0;">$148,250.00 <span style="font-size:14px; color:var(--ink-secondary);">USDC</span></div>
+            <span style="font-size:12px; font-weight:700; color:var(--green-verified);">✔ 100% On-Chain Balanced</span>
+          </div>
+          <div style="display:flex; gap:12px; font-size:11px; color:var(--ink-secondary); margin-top:6px;">
+            <span>• <strong>Payroll:</strong> $49,750.00</span>
+            <span>• <strong>Cloud Compute:</strong> $48,500.00</span>
+            <span>• <strong>Treasury Yield:</strong> $50,000.00</span>
+          </div>
+        </div>
+
+        <!-- Right Card -->
+        <div class="dual-hero-card">
+          <div class="cell-title">TREASURY IDENTITY &amp; QUICK EXPORT</div>
+          <div>
+            <div style="font-family:var(--font-display); font-size:15px; font-weight:800; color:var(--ink-primary);">Acme Foundation Vault</div>
+            <div style="font-family:var(--font-mono); font-size:11px; color:var(--ink-secondary);">0x71C8...22Ec (Privy Verified)</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="cell-btn-compact" style="background:var(--burgundy); color:#FAF6ED; border:none; margin:0;">
+              Export QuickBooks CSV
+            </button>
+            <button class="cell-btn-compact" style="margin:0;">
+              Download Audit Slip
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOWER WORKSPACE CONTEXT (To show how top cards harmonize with bottom cards) -->
+    <div class="preview-context-divider">
+      <div>
+        <span style="font-family:var(--font-display); font-weight:800; font-size:14px; color:var(--burgundy);">Harmonized Two-Card Workspace Below</span>
+        <span style="font-size:12px; color:var(--ink-secondary); margin-left:10px;">Audit Configuration &amp; Decrypted Transactions with equal 420px height</span>
+      </div>
+    </div>
+
+    <!-- The 2-Card Lower Workspace matching the exact colors -->
+    <div style="display:grid; grid-template-columns: 340px 1fr; gap:18px;">
+      <!-- Audit Config Preview -->
+      <div style="background:var(--cream-beige); border:1.5px solid var(--sage-dark); border-radius:14px; padding:16px;">
+        <div style="font-family:var(--font-display); font-weight:800; font-size:13px; color:var(--burgundy); margin-bottom:10px;">
+          ⚙️ Audit Configuration
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:10px;">
+          <div style="background:var(--burgundy); color:#FAF6ED; font-size:11px; font-weight:700; text-align:center; padding:5px; border-radius:6px;">Full Auditor</div>
+          <div style="background:var(--cream-light); color:var(--ink-secondary); font-size:11px; font-weight:700; text-align:center; padding:5px; border-radius:6px;">Redacted Client</div>
+        </div>
+        <div style="font-size:11px; color:var(--ink-secondary); line-height:1.6;">
+          Target Network: Arc Testnet (50)<br>
+          Treasury Address: 0x71C8...22Ec<br>
+          Period: Q4 2026 (Statutory Audit)
+        </div>
+      </div>
+
+      <!-- Decrypted Transactions Preview -->
+      <div style="background:var(--cream-beige); border:1.5px solid var(--sage-dark); border-radius:14px; padding:16px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="font-family:var(--font-display); font-weight:800; font-size:13px; color:var(--burgundy); margin-bottom:10px;">
+            📑 Decrypted Treasury Transactions (4 Synced)
+          </div>
+          <div style="font-size:11px; color:var(--ink-secondary);">
+            Dr. Elena Rostova ($35,000.00) • Lambda Compute ($48,500.00) • Securitize / BlackRock ($50,000.00)
+          </div>
+        </div>
+        <div style="background:var(--cream-light); border:1.5px dashed var(--burgundy); border-radius:8px; padding:8px 12px; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700; color:var(--burgundy);">Live Compliance Output &amp; ZK Audit Scope</span>
+          <span style="font-size:10px; background:var(--burgundy); color:#FAF6ED; padding:3px 8px; border-radius:5px;">Open Modal →</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    function showOption(optId) {
+      document.getElementById('panelOptA').style.display = optId === 'optA' ? 'flex' : 'none';
+      document.getElementById('panelOptB').style.display = optId === 'optB' ? 'grid' : 'none';
+      document.getElementById('panelOptC').style.display = optId === 'optC' ? 'flex' : 'none';
+      document.getElementById('panelOptD').style.display = optId === 'optD' ? 'grid' : 'none';
+
+      const buttons = document.querySelectorAll('.opt-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function switchPlanBadge(plan) {
+      const badge = document.getElementById('planBadgeDisplay');
+      if (plan === 'single') {
+        badge.textContent = 'Single Org · Free';
+        badge.style.background = 'var(--sage-grey)';
+        badge.style.color = 'var(--ink-primary)';
+      } else if (plan === 'enterprise') {
+        badge.textContent = 'Enterprise Treasury';
+        badge.style.background = 'var(--cream-light)';
+        badge.style.color = 'var(--burgundy)';
+        badge.style.borderColor = 'var(--burgundy)';
+      } else if (plan === 'audit_firm') {
+        badge.textContent = 'Audit Firm Partner';
+        badge.style.background = 'var(--burgundy)';
+        badge.style.color = '#FAF6ED';
+        badge.style.borderColor = 'var(--burgundy)';
+      }
+    }
+
+    // Set initial
+    switchPlanBadge('enterprise');
+  </script>
+</body>
+</html>

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Veyroq Cockpit — Institutional Audit &amp; Decryption Console</title>
+  <title>Veyroq Cockpit — Institutional Treasury Ledger &amp; Audit Console</title>
   <meta name="description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
-  <meta name="theme-color" content="#450405">
+  <meta name="theme-color" content="#590907">
 
   <!-- Brand Favicons -->
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
@@ -16,208 +16,231 @@
   <!-- Open Graph & X Card -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Veyroq">
-  <meta property="og:title" content="Veyroq Cockpit — Institutional Audit &amp; Decryption Console">
+  <meta property="og:title" content="Veyroq Cockpit — Institutional Audit Console">
   <meta property="og:description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
   <meta property="og:image" content="/assets/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="675">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Veyroq Cockpit — Institutional Audit &amp; Decryption Console">
-  <meta name="twitter:description" content="Local zero-custody View Key decryption, Merkle completeness verification, and GAAP tax export for digital asset treasuries.">
-  <meta name="twitter:image" content="/assets/og-image.png">
 
+  <!-- Google Fonts: Outfit, Plus Jakarta Sans, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="/console/styles.css">
 </head>
 <body>
 
-  <!-- Top Navigation Bar -->
-  <header class="cockpit-nav">
-    <div class="nav-left">
-      <a href="/" class="brand-link" target="_blank" rel="noopener noreferrer">
-        <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
-        <span class="brand-title">Veyroq</span>
-        <span class="brand-sub">Cockpit</span>
-      </a>
-      <div class="network-badge">
-        <span class="dot-live"></span>
-        <span id="active-network-label">Circle Arc L1</span>
+  <!-- 1. Floating Top Navigation Bar -->
+  <div class="nav-wrapper">
+    <header class="cockpit-nav">
+      <div class="nav-left">
+        <a href="/" class="brand-link" target="_blank" rel="noopener noreferrer">
+          <img src="/assets/veyroq-mark.svg" alt="Veyroq" class="brand-mark-img">
+          <span class="brand-title">Veyroq</span>
+        </a>
+
+        <!-- Dynamic Plan Badge (User Specified) -->
+        <div class="plan-cluster">
+          <span class="plan-badge enterprise" id="plan-badge-display">Enterprise Treasury</span>
+          <button class="btn-plan-manage" id="btn-open-plan-modal">Upgrade / Downgrade</button>
+        </div>
       </div>
-    </div>
 
-    <div class="nav-right">
-      <div class="security-indicator">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>Client-Side Zero-Custody</span>
-      </div>
-      <button class="btn btn-secondary btn-sm" id="btn-wallet-connect">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span id="wallet-btn-text">Connect Wallet</span>
-      </button>
-      <a href="/docs" class="doc-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
-      <a href="/legal/privacy" class="doc-link" target="_blank" rel="noopener noreferrer">Privacy ↗</a>
-    </div>
-  </header>
-
-  <!-- Main Cockpit Layout -->
-  <main class="cockpit-layout">
-    
-    <!-- Left Configuration Sidebar (Intake Form Slip) -->
-    <aside class="cockpit-sidebar">
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">1. AUDIT CONFIGURATION</h3>
-
-        <div class="input-group">
-          <label for="network-select">Settlement Network</label>
-          <select id="network-select">
-            <option value="Arc">Circle Arc L1 (Chain ID: 5042002)</option>
-            <option value="Base">Base Mainnet (EVM L2)</option>
-            <option value="Monad">Monad (Parallel EVM)</option>
-            <option value="Arbitrum">Arbitrum One</option>
-            <option value="Ethereum">Ethereum Mainnet</option>
-          </select>
-        </div>
-        
-        <div class="input-group">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <label for="org-address" style="margin-bottom:0;">Treasury Wallet Address</label>
-            <span class="badge-tag" id="connected-wallet-pill" style="display:none; cursor:pointer;" title="Click to use connected wallet">Use Connected</span>
-          </div>
-          <input type="text" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
+      <div class="nav-right">
+        <div class="security-indicator">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Client-Side Zero-Custody</span>
         </div>
 
-        <div class="input-group">
-          <label for="period-select">Accounting Period</label>
-          <select id="period-select">
-            <option value="2026-Q3">FY 2026 - Q3 (July - Sept)</option>
-            <option value="2026-Q2">FY 2026 - Q2 (Apr - June)</option>
-            <option value="2026-Q1">FY 2026 - Q1 (Jan - Mar)</option>
-            <option value="ALL">All Available History</option>
-          </select>
-        </div>
-
-        <button class="btn btn-primary btn-block" id="btn-run-decryption">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <span>Fetch Real On-Chain History</span>
+        <button class="btn btn-primary btn-sm" id="btn-wallet-connect">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span id="wallet-btn-text">Connect Wallet</span>
         </button>
 
-        <button class="btn-text" id="btn-load-demo-key" style="margin-top:8px; text-align:center; width:100%;">
-          Load Sample Ledger Batch
+        <a href="/docs" class="doc-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
+        <a href="/legal/privacy" class="doc-link" target="_blank" rel="noopener noreferrer">Privacy ↗</a>
+      </div>
+    </header>
+  </div>
+
+  <!-- 2. Main Cockpit Container -->
+  <main class="cockpit-container">
+
+    <!-- Option A: Unified Editorial Metric Strip (Top Hero Area) -->
+    <section class="unified-metric-strip">
+      <!-- Col 1: Reconciled Volume -->
+      <div class="metric-cell">
+        <div>
+          <div class="cell-title">Reconciled Treasury Volume</div>
+          <div class="cell-stat-big" id="stat-volume">$0.00 <small style="font-size: 14px; font-weight:600; color:var(--ink-secondary);">USDC</small></div>
+        </div>
+        <div class="cell-meta-row" id="merkle-status">
+          <span style="color:var(--green-verified); font-weight:700;">✔ 100% On-Chain Balanced</span>
+        </div>
+      </div>
+
+      <!-- Col 2: Verified Items -->
+      <div class="metric-cell">
+        <div>
+          <div class="cell-title">Verified Line Items</div>
+          <div class="cell-stat-big" id="stat-items" style="color:var(--ink-primary);">0 <small style="font-size: 15px; font-weight:600; color:var(--ink-secondary);">/ 0 Classified</small></div>
+        </div>
+        <div class="cell-meta-row">
+          <span style="font-size:11px; color:var(--ink-secondary);">Zero Unclassified Leaves</span>
+        </div>
+      </div>
+
+      <!-- Col 3: Treasury Identity -->
+      <div class="metric-cell">
+        <div>
+          <div class="cell-title">Treasury Identity &amp; Auth</div>
+          <div style="font-family:var(--font-heading); font-size:16px; font-weight:800; color:var(--ink-primary); margin-top:2px;" id="display-treasury-name">
+            Acme Foundation Vault
+          </div>
+          <div style="font-family:var(--font-mono); font-size:11px; color:var(--ink-secondary); margin-top:3px;" id="display-treasury-addr">
+            0x71C8...22Ec
+          </div>
+        </div>
+        <div class="cell-meta-row" style="margin-top:6px;">
+          <span class="badge-tag" id="connected-wallet-pill" style="font-size:10px; font-weight:700; color:var(--burgundy); background:var(--cream-light); border:1px solid var(--sage-dark); padding:2px 6px; border-radius:4px; display:inline-block; cursor:pointer;">
+            Privy Core Verified
+          </span>
+        </div>
+      </div>
+
+      <!-- Col 4: Statutory Compliance & Quick Export -->
+      <div class="metric-cell">
+        <div>
+          <div class="cell-title">Statutory Compliance</div>
+          <div style="font-family:var(--font-heading); font-size:15px; font-weight:800; color:var(--burgundy);" id="stat-assurance">
+            GAAP Proof Active
+          </div>
+          <div style="font-size:11px; color:var(--ink-secondary); margin-top:2px;">
+            Direct sync for QuickBooks &amp; Xero
+          </div>
+        </div>
+        <button class="btn-strip-export" id="btn-strip-quick-export">
+          Export QuickBooks CSV →
         </button>
       </div>
+    </section>
 
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">2. VERIFICATION STATUS</h3>
-        <div class="status-box" id="status-card">
-          <div class="status-row">
-            <span class="label">Network Node:</span>
-            <span class="val text-green" id="network-rpc-status">RPC Connected</span>
-          </div>
-          <div class="status-row">
-            <span class="label">Completeness:</span>
-            <span class="val" id="merkle-status">Awaiting Execution</span>
-          </div>
-          <div class="status-row">
-            <span class="label">Verified Leaves:</span>
-            <span class="val font-mono" id="verified-count">0</span>
-          </div>
-          <div class="status-row">
-            <span class="label">Gross Reconciled:</span>
-            <span class="val font-mono" id="reconciled-sum">$0.00 USDC</span>
-          </div>
-        </div>
-      </div>
+    <!-- 3. Balanced Two-Card Workspace (Equal 420px Calibrated Height) -->
+    <div class="two-card-workspace">
 
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">3. INSTITUTIONAL EXPORT</h3>
-        <button class="btn btn-secondary btn-block mb-10" id="btn-export-csv" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Export QuickBooks Online CSV</span>
-        </button>
-
-        <button class="btn btn-secondary btn-block mb-10" id="btn-export-xero" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Export Xero Manual Journal CSV</span>
-        </button>
-
-        <button class="btn btn-secondary btn-block" id="btn-export-cert" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Download Audit Certificate (JSON)</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- Right Workspace Area -->
-    <section class="cockpit-workspace">
-      
-      <!-- Top Metrics Bar -->
-      <div class="metrics-bar">
-        <div class="metric-card">
-          <div class="metric-title">TOTAL RECONCILED VOLUME</div>
-          <div class="metric-number" id="stat-volume">$0.00 <small>USDC</small></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">VERIFIED LINE ITEMS</div>
-          <div class="metric-number" id="stat-items">0 <small>Transactions</small></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">MERKLE ROOT COMMITMENT</div>
-          <div class="metric-number" style="font-size:1rem; font-family:var(--font-mono);" id="stat-root">—</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-title">COMPLIANCE ASSURANCE</div>
-          <div class="metric-number" style="font-size:1.05rem; color:var(--green-verified);" id="stat-assurance">READY TO VERIFY</div>
-        </div>
-      </div>
-
-      <!-- Proof Banner (revealed after verification) -->
-      <div class="proof-banner" id="banner-proof" style="display:none;">
-        <div class="banner-left">
-          <div class="proof-icon">✔</div>
-          <div>
-            <div class="banner-title">CRYPTOGRAPHIC COMPLETENESS ESTABLISHED</div>
-            <div class="banner-hash">On-Chain Root: <strong id="banner-root-hash">0x00...</strong></div>
-          </div>
-        </div>
-        <div class="auditor-stamp">
-          <span class="stamp-badge">VERIFIED</span>
-          <span class="stamp-date">ZERO OMISSIONS</span>
-        </div>
-      </div>
-
-      <!-- Tab Navigation & Selective Disclosure Scope Control Bar -->
-      <div class="workspace-controls-bar">
-        <div class="workspace-tabs">
-          <button class="tab-btn active" id="tab-btn-ledger">Reconciliation Ledger</button>
-          <button class="tab-btn" id="tab-btn-policies">On-Chain Auditor Policies</button>
+      <!-- Left Card: Audit Configuration (340px) -->
+      <aside class="workspace-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Audit Configuration
+          </span>
+          <span style="font-size:10px; font-weight:700; color:var(--ink-secondary); background:var(--sage-grey); padding:2px 6px; border-radius:4px;">v2.4 Pro</span>
         </div>
 
-        <!-- The Core Innovation: Selective Disclosure Toggle -->
-        <div class="disclosure-toggle-group" id="disclosure-controls">
-          <span class="toggle-label">Disclosure Scope:</span>
-          <div class="segmented-control">
+        <div class="card-inner-body">
+          <!-- Segmented Scope Toggle -->
+          <div class="view-segmented-toggle" id="disclosure-controls">
             <button class="segment-btn active" id="btn-scope-full" title="Reveals decrypted business counterparties to certified auditor">
-              <span>👁 Full Auditor View</span>
+              <span>👁 Full Auditor</span>
             </button>
             <button class="segment-btn" id="btn-scope-redacted" title="Masks counterparty names while proving amount and tax category on-chain">
-              <span>🔒 Redacted (Zero-Leak)</span>
+              <span>🔒 Redacted Client</span>
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- Tab Content Area -->
-      <div class="tab-content">
-        <!-- View 1: Ledger -->
-        <div id="view-ledger">
-          <div class="table-wrapper">
+          <div class="field-group">
+            <label class="field-label" for="network-select">Settlement Network</label>
+            <select class="field-control" id="network-select">
+              <option value="Arc">Circle Arc L1 (Chain ID: 5042002)</option>
+              <option value="Base">Base Mainnet (EVM L2)</option>
+              <option value="Monad">Monad (Parallel EVM)</option>
+              <option value="Arbitrum">Arbitrum One</option>
+              <option value="Ethereum">Ethereum Mainnet</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="org-address">Treasury Wallet Address</label>
+            <input type="text" class="field-control font-mono" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)" style="font-size: 11px;">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="period-select">Accounting Period Scope</label>
+            <select class="field-control" id="period-select">
+              <option value="2026-Q3">FY 2026 - Q3 (July - Sept)</option>
+              <option value="2026-Q2">FY 2026 - Q2 (Apr - June)</option>
+              <option value="2026-Q1">FY 2026 - Q1 (Jan - Mar)</option>
+              <option value="ALL">All Available History</option>
+            </select>
+          </div>
+
+          <button class="btn-fetch-rpc" id="btn-run-decryption">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <span>Fetch Real On-Chain History</span>
+          </button>
+
+          <button class="btn-text-link" id="btn-load-demo-key">
+            Load Sample Ledger Batch
+          </button>
+
+          <!-- Hidden verification helper hooks for app.js calculateCompleteness -->
+          <div style="display:none;" id="status-card">
+            <span id="network-rpc-status">RPC Active</span>
+            <span id="active-network-label">Circle Arc L1</span>
+            <span id="verified-count">0</span>
+            <span id="reconciled-sum">$0.00 USDC</span>
+            <span id="stat-root">—</span>
+            <div id="banner-proof"><strong id="banner-root-hash">0x00...</strong></div>
+            <div id="slip-card-preview"></div>
+            <button id="tab-btn-ledger" class="active"></button>
+            <button id="tab-btn-policies"></button>
+            <div id="view-ledger"></div>
+            <div id="view-policies"></div>
+            <input type="text" id="auditor-addr-input">
+            <input type="date" id="auditor-expiry-input">
+            <select id="auditor-scope-input"><option value="ALL">All</option></select>
+            <button id="btn-submit-policy"></button>
+            <div id="auditor-list-container"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Card: Decrypted Treasury Transactions (Exact Same 420px Height) -->
+      <section class="workspace-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            Decrypted Treasury Transactions <span style="font-size:11px; font-weight:500; color:var(--ink-secondary);" id="synced-tx-count">(4 Synced)</span>
+          </span>
+          <button class="btn btn-secondary btn-sm" id="btn-open-comp-top">
+            Live Compliance Output
+          </button>
+        </div>
+
+        <div class="card-inner-body">
+          <!-- Search & Category Filters -->
+          <div class="table-filter-bar">
+            <div class="search-box">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="table-search-input" placeholder="Search recipient, block, or hash...">
+            </div>
+
+            <div class="category-filter-pills">
+              <span class="cat-pill active">All</span>
+              <span class="cat-pill">Payroll</span>
+              <span class="cat-pill">Suppliers</span>
+              <span class="cat-pill">Treasury</span>
+            </div>
+          </div>
+
+          <!-- Balanced Scrolling Table (fits inside card cleanly) -->
+          <div class="table-scroll-area">
             <table class="ledger-table" id="transactions-table">
               <thead>
                 <tr>
                   <th>Timestamp / Date</th>
-                  <th>Block Height</th>
+                  <th>Block</th>
                   <th id="th-counterparty">Counterparty / Custom Tag</th>
                   <th>Classification</th>
                   <th>Gross Amount</th>
@@ -235,185 +258,353 @@
             </table>
           </div>
 
-          <!-- Printable Certified Audit Certificate Slip Preview -->
-          <div class="workspace-slip-card" id="slip-card-preview" style="display:none;">
-            <div>
-              <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--ink-muted); text-transform:uppercase;">Certified Audit Certificate Slip · GAAP &amp; IFRS</span>
-              <h4 style="font-family:var(--font-heading); font-size:1.15rem; margin-top:2px;">FY2026-Q3 Corporate Treasury Reconciliation</h4>
-              <p style="font-size:0.85rem; color:var(--ink-secondary); margin-top:4px;">All line items cryptographically anchored to <code>VeyroqRegistry.sol</code>. Zero omissions, alterations, or leaks.</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:14px;">
-              <button class="btn btn-secondary btn-sm" onclick="window.print()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                <span>Print Official Slip</span>
-              </button>
-              <div class="auditor-stamp">
-                <span class="stamp-badge">SEALED</span>
-                <span class="stamp-date">IFRS / GAAP COMPLIANT</span>
+          <!-- Bottom Trigger Strip for Live Compliance Output Modal -->
+          <div class="compliance-footer-strip" id="btn-open-compliance-footer">
+            <div class="strip-left">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--burgundy);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <div>
+                <div class="strip-title">Live Compliance Output &amp; Zero-Knowledge Audit Scope</div>
+                <div class="strip-meta">Click to inspect redacted certificate, GAAP accounting proofs, and statutory exports</div>
               </div>
             </div>
+            <button class="btn-open-compliance" type="button">
+              <span>Inspect Certificate Modal →</span>
+            </button>
           </div>
+
         </div>
+      </section>
 
-        <!-- View 2: Policies -->
-        <div id="view-policies" style="display: none;">
-          <div class="policies-container">
-            <div class="policy-card">
-              <h3>Authorize New External Auditor</h3>
-              <p>Authorize an external accounting firm (PwC, EY, Deloitte, or internal CPA) to commit audit proofs on-chain.</p>
-              
-              <div class="input-group">
-                <label for="auditor-addr-input">Auditor EVM Address</label>
-                <input type="text" id="auditor-addr-input" placeholder="0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7" spellcheck="false">
-              </div>
+    </div>
 
-              <div class="input-group">
-                <label for="auditor-expiry-input">Authorization Expiration Date</label>
-                <input type="date" id="auditor-expiry-input" value="2026-12-31">
-              </div>
-
-              <div class="input-group">
-                <label for="auditor-scope-input">Audit Engagement Scope</label>
-                <select id="auditor-scope-input">
-                  <option value="ALL_TRANSACTIONS">All Transactions (Comprehensive)</option>
-                  <option value="PAYROLL_ONLY">Confidential Payroll Only</option>
-                  <option value="SUPPLIERS_ONLY">Supplier Settlements Only</option>
-                </select>
-              </div>
-
-              <button class="btn btn-primary btn-block" id="btn-submit-policy">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Authorize Auditor Policy On-Chain</span>
-              </button>
-            </div>
-
-            <div class="policy-card">
-              <h3>Currently Authorized Auditors</h3>
-              <p>Active cryptographic permissions anchored to your treasury smart contract.</p>
-              
-              <div class="auditor-list" id="auditor-list-container">
-                <div class="auditor-item">
-                  <div class="auditor-meta">
-                    <strong>PricewaterhouseCoopers (PwC Global Digital Assets)</strong>
-                    <span>0x5A3A...43e7</span>
-                    <small>Scope: All Transactions · Valid until 2026-12-31</small>
-                  </div>
-                  <button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'PwC Global')">Revoke</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
-  <!-- Privy & Real Web3 Authentication Modal -->
-  <div class="modal-overlay" id="wallet-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Connect Treasury Wallet</h3>
-        <button class="btn-close" id="btn-close-modal">&times;</button>
+  <!-- 4. LIVE COMPLIANCE OUTPUT MODAL -->
+  <div class="modal-overlay" id="compliance-modal" style="display: none;">
+    <div class="modal-card" style="width: 540px;">
+      <button class="btn-close" id="btn-close-comp-modal">&times;</button>
+
+      <div class="modal-header-brand">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span class="modal-title">Live Compliance Output</span>
       </div>
+
       <p class="modal-desc">
-        Connect securely via Privy or standard Web3 browser extensions. Zero custody of private keys.
+        This is the cryptographic zero-knowledge redacted certificate that statutory tax auditors and external reviewers receive. Counterparty names and internal compensation are cryptographically shielded.
       </p>
 
-      <div class="wallet-options-list">
-        <!-- Option 1: Browser Web3 (MetaMask, Rabby, Coinbase, Brave) -->
-        <button class="wallet-option-btn" id="btn-connect-injected">
-          <div class="wallet-icon-box">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-          </div>
-          <div class="wallet-info">
-            <span class="wallet-name">Browser Web3 Wallet</span>
-            <span class="wallet-detail">MetaMask, Rabby, Coinbase Wallet, Brave</span>
-          </div>
-          <span class="wallet-badge" id="detected-ext-badge">Auto-Detect</span>
-        </button>
+      <div class="cert-display-card">
+        <div class="cert-title-badge">Veyroq Audit Certificate</div>
+        <div style="font-size:11px; color:var(--ink-muted); margin-bottom:10px;">GAAP Ledger Redaction Verification Scope</div>
 
-        <!-- Option 2: Privy Email / Embedded Wallet -->
-        <div class="privy-email-box">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <label style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--ink-secondary); margin:0;">
-              PRIVY EMAIL LOGIN
-            </label>
-            <span class="wallet-badge" style="background:#590907; color:#fff;">Privy Core</span>
-          </div>
-          
-          <div id="privy-email-step">
-            <div style="display:flex; gap:8px;">
-              <input type="email" id="privy-email-input" placeholder="treasury@company.com" style="flex:1; padding:8px 10px; font-size:0.85rem; border:1px solid var(--sage-dark); border-radius:3px; background:#fff;">
-              <button class="btn btn-primary btn-sm" id="btn-privy-send-otp" style="white-space:nowrap;">Send Code</button>
-            </div>
-          </div>
-
-          <div id="privy-otp-step" style="display:none; margin-top:8px;">
-            <div style="display:flex; gap:8px;">
-              <input type="text" id="privy-otp-input" placeholder="6-digit code" maxlength="6" style="width:120px; padding:8px 10px; font-family:var(--font-mono); font-size:0.9rem; text-align:center; border:1px solid var(--sage-dark); border-radius:3px; background:#fff;">
-              <button class="btn btn-primary btn-sm" id="btn-privy-verify-otp" style="flex:1;">Verify &amp; Connect</button>
-            </div>
-          </div>
-          <div id="privy-auth-status" style="font-size:0.75rem; color:var(--ink-muted); margin-top:6px;"></div>
+        <div class="cert-detail-row">
+          <span class="lbl">Treasury Vault Address:</span>
+          <span class="val" id="cert-display-vault">0x71C8...22Ec</span>
         </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Accounting Period:</span>
+          <span class="val" id="cert-display-period">Q3 2026 (Statutory Audit)</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Total Reconciled Outflow:</span>
+          <span class="val" id="cert-display-outflow">$148,250.00 USDC</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Reconciled Items:</span>
+          <span class="val" id="cert-display-items">6 Verified (100% On-Chain)</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Recipient Names &amp; Details:</span>
+          <span class="redacted-pill">REDACTED [ZERO-LEAF]</span>
+        </div>
+        <div class="cert-detail-row">
+          <span class="lbl">Cryptographic Proof:</span>
+          <span class="val" style="font-size:11px; color:var(--green-verified);" id="cert-display-proof">0x9df8...e021 (Valid Merkle Proof)</span>
+        </div>
+      </div>
 
-        <!-- Option 3: Auditor / Read-Only Direct Address (Safe multisig or any treasury address) -->
-        <button class="wallet-option-btn" id="btn-connect-manual">
-          <div class="wallet-icon-box">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </div>
-          <div class="wallet-info">
-            <span class="wallet-name">Auditor Read-Only Mode</span>
-            <span class="wallet-detail">Paste any Safe or Treasury address to scan without signing</span>
-          </div>
-          <span class="wallet-badge">Read-Only</span>
+      <div class="modal-export-buttons">
+        <button class="btn btn-primary btn-sm" id="btn-export-csv" disabled style="padding:10px;">
+          Download QuickBooks CSV
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-export-xero" disabled style="padding:10px;">
+          Download Xero Journal
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Real Transaction Tagging Modal -->
-  <div class="modal-overlay" id="tag-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Tag Transaction</h3>
-        <button class="btn-close" id="btn-close-tag-modal">&times;</button>
-      </div>
-      <p class="modal-desc" id="tag-modal-tx-meta">
-        Assign an accounting label and tax classification to this on-chain line item.
-      </p>
-
-      <input type="hidden" id="tag-target-hash">
-
-      <div class="input-group">
-        <label for="tag-name-input">Transaction Label / Counterparty Name</label>
-        <input type="text" id="tag-name-input" placeholder="e.g. Alex - Lead Developer Salary, AWS Cloud">
-      </div>
-
-      <div class="input-group">
-        <label for="tag-category-select">Accounting &amp; Tax Category</label>
-        <select id="tag-category-select">
-          <option value="Payroll">Payroll (W-2 / Contractor)</option>
-          <option value="Supplier Settlement">Supplier / Vendor Settlement</option>
-          <option value="Software &amp; Cloud Infrastructure">Software &amp; Cloud Infrastructure</option>
-          <option value="Treasury Sweep">Treasury Sweep / Rebalance</option>
-          <option value="Professional Services">Professional Services (Legal / Audit)</option>
-          <option value="General &amp; Administrative">General &amp; Administrative</option>
-        </select>
-      </div>
-
-      <div class="input-group">
-        <label for="tag-notes-input">Internal Accounting Notes</label>
-        <textarea id="tag-notes-input" rows="2" placeholder="Invoice reference, contract milestone, or GL code..."></textarea>
-      </div>
-
-      <button class="btn btn-primary btn-block" id="btn-save-tag">
-        <span>Save Transaction Tag</span>
+      <button class="btn btn-secondary btn-sm" id="btn-export-cert" disabled style="width:100%; margin-top:8px; padding:10px;">
+        Download Cryptographic Audit JSON
       </button>
     </div>
   </div>
 
+  <!-- 5. REDESIGNED PRIVY AUTH MODAL (Porcelain Style) -->
+  <div class="modal-overlay" id="wallet-modal" style="display: none;">
+    <div class="modal-card">
+      <button class="btn-close" id="btn-close-modal">&times;</button>
+
+      <div class="modal-header-brand">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span style="font-family:var(--font-heading); font-weight:800; font-size:16px; color:var(--burgundy);">VEYROQ</span>
+        <span class="plan-badge enterprise" style="margin-left: 6px;">Enterprise Treasury</span>
+      </div>
+
+      <h3 style="font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--burgundy); margin-bottom:4px;">
+        Connect Treasury Wallet
+      </h3>
+      <p class="modal-desc">
+        Non-custodial cryptographic audit authentication via Privy Core or EIP-1193 Web3 extensions. Private keys are never touched.
+      </p>
+
+      <!-- Option 1: Browser Web3 -->
+      <button class="wallet-option-btn" id="btn-connect-injected" type="button">
+        <div class="wallet-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        </div>
+        <div class="wallet-info">
+          <span class="wallet-name">Browser Web3 Wallet</span>
+          <span class="wallet-detail">MetaMask, Rabby, Rainbow, Coinbase, Brave</span>
+        </div>
+        <span class="wallet-badge" id="detected-ext-badge">Ready</span>
+      </button>
+
+      <!-- Option 2: Privy Email OTP -->
+      <div class="privy-email-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-family:var(--font-mono); font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-secondary);">
+            Privy Email OTP
+          </label>
+          <span style="font-size:10px; font-weight:700; color:var(--burgundy); background:var(--cream-beige); padding:2px 6px; border-radius:4px;">Privy Core</span>
+        </div>
+
+        <div id="privy-email-step">
+          <div style="display:flex; gap:8px;">
+            <input type="email" id="privy-email-input" placeholder="cfo@foundation.xyz" style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--sage-dark); font-size:12px; background:var(--cream-surface); outline:none;">
+            <button class="btn btn-primary btn-sm" id="btn-privy-send-otp" style="white-space:nowrap;">Send Code</button>
+          </div>
+        </div>
+
+        <div id="privy-otp-step" style="display:none; margin-top:8px;">
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="privy-otp-input" placeholder="6-digit code" maxlength="6" style="width:120px; padding:8px 10px; font-family:var(--font-mono); font-size:13px; text-align:center; border:1px solid var(--sage-dark); border-radius:8px; background:var(--cream-surface);">
+            <button class="btn btn-primary btn-sm" id="btn-privy-verify-otp" style="flex:1;">Verify &amp; Connect</button>
+          </div>
+        </div>
+        <div id="privy-auth-status" style="font-size:11px; color:var(--ink-muted); margin-top:6px;"></div>
+      </div>
+
+      <!-- Option 3: Auditor Read-Only -->
+      <button class="wallet-option-btn" id="btn-connect-manual" type="button">
+        <div class="wallet-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <div class="wallet-info">
+          <span class="wallet-name">Auditor Read-Only Mode</span>
+          <span class="wallet-detail">Safe multisig or address inspection</span>
+        </div>
+        <span class="wallet-badge" style="background:var(--sage-grey); color:var(--ink-primary);">Inspect</span>
+      </button>
+
+      <!-- Verified Multi-Chain EVM RPC connection footnote (Not tied to Arc) -->
+      <div style="text-align:center; font-size:11px; color:var(--ink-muted); margin-top:16px;">
+        Zero custody of private keys • Verified Multi-Chain EVM RPC connection
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. PLAN MANAGEMENT MODAL (Upgrade / Downgrade Prior to Coming Month) -->
+  <div class="modal-overlay" id="plan-modal" style="display: none;">
+    <div class="modal-card" style="width: 520px;">
+      <button class="btn-close" id="btn-close-plan-modal">&times;</button>
+
+      <div class="modal-header-brand">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span class="modal-title">Manage Institutional Tier</span>
+      </div>
+
+      <p class="modal-desc">
+        Select your organization's compliance tier. Changes apply prior to the start of the next billing cycle.
+      </p>
+
+      <div class="plan-manage-grid">
+        <!-- Tier 1 -->
+        <div class="plan-tile" onclick="changePlanTier('free', 'Single Org · Free')">
+          <div class="plan-tile-left">
+            <span class="plan-tile-title">Single Org</span>
+            <span class="plan-tile-sub">Free / Open-Source Core · Single-treasury testing</span>
+          </div>
+          <button class="btn-select-tier" id="btn-tier-free">Select</button>
+        </div>
+
+        <!-- Tier 2 -->
+        <div class="plan-tile active-tier" onclick="changePlanTier('enterprise', 'Enterprise Treasury')">
+          <div class="plan-tile-left">
+            <span class="plan-tile-title" style="color:var(--burgundy);">Enterprise Treasury</span>
+            <span class="plan-tile-sub">$499 / month in USDC · QuickBooks &amp; Xero sync</span>
+          </div>
+          <button class="btn-select-tier current" id="btn-tier-enterprise">Active Plan</button>
+        </div>
+
+        <!-- Tier 3 -->
+        <div class="plan-tile" onclick="changePlanTier('partner', 'Audit Firm Partner')">
+          <div class="plan-tile-left">
+            <span class="plan-tile-title">Audit Firm Partner</span>
+            <span class="plan-tile-sub">$1,499 / month in USDC · Multi-client firm licensing</span>
+          </div>
+          <button class="btn-select-tier" id="btn-tier-partner">Select</button>
+        </div>
+      </div>
+
+      <div class="billing-notice-box">
+        <strong>Billing Notice:</strong> Tier upgrades or downgrades take effect prior to the coming month's billing cycle. All existing on-chain cryptographic proofs and local view keys remain valid indefinitely.
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. TRANSACTION TAGGING MODAL -->
+  <div class="modal-overlay" id="tag-modal" style="display: none;">
+    <div class="modal-card" style="width: 480px;">
+      <button class="btn-close" id="btn-close-tag-modal">&times;</button>
+
+      <div class="modal-header">
+        <h3 style="font-family:var(--font-heading); font-size:18px; font-weight:800; color:var(--burgundy);">
+          Tag Treasury Transaction
+        </h3>
+      </div>
+
+      <p class="modal-desc" id="tag-modal-tx-meta" style="font-family:var(--font-mono); font-size:11px; margin-bottom:14px;">
+        Tx: 0x... · Amount: $0.00 USDC
+      </p>
+
+      <input type="hidden" id="tag-target-hash">
+
+      <div class="field-group">
+        <label class="field-label" for="tag-name-input">Labeled Counterparty / Employee Name</label>
+        <input type="text" class="field-control" id="tag-name-input" placeholder="e.g. Dr. Elena Rostova (Chief AI Scientist)">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="tag-category-select">Tax &amp; Accounting Category</label>
+        <select class="field-control" id="tag-category-select">
+          <option value="Officer Compensation (W-2)">Officer Compensation (W-2)</option>
+          <option value="Contractor Payroll">Contractor Payroll</option>
+          <option value="Supplier Settlement">Supplier Settlement (SaaS / Cloud)</option>
+          <option value="Treasury Yield Sweep">Treasury Yield Sweep</option>
+          <option value="Legal &amp; Compliance">Legal &amp; Regulatory Compliance</option>
+          <option value="Capital Expenditure">Capital Expenditure</option>
+          <option value="General Operating">General Operating Expense</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="tag-notes-input">Internal Audit Scope Notes</label>
+        <input type="text" class="field-control" id="tag-notes-input" placeholder="e.g. Q3 bonus grant approved under Board Resolution 42">
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-save-tag" style="margin-top:16px; padding:11px;">
+        Save Transaction Tag (Local View Key)
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script type="module" src="/console/exporter.js"></script>
+  <script type="module" src="/console/chain-scanner.js"></script>
+  <script type="module" src="/console/privy-auth.js"></script>
   <script type="module" src="/console/app.js"></script>
+
+  <script>
+    // Wire Modals & Plan Management
+    function openComplianceModal() {
+      const modal = document.getElementById('compliance-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeComplianceModal() {
+      const modal = document.getElementById('compliance-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openPlanModal() {
+      const modal = document.getElementById('plan-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closePlanModal() {
+      const modal = document.getElementById('plan-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function changePlanTier(tierKey, tierLabel) {
+      const badge = document.getElementById('plan-badge-display');
+      if (badge) {
+        badge.textContent = tierLabel;
+        badge.className = 'plan-badge ' + tierKey;
+      }
+
+      ['free', 'enterprise', 'partner'].forEach(k => {
+        const btn = document.getElementById('btn-tier-' + k);
+        if (btn) {
+          if (k === tierKey) {
+            btn.className = 'btn-select-tier current';
+            btn.textContent = 'Active Plan';
+          } else {
+            btn.className = 'btn-select-tier';
+            btn.textContent = 'Select';
+          }
+        }
+      });
+      closePlanModal();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Compliance modal open buttons
+      document.getElementById('btn-open-comp-top')?.addEventListener('click', openComplianceModal);
+      document.getElementById('btn-open-compliance-footer')?.addEventListener('click', openComplianceModal);
+      document.getElementById('btn-close-comp-modal')?.addEventListener('click', closeComplianceModal);
+      document.getElementById('compliance-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('compliance-modal')) closeComplianceModal();
+      });
+
+      // Quick export from hero strip
+      document.getElementById('btn-strip-quick-export')?.addEventListener('click', () => {
+        document.getElementById('btn-export-csv')?.click();
+      });
+
+      // Plan modal open buttons
+      document.getElementById('btn-open-plan-modal')?.addEventListener('click', openPlanModal);
+      document.getElementById('plan-badge-display')?.addEventListener('click', openPlanModal);
+      document.getElementById('btn-close-plan-modal')?.addEventListener('click', closePlanModal);
+      document.getElementById('plan-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('plan-modal')) closePlanModal();
+      });
+
+      // Live search filter in table
+      document.getElementById('table-search-input')?.addEventListener('input', e => {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#table-body tr');
+        rows.forEach(r => {
+          r.style.display = r.textContent.toLowerCase().includes(term) ? '' : 'none';
+        });
+      });
+
+      // Category filter pills
+      document.querySelectorAll('.cat-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const cat = pill.textContent.trim().toLowerCase();
+          const rows = document.querySelectorAll('#table-body tr');
+          rows.forEach(r => {
+            if (cat === 'all') {
+              r.style.display = '';
+            } else {
+              r.style.display = r.textContent.toLowerCase().includes(cat) ? '' : 'none';
+            }
+          });
+        });
+      });
+    });
+  </script>
+
 </body>
 </html>

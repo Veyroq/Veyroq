@@ -56,3 +56,4 @@ test('Integration: Privy / Web3 Wallet connection -> Tagging -> Export pipeline'
   assert.equal(redactedCSV.includes('35000.00'), true);
   assert.equal(redactedCSV.includes('[REDACTED]'), true);
 });
+

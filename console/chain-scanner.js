@@ -204,3 +204,4 @@ export async function fetchLiveTransactions(address, networkKey = 'Arc') {
     return [];
   }
 }
+
