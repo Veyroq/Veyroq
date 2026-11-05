@@ -47,3 +47,4 @@ test('Integration: End-to-end institutional audit cycle execution', async () => 
   assert.equal(qbCSV.includes('48500.00'), true);
   assert.equal(qbCSV.includes(leafHashes[0]), true);
 });
+

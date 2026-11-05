@@ -55,3 +55,4 @@ test('Integration: Server handles app subdomain routing simulation', async () =>
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.includes('Veyroq Cockpit'), true);
 });
+

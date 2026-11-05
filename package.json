@@ -27,6 +27,7 @@
   "type": "module",
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^10.8.1",
+    "@privy-io/js-sdk-core": "^0.79.3",
     "dotenv": "^18.0.9"
   }
 }

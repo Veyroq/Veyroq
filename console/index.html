@@ -89,24 +89,22 @@
         </div>
 
         <div class="input-group">
-          <label for="view-key">Scoped View Key (Read-Only Decryption)</label>
-          <textarea id="view-key" rows="2" placeholder="Enter Scoped View Key..." spellcheck="false">vk_live_7a9f4102d84c17e8b625c4ef190a33190</textarea>
-          <button class="btn-text" id="btn-load-demo-key">Load Demo Credentials</button>
-        </div>
-
-        <div class="input-group">
-          <label for="period-select">Audit Period Scope</label>
+          <label for="period-select">Accounting Period</label>
           <select id="period-select">
             <option value="2026-Q3">FY 2026 - Q3 (July - Sept)</option>
             <option value="2026-Q2">FY 2026 - Q2 (Apr - June)</option>
             <option value="2026-Q1">FY 2026 - Q1 (Jan - Mar)</option>
-            <option value="custom">Custom Date Range...</option>
+            <option value="ALL">All Available History</option>
           </select>
         </div>
 
         <button class="btn btn-primary btn-block" id="btn-run-decryption">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          <span>Decrypt &amp; Verify Ledger</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Fetch Real On-Chain History</span>
+        </button>
+
+        <button class="btn-text" id="btn-load-demo-key" style="margin-top:8px; text-align:center; width:100%;">
+          Load Sample Ledger Batch
         </button>
       </div>
 
@@ -219,18 +217,18 @@
               <thead>
                 <tr>
                   <th>Timestamp / Date</th>
-                  <th>Network Block</th>
-                  <th>Transaction Classification</th>
-                  <th id="th-counterparty">Counterparty (Decrypted)</th>
+                  <th>Block Height</th>
+                  <th id="th-counterparty">Counterparty / Custom Tag</th>
+                  <th>Classification</th>
                   <th>Gross Amount</th>
                   <th>Asset</th>
-                  <th>Merkle Completeness</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="table-body">
                 <tr>
                   <td colspan="7" style="text-align:center; padding: 48px; color: var(--ink-muted);">
-                    Click <strong>"Decrypt &amp; Verify Ledger"</strong> in the sidebar to decrypt transactions locally in volatile browser RAM.
+                    Click <strong>"Fetch Real On-Chain History"</strong> to scan live blocks via RPC, or <strong>"Load Sample Ledger Batch"</strong> to test tagging.
                   </td>
                 </tr>
               </tbody>
@@ -310,7 +308,7 @@
     </section>
   </main>
 
-  <!-- Universal Institutional Wallet Modal (Supports Safe, Ledger, SCA, EOA, or Manual Mode) -->
+  <!-- Privy & Real Web3 Authentication Modal -->
   <div class="modal-overlay" id="wallet-modal">
     <div class="modal-card">
       <div class="modal-header">
@@ -318,70 +316,100 @@
         <button class="btn-close" id="btn-close-modal">&times;</button>
       </div>
       <p class="modal-desc">
-        Connect any existing corporate treasury wallet. Veyroq never custodies or transfers your funds.
+        Connect securely via Privy or standard Web3 browser extensions. Zero custody of private keys.
       </p>
-      
+
       <div class="wallet-options-list">
-        <!-- Option 1: Browser Web3 (MetaMask, Rabby, Coinbase) -->
+        <!-- Option 1: Browser Web3 (MetaMask, Rabby, Coinbase, Brave) -->
         <button class="wallet-option-btn" id="btn-connect-injected">
           <div class="wallet-icon-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
           </div>
           <div class="wallet-info">
-            <span class="wallet-name">Browser Extension</span>
+            <span class="wallet-name">Browser Web3 Wallet</span>
             <span class="wallet-detail">MetaMask, Rabby, Coinbase Wallet, Brave</span>
           </div>
           <span class="wallet-badge" id="detected-ext-badge">Auto-Detect</span>
         </button>
 
-        <!-- Option 2: Safe Multi-Sig (app.safe.global) -->
-        <button class="wallet-option-btn" id="btn-connect-safe">
-          <div class="wallet-icon-box">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <!-- Option 2: Privy Email / Embedded Wallet -->
+        <div class="privy-email-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--ink-secondary); margin:0;">
+              PRIVY EMAIL LOGIN
+            </label>
+            <span class="wallet-badge" style="background:#590907; color:#fff;">Privy Core</span>
           </div>
-          <div class="wallet-info">
-            <span class="wallet-name">Safe Multi-Sig</span>
-            <span class="wallet-detail">app.safe.global corporate multi-signers</span>
+          
+          <div id="privy-email-step">
+            <div style="display:flex; gap:8px;">
+              <input type="email" id="privy-email-input" placeholder="treasury@company.com" style="flex:1; padding:8px 10px; font-size:0.85rem; border:1px solid var(--sage-dark); border-radius:3px; background:#fff;">
+              <button class="btn btn-primary btn-sm" id="btn-privy-send-otp" style="white-space:nowrap;">Send Code</button>
+            </div>
           </div>
-          <span class="wallet-badge">Institutional</span>
-        </button>
 
-        <!-- Option 3: Hardware Wallet (Ledger / Trezor) -->
-        <button class="wallet-option-btn" id="btn-connect-hardware">
-          <div class="wallet-icon-box">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg>
+          <div id="privy-otp-step" style="display:none; margin-top:8px;">
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="privy-otp-input" placeholder="6-digit code" maxlength="6" style="width:120px; padding:8px 10px; font-family:var(--font-mono); font-size:0.9rem; text-align:center; border:1px solid var(--sage-dark); border-radius:3px; background:#fff;">
+              <button class="btn btn-primary btn-sm" id="btn-privy-verify-otp" style="flex:1;">Verify &amp; Connect</button>
+            </div>
           </div>
-          <div class="wallet-info">
-            <span class="wallet-name">Hardware Cold Storage</span>
-            <span class="wallet-detail">Ledger, Trezor offline treasury</span>
-          </div>
-          <span class="wallet-badge">Cold Storage</span>
-        </button>
+          <div id="privy-auth-status" style="font-size:0.75rem; color:var(--ink-muted); margin-top:6px;"></div>
+        </div>
 
-        <!-- Option 4: Smart Contract Account / Passkey -->
-        <button class="wallet-option-btn" id="btn-connect-sca">
-          <div class="wallet-icon-box">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a6 6 0 0 0-6 6h2a4 4 0 0 1 8 0h2a6 6 0 0 0-6-6z"/></svg>
-          </div>
-          <div class="wallet-info">
-            <span class="wallet-name">Smart Account / Passkey</span>
-            <span class="wallet-detail">ERC-4337, Coinbase Smart Wallet, WebAuthn</span>
-          </div>
-          <span class="wallet-badge">ERC-4337</span>
-        </button>
-
-        <!-- Option 5: Manual Read-Only Mode (Auditors) -->
+        <!-- Option 3: Auditor / Read-Only Direct Address (Safe multisig or any treasury address) -->
         <button class="wallet-option-btn" id="btn-connect-manual">
           <div class="wallet-icon-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
           <div class="wallet-info">
             <span class="wallet-name">Auditor Read-Only Mode</span>
-            <span class="wallet-detail">Paste any treasury address without signing</span>
+            <span class="wallet-detail">Paste any Safe or Treasury address to scan without signing</span>
           </div>
           <span class="wallet-badge">Read-Only</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Real Transaction Tagging Modal -->
+  <div class="modal-overlay" id="tag-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Tag Transaction</h3>
+        <button class="btn-close" id="btn-close-tag-modal">&times;</button>
+      </div>
+      <p class="modal-desc" id="tag-modal-tx-meta">
+        Assign an accounting label and tax classification to this on-chain line item.
+      </p>
+
+      <input type="hidden" id="tag-target-hash">
+
+      <div class="input-group">
+        <label for="tag-name-input">Transaction Label / Counterparty Name</label>
+        <input type="text" id="tag-name-input" placeholder="e.g. Alex - Lead Developer Salary, AWS Cloud">
+      </div>
+
+      <div class="input-group">
+        <label for="tag-category-select">Accounting &amp; Tax Category</label>
+        <select id="tag-category-select">
+          <option value="Payroll">Payroll (W-2 / Contractor)</option>
+          <option value="Supplier Settlement">Supplier / Vendor Settlement</option>
+          <option value="Software &amp; Cloud Infrastructure">Software &amp; Cloud Infrastructure</option>
+          <option value="Treasury Sweep">Treasury Sweep / Rebalance</option>
+          <option value="Professional Services">Professional Services (Legal / Audit)</option>
+          <option value="General &amp; Administrative">General &amp; Administrative</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="tag-notes-input">Internal Accounting Notes</label>
+        <textarea id="tag-notes-input" rows="2" placeholder="Invoice reference, contract milestone, or GL code..."></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-save-tag">
+        <span>Save Transaction Tag</span>
+      </button>
     </div>
   </div>
 

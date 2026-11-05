@@ -277,11 +277,16 @@ const VeyroqExporter = (() => {
 
   function mapCategoryToAccount(category, side) {
     const map = {
+      'Payroll': 'Payroll Expenses:Officer Compensation',
       'Officer Compensation (W-2)': 'Payroll Expenses:Officer Compensation',
       'Cloud GPU Compute Cluster': 'Technology Expenses:Cloud Infrastructure',
+      'Software & Cloud Infrastructure': 'Technology Expenses:Cloud Infrastructure',
       'Yield Sweep to BlackRock BUIDL': 'Investments:Treasury Instruments',
+      'Treasury Sweep': 'Investments:Treasury Instruments',
       'Engineering Payroll Batch B': 'Payroll Expenses:Engineering Contractors',
+      'Supplier Settlement': 'Vendor Expenses:Supplier Settlements',
       'Smart Contract Audit Retainer': 'Professional Services:Security Audits',
+      'Professional Services': 'Professional Services:Legal & Audit',
       'Validator & RPC Infrastructure': 'Technology Expenses:Infrastructure & RPC'
     };
     return map[category] || 'General & Administrative:Uncategorized';
@@ -289,11 +294,16 @@ const VeyroqExporter = (() => {
 
   function mapCategoryToXeroCode(category) {
     const map = {
+      'Payroll': '477',
       'Officer Compensation (W-2)': '477',
       'Cloud GPU Compute Cluster': '420',
+      'Software & Cloud Infrastructure': '420',
       'Yield Sweep to BlackRock BUIDL': '621',
+      'Treasury Sweep': '621',
       'Engineering Payroll Batch B': '477',
+      'Supplier Settlement': '412',
       'Smart Contract Audit Retainer': '412',
+      'Professional Services': '412',
       'Validator & RPC Infrastructure': '420'
     };
     return map[category] || '400';

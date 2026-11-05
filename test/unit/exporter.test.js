@@ -83,3 +83,4 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
   assert.equal(cert.leafCommitments.length, 2);
   assert.equal(cert.leafCommitments[0].inclusionStatus, 'MERKLE_VERIFIED');
 });
+

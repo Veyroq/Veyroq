@@ -833,6 +833,46 @@ body {
   flex-shrink: 0;
 }
 
+/* Privy Email Auth Box */
+.privy-email-box {
+  background: var(--cream-light);
+  border: 1.5px solid var(--sage-dark);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+}
+
+/* Tagging Actions & Links */
+.btn-tag-action {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  background: var(--cream-light);
+  border: 1px solid var(--sage-dark);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  color: var(--ink-primary);
+  transition: all 0.15s ease;
+}
+
+.btn-tag-action:hover {
+  background: var(--burgundy);
+  color: #fff;
+  border-color: var(--burgundy);
+}
+
+.table-tx-link {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--burgundy);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.table-tx-link:hover {
+  color: #8b1310;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .cockpit-layout {

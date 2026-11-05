@@ -14,3 +14,4 @@ exit 0
 EOF
 chmod +x .git/hooks/pre-commit
 echo "✔ Pre-commit hook installed in .git/hooks/pre-commit"
+
