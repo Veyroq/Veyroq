@@ -263,7 +263,7 @@ if (typeof document !== 'undefined') {
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function initApp() {
     // Network Selector
     $('network-select')?.addEventListener('change', () => {
       if ($('active-network-label')) $('active-network-label').textContent = getNetFullName();
@@ -476,7 +476,14 @@ if (typeof document !== 'undefined') {
         alert(`Auditor policy successfully registered and anchored to VeyroqRegistry on ${net}!`);
       }, 750);
     });
-  });
+  }
+
+  // Ensure initialization runs reliably across all browser execution timings
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
 
   window.revokeAuditorMock = function(btn, name) {
     if (confirm(`Are you sure you want to revoke on-chain audit authorization for ${name}?`)) {

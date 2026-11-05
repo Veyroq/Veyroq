@@ -557,7 +557,7 @@
       closePlanModal();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initInlineModals() {
       document.getElementById('btn-open-comp-top')?.addEventListener('click', openComplianceModal);
       document.getElementById('btn-open-compliance-footer')?.addEventListener('click', openComplianceModal);
       document.getElementById('btn-close-comp-modal')?.addEventListener('click', closeComplianceModal);
@@ -566,7 +566,13 @@
       });
 
       document.getElementById('btn-strip-quick-export')?.addEventListener('click', () => {
-        document.getElementById('btn-export-csv')?.click();
+        const exportBtn = document.getElementById('btn-export-csv');
+        if (exportBtn && !exportBtn.disabled) {
+          exportBtn.click();
+        } else {
+          document.getElementById('btn-load-demo-key')?.click();
+          openComplianceModal();
+        }
       });
 
       document.getElementById('btn-open-plan-modal')?.addEventListener('click', openPlanModal);
@@ -574,6 +580,19 @@
       document.getElementById('btn-close-plan-modal')?.addEventListener('click', closePlanModal);
       document.getElementById('plan-modal')?.addEventListener('click', e => {
         if (e.target === document.getElementById('plan-modal')) closePlanModal();
+      });
+
+      document.getElementById('btn-tier-free')?.addEventListener('click', e => {
+        e.stopPropagation();
+        changePlanTier('free', 'Single Org · Free');
+      });
+      document.getElementById('btn-tier-enterprise')?.addEventListener('click', e => {
+        e.stopPropagation();
+        changePlanTier('enterprise', 'Enterprise Treasury');
+      });
+      document.getElementById('btn-tier-partner')?.addEventListener('click', e => {
+        e.stopPropagation();
+        changePlanTier('partner', 'Audit Firm Partner');
       });
 
       document.getElementById('table-search-input')?.addEventListener('input', e => {
@@ -599,7 +618,13 @@
           });
         });
       });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initInlineModals);
+    } else {
+      initInlineModals();
+    }
   </script>
 
 </body>
