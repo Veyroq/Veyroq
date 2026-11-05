@@ -200,9 +200,14 @@ if (typeof document !== 'undefined') {
       const currentLabel = tagInfo.tag || tx.plainCounterparty || tx.counterparty;
       const currentCategory = tagInfo.category || tx.category || 'General';
 
-      const counterpartyHtml = activeScope === 'full'
-        ? `<strong>${currentLabel}</strong><br><small class="counterparty-sub">${tx.counterparty || ''}</small>`
-        : `<span class="redacted-pill"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Confidential counterparty</span><br><small class="counterparty-sub font-mono">Ref: ${txHash.slice(0, 10)}...${txHash.slice(-4)}</small>`;
+      let counterpartyHtml = '';
+      if (activeScope === 'full') {
+        const sub = tx.counterparty || '';
+        counterpartyHtml = `<strong>${currentLabel}</strong><br><small class="counterparty-sub">${sub}</small>`;
+      } else {
+        const refShort = `Ref: ${txHash.slice(0, 10)}...${txHash.slice(-4)}`;
+        counterpartyHtml = `<span class="redacted-pill"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Confidential counterparty</span><br><small class="counterparty-sub font-mono">${refShort}</small>`;
+      }
 
       const explorerLink = tx.explorerLink
         ? `<a href="${tx.explorerLink}" target="_blank" rel="noopener noreferrer" class="table-tx-link">#${tx.block} ↗</a>`
@@ -310,10 +315,7 @@ if (typeof document !== 'undefined') {
       }
 
       try {
-        if (statusEl) statusEl.textContent = 'Sending Privy authentication code...';
-        // Initialize Privy client if not already
-        const appId = window.PRIVY_APP_ID || 'cm2x34privy_veyroq_default';
-        try { await initPrivy(appId); } catch {}
+        if (statusEl) statusEl.textContent = 'Sending authentication code...';
         await sendEmailOtp(email);
 
         if ($('privy-email-step')) $('privy-email-step').style.display = 'none';

@@ -56,3 +56,49 @@ test('Integration: Server handles app subdomain routing simulation', async () =>
   assert.equal(res.body.includes('Veyroq Cockpit'), true);
 });
 
+test('Integration: Server Privy API validates email parameter', async () => {
+  const postData = JSON.stringify({ email: 'not-an-email' });
+  const res = await new Promise((resolve, reject) => {
+    const req = http.request(new URL('/api/auth/privy/send-code', BASE_URL), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, res => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: JSON.parse(body) }));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.success, false);
+});
+
+test('Integration: Server Privy API validates verify-code parameters', async () => {
+  const postData = JSON.stringify({ email: 'test@veyroq.xyz', code: '' });
+  const res = await new Promise((resolve, reject) => {
+    const req = http.request(new URL('/api/auth/privy/verify-code', BASE_URL), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, res => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: JSON.parse(body) }));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.success, false);
+});
+

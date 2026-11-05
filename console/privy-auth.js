@@ -66,32 +66,59 @@ export async function initPrivy(appId, PrivyClass = null) {
   }
 }
 
-// Send Email OTP Code via Privy Core
+// Send Email OTP Code (Backend zero-custody proxy using .env or mock SDK client)
 export async function sendEmailOtp(email) {
-  if (!privyClient) {
-    throw new Error('Privy client not initialized. Enter your Privy App ID.');
-  }
   if (!email || !email.includes('@')) {
     throw new Error('Invalid email address');
   }
 
-  return await privyClient.auth.email.sendCode(email);
+  if (privyClient) {
+    return await privyClient.auth.email.sendCode(email);
+  }
+
+  // Zero-custody backend proxy call (Privy App ID resides strictly in .env)
+  const res = await fetch('/api/auth/privy/send-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to send verification code');
+  }
+  return data;
 }
 
-// Verify Email OTP Code via Privy Core
+// Verify Email OTP Code
 export async function verifyEmailOtp(email, code) {
-  if (!privyClient) {
-    throw new Error('Privy client not initialized');
-  }
   if (!code || code.trim().length === 0) {
     throw new Error('Verification code is required');
   }
 
-  const result = await privyClient.auth.email.loginWithCode(email, code.trim());
-  const user = result?.user;
-  const embeddedWallet = user?.linkedAccounts?.find(a => a.type === 'wallet');
-  const address = embeddedWallet?.address || user?.id || `privy-${email}`;
+  if (privyClient) {
+    const result = await privyClient.auth.email.loginWithCode(email, code.trim());
+    const user = result?.user;
+    const embeddedWallet = user?.linkedAccounts?.find(a => a.type === 'wallet');
+    const address = embeddedWallet?.address || user?.id || `privy-${email}`;
+    setAuthState(address, 'privy_email', user);
+    return { user, address };
+  }
 
+  // Zero-custody backend proxy verification
+  const res = await fetch('/api/auth/privy/verify-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code: code.trim() })
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Verification code failed');
+  }
+
+  const address = data.address;
+  const user = data.user;
   setAuthState(address, 'privy_email', user);
   return { user, address };
 }

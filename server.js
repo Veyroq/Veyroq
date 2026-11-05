@@ -1,11 +1,22 @@
+import 'dotenv/config';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { default as Privy, InMemoryCache } from '@privy-io/js-sdk-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
+
+// Singleton server-side Privy client initialized strictly with .env secret
+let _privyInstance = null;
+function getPrivyClient(appId) {
+  if (!_privyInstance) {
+    _privyInstance = new Privy({ appId, storage: new InMemoryCache() });
+  }
+  return _privyInstance;
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -34,6 +45,73 @@ const server = http.createServer((req, res) => {
   // Normalize trailing slash (except for root '/')
   if (reqPath.length > 1 && reqPath.endsWith('/')) {
     reqPath = reqPath.slice(0, -1);
+  }
+
+  // 0. Privy Authentication Backend API Endpoints (Keeps PRIVY_APP_ID strictly in .env)
+  if (reqPath === '/api/auth/privy/send-code' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        const { email } = JSON.parse(body || '{}');
+        if (!email || !email.includes('@')) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'A valid email address is required.' }));
+          return;
+        }
+
+        const privyAppId = process.env.PRIVY_APP_ID;
+        if (!privyAppId) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'PRIVY_APP_ID is not configured in .env' }));
+          return;
+        }
+
+        const privy = getPrivyClient(privyAppId);
+        await privy.auth.email.sendCode(email);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Authentication code dispatched.' }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message || 'Error sending Privy OTP' }));
+      }
+    });
+    return;
+  }
+
+  if (reqPath === '/api/auth/privy/verify-code' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        const { email, code } = JSON.parse(body || '{}');
+        if (!email || !code) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Email and verification code are required.' }));
+          return;
+        }
+
+        const privyAppId = process.env.PRIVY_APP_ID;
+        if (!privyAppId) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'PRIVY_APP_ID is not configured in .env' }));
+          return;
+        }
+
+        const privy = getPrivyClient(privyAppId);
+        const result = await privy.auth.email.loginWithCode(email, code.trim());
+        const user = result?.user;
+        const embeddedWallet = user?.linkedAccounts?.find(a => a.type === 'wallet');
+        const address = embeddedWallet?.address || user?.id || `0xPrivy${Date.now().toString(16)}`;
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, address, user }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message || 'Verification failed. Please check the code.' }));
+      }
+    });
+    return;
   }
 
   // 1. Clean redirect for any .html or /index requests to pure extensionless paths
