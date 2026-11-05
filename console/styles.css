@@ -96,9 +96,9 @@ body {
 
 .brand-title {
   font-family: var(--font-heading);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.25rem;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.2px;
   color: var(--burgundy);
 }
 
@@ -112,11 +112,10 @@ body {
 .plan-badge {
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 9px;
   border-radius: 6px;
-  letter-spacing: 0.3px;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   display: inline-flex;
   align-items: center;
 }
@@ -144,11 +143,11 @@ body {
   border: 1px dashed var(--sage-dark);
   color: var(--ink-secondary);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   padding: 3px 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-plan-manage:hover {
@@ -169,7 +168,7 @@ body {
   gap: 6px;
   font-size: 0.78rem;
   color: var(--ink-secondary);
-  font-weight: 600;
+  font-weight: 500;
   background: var(--cream-light);
   border: 1px solid var(--sage-dark);
   padding: 5px 12px;
@@ -178,12 +177,12 @@ body {
 
 .doc-link {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-secondary);
   text-decoration: none;
   padding: 5px 8px;
   border-radius: 6px;
-  transition: color 0.15s;
+  transition: color 0.15s ease;
 }
 
 .doc-link:hover {
@@ -230,11 +229,9 @@ body {
 }
 
 .cell-title {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
   color: var(--ink-muted);
   margin-bottom: 6px;
 }
@@ -242,7 +239,7 @@ body {
 .cell-stat-big {
   font-family: var(--font-heading);
   font-size: 1.95rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--burgundy);
   line-height: 1;
   margin-bottom: 6px;
@@ -261,13 +258,13 @@ body {
   color: #FAF6ED;
   border: none;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
   align-self: flex-start;
   margin-top: 8px;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease;
 }
 
 .btn-strip-export:hover {
@@ -293,7 +290,7 @@ body {
   flex-direction: column;
   height: 420px; /* Equal calibrated height */
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s ease;
 }
 
 .workspace-card:hover {
@@ -313,7 +310,7 @@ body {
 .card-title-text {
   font-family: var(--font-heading);
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--burgundy);
   display: flex;
   align-items: center;
@@ -345,19 +342,18 @@ body {
   text-align: center;
   padding: 6px 10px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 7px;
   border: none;
   cursor: pointer;
   background: transparent;
   color: var(--ink-secondary);
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .segment-btn.active {
   background: var(--burgundy);
   color: #FAF6ED;
-  box-shadow: 0 2px 6px rgba(89, 9, 7, 0.15);
 }
 
 .field-group {
@@ -367,10 +363,8 @@ body {
 
 .field-label {
   display: block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--ink-secondary);
   margin-bottom: 5px;
 }
@@ -385,7 +379,7 @@ body {
   font-family: inherit;
   color: var(--ink-primary);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s ease;
 }
 
 .field-control:focus {
@@ -398,7 +392,7 @@ body {
   background: var(--burgundy);
   color: #FAF6ED;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 10px;
   border-radius: 8px;
   border: none;
@@ -407,8 +401,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(89, 9, 7, 0.18);
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-fetch-rpc:hover {
@@ -425,7 +418,7 @@ body {
   border: none;
   color: var(--burgundy);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   text-align: center;
   margin-top: 6px;
@@ -470,14 +463,14 @@ body {
 
 .cat-pill {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 4px 8px;
   border-radius: 6px;
   background: var(--cream-light);
   border: 1px solid var(--sage-dark);
   cursor: pointer;
   color: var(--ink-secondary);
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .cat-pill.active {
@@ -504,14 +497,12 @@ body {
   position: sticky;
   top: 0;
   background: var(--sage-grey);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-primary);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-secondary);
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1.5px solid var(--sage-dark);
+  border-bottom: 1px solid var(--sage-dark);
   z-index: 2;
 }
 
@@ -532,14 +523,14 @@ body {
 .table-tx-link {
   color: var(--burgundy);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .table-badge {
   background: var(--sage-grey);
   border: 1px solid var(--sage-dark);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -549,11 +540,11 @@ body {
   border: 1px solid var(--sage-dark);
   color: var(--burgundy);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 3px 8px;
   border-radius: 5px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-tag-action:hover {
@@ -568,7 +559,7 @@ body {
   border-radius: 4px;
   font-size: 10px;
   font-family: var(--font-mono);
-  font-weight: 700;
+  font-weight: 500;
   display: inline-block;
 }
 
@@ -584,12 +575,11 @@ body {
   justify-content: space-between;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .compliance-footer-strip:hover {
   background: var(--burgundy-tint);
-  transform: translateY(-1px);
 }
 
 .strip-left {
@@ -600,7 +590,7 @@ body {
 
 .strip-title {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--burgundy);
 }
 
@@ -613,7 +603,7 @@ body {
   background: var(--burgundy);
   color: #FAF6ED;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 5px 12px;
   border-radius: 6px;
   border: none;
@@ -670,7 +660,7 @@ body {
   justify-content: center;
   font-size: 13px;
   color: var(--ink-secondary);
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-close:hover {
@@ -695,7 +685,7 @@ body {
 .modal-title {
   font-family: var(--font-heading);
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--burgundy);
 }
 
@@ -718,15 +708,13 @@ body {
   border-radius: 12px;
   margin-bottom: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   text-align: left;
 }
 
 .wallet-option-btn:hover {
   border-color: var(--burgundy);
   background: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(89, 9, 7, 0.08);
-  transform: translateY(-1px);
 }
 
 .wallet-icon-box {
@@ -795,10 +783,8 @@ body {
 .cert-title-badge {
   font-family: var(--font-heading);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--burgundy);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   margin-bottom: 4px;
 }
 
@@ -812,7 +798,7 @@ body {
 }
 
 .cert-detail-row .lbl { color: var(--ink-secondary); }
-.cert-detail-row .val { font-family: var(--font-mono); font-weight: 700; color: var(--ink-primary); }
+.cert-detail-row .val { font-family: var(--font-mono); font-weight: 500; color: var(--ink-primary); }
 
 .modal-export-buttons {
   display: grid;
@@ -838,7 +824,7 @@ body {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .plan-tile:hover {
@@ -849,7 +835,6 @@ body {
 .plan-tile.active-tier {
   border-color: var(--burgundy);
   background: var(--cream-surface);
-  box-shadow: 0 2px 8px rgba(89, 9, 7, 0.08);
 }
 
 .plan-tile-left {
@@ -859,7 +844,7 @@ body {
 
 .plan-tile-title {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-primary);
 }
 
@@ -873,10 +858,11 @@ body {
   border: 1px solid var(--sage-dark);
   color: var(--burgundy);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-select-tier.current {
@@ -903,10 +889,10 @@ body {
   justify-content: center;
   gap: 6px;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-primary {

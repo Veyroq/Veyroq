@@ -202,7 +202,7 @@ if (typeof document !== 'undefined') {
 
       const counterpartyHtml = activeScope === 'full'
         ? `<strong>${currentLabel}</strong><br><small class="counterparty-sub">${tx.counterparty || ''}</small>`
-        : `<span class="redacted-pill">🔒 Confidential Counterparty</span><br><small class="counterparty-sub font-mono">Ref: ${txHash.slice(0, 10)}...${txHash.slice(-4)}</small>`;
+        : `<span class="redacted-pill"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Confidential counterparty</span><br><small class="counterparty-sub font-mono">Ref: ${txHash.slice(0, 10)}...${txHash.slice(-4)}</small>`;
 
       const explorerLink = tx.explorerLink
         ? `<a href="${tx.explorerLink}" target="_blank" rel="noopener noreferrer" class="table-tx-link">#${tx.block} ↗</a>`
@@ -240,9 +240,9 @@ if (typeof document !== 'undefined') {
     if ($('stat-volume')) $('stat-volume').innerHTML = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} <small>USDC</small>`;
     if ($('verified-count')) $('verified-count').innerText = loadedTransactions.length;
     if ($('stat-items')) $('stat-items').innerHTML = `${loadedTransactions.length} <small>Transactions</small>`;
-    if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="text-green">✔ Live Synced</span>`;
+    if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="status-verified-text">100% on-chain balanced</span>`;
     if ($('stat-root')) $('stat-root').innerText = `${calculatedMerkleRoot.slice(0, 10)}...${calculatedMerkleRoot.slice(-4)}`;
-    if ($('stat-assurance')) $('stat-assurance').innerHTML = `<span style="color:var(--green-verified);">✔ GAAP Proof Active</span>`;
+    if ($('stat-assurance')) $('stat-assurance').innerHTML = `<span class="status-verified-text">GAAP proof active</span>`;
 
     if ($('cert-display-outflow')) $('cert-display-outflow').textContent = formattedTotal;
     if ($('cert-display-items')) $('cert-display-items').textContent = `${loadedTransactions.length} Verified (100% On-Chain)`;
