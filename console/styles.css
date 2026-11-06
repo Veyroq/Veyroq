@@ -988,33 +988,6 @@ body {
   gap: 12px;
 }
 
-.session-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.status-indicator-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--green-verified);
-  background: var(--green-tint);
-  padding: 3px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(21, 128, 61, 0.25);
-}
-
-.status-live-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green-verified);
-  box-shadow: 0 0 6px rgba(21, 128, 61, 0.6);
-}
-
 .session-badge {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1103,15 +1076,6 @@ body {
   gap: 6px;
   font-size: 12px;
   text-decoration: none;
-}
-
-.session-meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11px;
-  color: var(--ink-muted);
-  padding-top: 4px;
 }
 
 .btn-disconnect-session {

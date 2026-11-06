@@ -183,7 +183,7 @@ if (typeof document !== 'undefined') {
 
     // Update Connected Account Modal
     if ($('account-modal-full-address')) $('account-modal-full-address').textContent = address;
-    if ($('account-modal-auth-method')) $('account-modal-auth-method').textContent = `${label} Verified`;
+    if ($('account-modal-auth-method')) $('account-modal-auth-method').textContent = label === 'Privy' ? 'Privy Core' : `${label} Connected`;
     if ($('account-modal-network')) $('account-modal-network').textContent = getNetFullName();
     if ($('link-account-explorer')) $('link-account-explorer').href = getExplorerAddressUrl(getNetName(), address);
 
@@ -280,7 +280,7 @@ if (typeof document !== 'undefined') {
     if (!tbody) return;
 
     if (loadedTransactions.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 48px; color: var(--ink-muted);">Click <strong>"Fetch Real On-Chain History"</strong> to scan live blocks via RPC, or <strong>"Load Sample Ledger Batch"</strong> to test tagging.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 48px; color: var(--ink-muted);">Click <strong>"Fetch Real On-Chain History"</strong> to scan live blocks via RPC node.</td></tr>`;
       return;
     }
 
