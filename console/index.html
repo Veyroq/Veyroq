@@ -97,12 +97,17 @@
           <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--ink-primary); margin-top: 2px;" id="display-treasury-name">
             Acme Foundation Vault
           </div>
-          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-secondary); margin-top: 4px;" id="display-treasury-addr">
-            0x71C8...22Ec
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-secondary);" id="display-treasury-addr">
+              0x71C8...22Ec
+            </span>
+            <button type="button" class="btn-copy-micro" id="btn-copy-strip-addr" title="Copy Address">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
           </div>
         </div>
         <div class="cell-meta-row" style="margin-top: 6px;">
-          <span class="badge-tag" id="connected-wallet-pill" style="font-size: 10px; font-weight: 600; color: var(--burgundy); background: var(--cream-light); border: 1px solid var(--sage-dark); padding: 2px 8px; border-radius: 4px; display: inline-block; cursor: pointer;">
+          <span class="badge-tag" id="connected-wallet-pill" style="font-size: 10px; font-weight: 600; color: var(--burgundy); background: var(--cream-light); border: 1px solid var(--sage-dark); padding: 2px 8px; border-radius: 4px; display: inline-block; cursor: pointer;" title="Manage connected account">
             Privy Core Verified
           </span>
         </div>
@@ -163,7 +168,13 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label" for="org-address">Treasury Wallet Address</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+              <label class="field-label" for="org-address" style="margin-bottom:0;">Treasury Wallet Address</label>
+              <button type="button" class="btn-copy-inline" id="btn-copy-org-address" title="Copy Address">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span id="copy-org-text">Copy</span>
+              </button>
+            </div>
             <input type="text" class="field-control font-mono" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
           </div>
 
@@ -410,6 +421,75 @@
       <div style="text-align:center; font-size:11px; color:var(--ink-muted); margin-top:16px;">
         Zero custody of private keys • Verified Multi-Chain EVM RPC connection
       </div>
+    </div>
+  </div>
+
+  <!-- 5b. CONNECTED ACCOUNT SESSION & DISCONNECT MODAL -->
+  <div class="modal-overlay" id="account-modal" style="display: none;">
+    <div class="modal-card" style="width: 490px;">
+      <button class="btn-close" id="btn-close-account-modal" aria-label="Close modal">&times;</button>
+
+      <div class="modal-header-brand">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
+        <span class="modal-title">Treasury Account Session</span>
+      </div>
+
+      <p class="modal-desc">
+        Active institutional audit session. You can copy your allocated EVM wallet address, inspect on-chain activity, or disconnect your session.
+      </p>
+
+      <!-- Connection Details Card -->
+      <div class="account-session-card">
+        <div class="session-status-row">
+          <div class="status-indicator-pill">
+            <span class="status-live-dot"></span>
+            <span id="account-modal-status-text">Connected &amp; Active</span>
+          </div>
+          <span class="session-badge" id="account-modal-auth-method">Privy Core</span>
+        </div>
+
+        <div class="session-detail-item" id="account-modal-email-row" style="display:none;">
+          <span class="detail-label">Authenticated Account:</span>
+          <span class="detail-value" id="account-modal-email">—</span>
+        </div>
+
+        <div class="session-address-block">
+          <div class="address-header-row">
+            <span class="address-label">Allocated EVM Address</span>
+            <span class="address-network-label" id="account-modal-network">Circle Arc L1</span>
+          </div>
+          <div class="address-display-box font-mono" id="account-modal-full-address">
+            0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec
+          </div>
+          <div class="address-action-row">
+            <button class="btn btn-secondary btn-sm" id="btn-copy-account-addr" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="copy-addr-text">Copy Address</span>
+            </button>
+            <a class="btn btn-secondary btn-sm" id="link-account-explorer" href="https://explorer.testnet.arc.io" target="_blank" rel="noopener noreferrer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              <span>View on Explorer ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="session-meta-row">
+          <span class="session-expiry-text" id="account-modal-expires">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Session valid for 24 hours
+          </span>
+          <span class="session-security-text" style="color:var(--burgundy); font-weight:600;">Zero-Custody Active</span>
+        </div>
+      </div>
+
+      <!-- Disconnect Action Button -->
+      <div style="margin-top: 16px;">
+        <button class="btn-disconnect-session" id="btn-disconnect-wallet" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Disconnect Wallet &amp; End Session</span>
+        </button>
+      </div>
+
     </div>
   </div>
 

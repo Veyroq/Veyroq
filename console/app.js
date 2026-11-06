@@ -1,8 +1,18 @@
 // Veyroq Institutional Audit & Real On-Chain Transaction Engine
 // Supports Privy Auth, Injected Web3, Live RPC Ingestion & Persistent Tagging.
 
-import { NETWORKS, fetchLiveTransactions, saveTransactionTag, getTransactionTag } from './chain-scanner.js';
-import { connectInjectedWallet, initPrivy, sendEmailOtp, verifyEmailOtp, setAuthState } from './privy-auth.js';
+import { NETWORKS, fetchLiveTransactions, saveTransactionTag, getTransactionTag, getExplorerAddressUrl } from './chain-scanner.js';
+import { 
+  connectInjectedWallet, 
+  initPrivy, 
+  sendEmailOtp, 
+  verifyEmailOtp, 
+  setAuthState, 
+  clearAuthState, 
+  getAuthSession, 
+  disconnectWallet, 
+  copyToClipboard 
+} from './privy-auth.js';
 
 export const DEMO_TRANSACTIONS = [
   {
@@ -142,20 +152,100 @@ if (typeof document !== 'undefined') {
   const getNetName = () => $('network-select')?.value || 'Arc';
   const getNetFullName = () => $('network-select')?.options[$('network-select').selectedIndex]?.text || 'Circle Arc L1';
 
-  function applyConnectedWallet(address, label) {
+  function applyConnectedWallet(address, label, email = null) {
+    if (!address) return;
     connectedAddress = address;
-    setAuthState(address, label);
+    setAuthState(address, label, null, email);
+
+    const shortAddr = address.length > 12 ? `${address.slice(0, 6)}...${address.slice(-4)}` : address;
+
     if ($('org-address')) $('org-address').value = address;
-    if ($('wallet-btn-text')) $('wallet-btn-text').textContent = `${label}: ${address.slice(0, 6)}...${address.slice(-4)}`;
+
+    const walletBtn = $('btn-wallet-connect');
+    if (walletBtn) {
+      walletBtn.classList.add('connected');
+      walletBtn.title = `Connected: ${address} (Click to manage)`;
+    }
+    if ($('wallet-btn-text')) {
+      $('wallet-btn-text').textContent = `${label}: ${shortAddr}`;
+    }
+
     const pill = $('connected-wallet-pill');
     if (pill) {
       pill.style.display = 'inline-block';
       pill.textContent = `${label} Verified`;
       pill.classList.add('badge-tag-connected');
+      pill.title = 'Click to inspect allocated address & session';
     }
-    if ($('display-treasury-addr')) $('display-treasury-addr').textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
-    if ($('cert-display-vault')) $('cert-display-vault').textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+    if ($('display-treasury-addr')) $('display-treasury-addr').textContent = shortAddr;
+    if ($('cert-display-vault')) $('cert-display-vault').textContent = shortAddr;
+
+    // Update Connected Account Modal
+    if ($('account-modal-full-address')) $('account-modal-full-address').textContent = address;
+    if ($('account-modal-auth-method')) $('account-modal-auth-method').textContent = `${label} Verified`;
+    if ($('account-modal-network')) $('account-modal-network').textContent = getNetFullName();
+    if ($('link-account-explorer')) $('link-account-explorer').href = getExplorerAddressUrl(getNetName(), address);
+
+    const emailRow = $('account-modal-email-row');
+    const emailVal = $('account-modal-email');
+    if (email && emailRow && emailVal) {
+      emailVal.textContent = email;
+      emailRow.style.display = 'flex';
+    } else if (emailRow) {
+      emailRow.style.display = 'none';
+    }
+
     if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
+  }
+
+  function handleDisconnect() {
+    connectedAddress = null;
+    disconnectWallet();
+
+    const walletBtn = $('btn-wallet-connect');
+    if (walletBtn) {
+      walletBtn.classList.remove('connected');
+      walletBtn.title = 'Connect Treasury Wallet';
+    }
+    if ($('wallet-btn-text')) $('wallet-btn-text').textContent = 'Connect Wallet';
+
+    const pill = $('connected-wallet-pill');
+    if (pill) {
+      pill.textContent = 'Privy Core Verified';
+      pill.classList.remove('badge-tag-connected');
+      pill.title = 'Manage connected account';
+    }
+
+    if ($('display-treasury-addr')) $('display-treasury-addr').textContent = '0x71C8...22Ec';
+    if ($('org-address')) $('org-address').value = '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec';
+
+    if ($('privy-email-step')) $('privy-email-step').style.display = 'block';
+    if ($('privy-otp-step')) $('privy-otp-step').style.display = 'none';
+    if ($('privy-otp-input')) $('privy-otp-input').value = '';
+    if ($('privy-auth-status')) $('privy-auth-status').textContent = '';
+
+    if ($('account-modal')) $('account-modal').style.display = 'none';
+  }
+
+  function openWalletModal() {
+    if ($('wallet-modal')) $('wallet-modal').style.display = 'flex';
+  }
+
+  function closeWalletModal() {
+    if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
+  }
+
+  function openAccountModal() {
+    if ($('account-modal-network')) $('account-modal-network').textContent = getNetFullName();
+    if ($('link-account-explorer') && connectedAddress) {
+      $('link-account-explorer').href = getExplorerAddressUrl(getNetName(), connectedAddress);
+    }
+    if ($('account-modal')) $('account-modal').style.display = 'flex';
+  }
+
+  function closeAccountModal() {
+    if ($('account-modal')) $('account-modal').style.display = 'none';
   }
 
   function setScope(scope) {
@@ -274,17 +364,75 @@ if (typeof document !== 'undefined') {
     $('btn-scope-full')?.addEventListener('click', () => setScope('full'));
     $('btn-scope-redacted')?.addEventListener('click', () => setScope('redacted'));
 
-    // Wallet Modal Controls
-    $('btn-wallet-connect')?.addEventListener('click', () => { if ($('wallet-modal')) $('wallet-modal').style.display = 'flex'; });
-    $('btn-close-modal')?.addEventListener('click', () => { if ($('wallet-modal')) $('wallet-modal').style.display = 'none'; });
-    $('wallet-modal')?.addEventListener('click', e => { if (e.target === $('wallet-modal')) $('wallet-modal').style.display = 'none'; });
+    // Wallet & Account Modal Controls
+    $('btn-wallet-connect')?.addEventListener('click', () => {
+      if (connectedAddress) {
+        openAccountModal();
+      } else {
+        openWalletModal();
+      }
+    });
+
+    $('btn-close-modal')?.addEventListener('click', closeWalletModal);
+    $('wallet-modal')?.addEventListener('click', e => { if (e.target === $('wallet-modal')) closeWalletModal(); });
+
+    $('btn-close-account-modal')?.addEventListener('click', closeAccountModal);
+    $('account-modal')?.addEventListener('click', e => { if (e.target === $('account-modal')) closeAccountModal(); });
+    $('btn-disconnect-wallet')?.addEventListener('click', handleDisconnect);
+
     $('btn-close-tag-modal')?.addEventListener('click', () => { if ($('tag-modal')) $('tag-modal').style.display = 'none'; });
     $('tag-modal')?.addEventListener('click', e => { if (e.target === $('tag-modal')) $('tag-modal').style.display = 'none'; });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
+        closeWalletModal();
+        closeAccountModal();
         if ($('tag-modal')) $('tag-modal').style.display = 'none';
+      }
+    });
+
+    // 1-Click Copy Handlers with Visual Feedback
+    $('btn-copy-account-addr')?.addEventListener('click', async () => {
+      const addr = connectedAddress || $('account-modal-full-address')?.textContent?.trim();
+      if (addr) {
+        const ok = await copyToClipboard(addr);
+        if (ok) {
+          const span = $('copy-addr-text');
+          if (span) {
+            const original = span.textContent;
+            span.textContent = 'Copied!';
+            setTimeout(() => { span.textContent = original; }, 2000);
+          }
+        }
+      }
+    });
+
+    $('btn-copy-org-address')?.addEventListener('click', async () => {
+      const addr = $('org-address')?.value?.trim();
+      if (addr) {
+        const ok = await copyToClipboard(addr);
+        if (ok) {
+          const span = $('copy-org-text');
+          if (span) {
+            const original = span.textContent;
+            span.textContent = 'Copied!';
+            setTimeout(() => { span.textContent = original; }, 2000);
+          }
+        }
+      }
+    });
+
+    $('btn-copy-strip-addr')?.addEventListener('click', async () => {
+      const addr = connectedAddress || $('org-address')?.value?.trim();
+      if (addr) {
+        const ok = await copyToClipboard(addr);
+        if (ok) {
+          const btn = $('btn-copy-strip-addr');
+          if (btn) {
+            btn.style.color = 'var(--green-verified)';
+            setTimeout(() => { btn.style.color = ''; }, 1500);
+          }
+        }
       }
     });
 
@@ -332,9 +480,9 @@ if (typeof document !== 'undefined') {
       const statusEl = $('privy-auth-status');
 
       try {
-        if (statusEl) statusEl.textContent = 'Verifying code...';
-        const { address } = await verifyEmailOtp(email, code);
-        applyConnectedWallet(address, 'Privy');
+        if (statusEl) statusEl.textContent = 'Verifying code & allocating EVM address...';
+        const { address, email: verifiedEmail } = await verifyEmailOtp(email, code);
+        applyConnectedWallet(address, 'Privy', verifiedEmail || email);
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message || 'Verification failed';
       }
@@ -342,15 +490,25 @@ if (typeof document !== 'undefined') {
 
     // Auditor Read-Only
     $('btn-connect-manual')?.addEventListener('click', () => {
-      if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
+      closeWalletModal();
       $('org-address')?.focus();
       $('org-address')?.select();
     });
 
-    // Connected Wallet Pill restore
+    // Connected Wallet Pill opens Account Modal or restores address
     $('connected-wallet-pill')?.addEventListener('click', () => {
-      if (connectedAddress && $('org-address')) $('org-address').value = connectedAddress;
+      if (connectedAddress) {
+        openAccountModal();
+      } else {
+        openWalletModal();
+      }
     });
+
+    // Auto-restore active persistent session on boot
+    const existingSession = getAuthSession();
+    if (existingSession && existingSession.address) {
+      applyConnectedWallet(existingSession.address, existingSession.method, existingSession.email);
+    }
 
     // Tag Save Action
     $('btn-save-tag')?.addEventListener('click', () => {

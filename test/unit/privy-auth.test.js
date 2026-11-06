@@ -7,8 +7,17 @@ import {
   connectInjectedWallet,
   initPrivy,
   sendEmailOtp,
-  verifyEmailOtp
+  verifyEmailOtp,
+  saveAuthSession,
+  getAuthSession,
+  clearAuthSession,
+  disconnectWallet,
+  deriveDeterministicEvmAddress,
+  copyToClipboard,
+  SESSION_STORAGE_KEY,
+  SESSION_TTL_MS
 } from '../../console/privy-auth.js';
+import { resolveEvmAddress } from '../../server.js';
 
 test('Unit: authState management transitions correctly', () => {
   clearAuthState();
@@ -90,5 +99,77 @@ test('Unit: verifyEmailOtp sets auth state with embedded wallet address', async 
   assert.equal(user.id, 'usr_123');
   assert.equal(getAuthState().isAuthenticated, true);
   assert.equal(getAuthState().method, 'privy_email');
+});
+
+test('Unit: Session management stores, retrieves, and expires sessions properly', () => {
+  clearAuthSession();
+  assert.equal(getAuthSession(), null);
+
+  const testAddr = '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec';
+  const session = saveAuthSession(testAddr, 'Privy', 'treasury@fund.xyz');
+  assert.equal(session.address, testAddr);
+  assert.equal(session.method, 'Privy');
+  assert.equal(session.email, 'treasury@fund.xyz');
+  assert.equal(session.expiresAt > Date.now(), true);
+
+  const active = getAuthSession();
+  assert.equal(active.address, testAddr);
+
+  clearAuthSession();
+  assert.equal(getAuthSession(), null);
+});
+
+test('Unit: disconnectWallet clears authentication state and active session', () => {
+  setAuthState('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Privy', null, 'cfo@fund.xyz');
+  assert.equal(getAuthState().isAuthenticated, true);
+
+  const res = disconnectWallet();
+  assert.equal(res, true);
+  assert.equal(getAuthState().isAuthenticated, false);
+  assert.equal(getAuthState().address, null);
+  assert.equal(getAuthSession(), null);
+});
+
+test('Unit: deriveDeterministicEvmAddress generates valid 42-character 0x EVM address', () => {
+  const addr1 = deriveDeterministicEvmAddress('did:privy:cmw56hor701f90hjsi03jo7ds');
+  assert.equal(addr1.startsWith('0x'), true);
+  assert.equal(addr1.length, 42);
+
+  // Deterministic check
+  const addr2 = deriveDeterministicEvmAddress('did:privy:cmw56hor701f90hjsi03jo7ds');
+  assert.equal(addr1, addr2);
+});
+
+test('Unit: copyToClipboard handles text gracefully in test environment', async () => {
+  const ok = await copyToClipboard('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec');
+  // In node.js headless test environment where navigator.clipboard & document are undefined, returns false
+  assert.equal(typeof ok, 'boolean');
+
+  const empty = await copyToClipboard('');
+  assert.equal(empty, false);
+});
+
+test('Unit: resolveEvmAddress in server resolves linked wallet and deterministically derives EVM address', () => {
+  // Case 1: user has an embedded 0x wallet
+  const userWithWallet = {
+    id: 'did:privy:cmw1',
+    linkedAccounts: [{ type: 'wallet', chainType: 'ethereum', address: '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec' }]
+  };
+  const resolved1 = resolveEvmAddress(userWithWallet, 'test@veyroq.xyz');
+  assert.equal(resolved1, '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec');
+
+  // Case 2: user has NO embedded wallet (new email user) -> MUST NOT return did:privy:...
+  const userWithoutWallet = {
+    id: 'did:privy:cmw56hor701f90hjsi03jo7ds',
+    linkedAccounts: [{ type: 'email', address: 'treasury@fund.xyz' }]
+  };
+  const resolved2 = resolveEvmAddress(userWithoutWallet, 'treasury@fund.xyz');
+  assert.equal(resolved2.startsWith('0x'), true);
+  assert.equal(resolved2.length, 42);
+  assert.equal(resolved2.includes('did:privy:'), false);
+
+  // Deterministic output
+  const resolvedAgain = resolveEvmAddress(userWithoutWallet, 'treasury@fund.xyz');
+  assert.equal(resolved2, resolvedAgain);
 });
 

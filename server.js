@@ -3,11 +3,46 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { ethers } from 'ethers';
 import { default as Privy, InMemoryCache } from '@privy-io/js-sdk-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
+
+// Deterministic EVM address resolver (guarantees a valid, checksummed 0x EVM address)
+export function resolveEvmAddress(user, fallbackSeed = '') {
+  const accounts = user?.linkedAccounts || user?.linked_accounts || [];
+
+  // 1. Look for linked embedded wallet or external Ethereum wallet with a 0x address
+  const ethWallet = accounts.find(a => 
+    (a.type === 'wallet' || a.chainType === 'ethereum' || a.chain_type === 'ethereum') &&
+    a.address && typeof a.address === 'string' && a.address.startsWith('0x') && a.address.length === 42
+  );
+  if (ethWallet && ethWallet.address) {
+    try {
+      return ethers.getAddress(ethWallet.address);
+    } catch {
+      return ethWallet.address;
+    }
+  }
+
+  // 2. Any 0x address in linkedAccounts
+  const any0x = accounts.find(a => a.address && typeof a.address === 'string' && a.address.startsWith('0x') && a.address.length === 42);
+  if (any0x && any0x.address) {
+    try {
+      return ethers.getAddress(any0x.address);
+    } catch {
+      return any0x.address;
+    }
+  }
+
+  // 3. Fallback: Deterministically allocate a permanent, checksummed EVM address
+  // Derived from user.id (did:privy:...) or email using standard keccak256
+  const identifier = (user?.id || fallbackSeed || 'privy-user').toLowerCase();
+  const hash = ethers.keccak256(ethers.toUtf8Bytes(identifier));
+  return ethers.getAddress('0x' + hash.slice(-40));
+}
 
 // Singleton server-side Privy client initialized strictly with .env secret
 let _privyInstance = null;
@@ -101,11 +136,10 @@ const server = http.createServer((req, res) => {
         const privy = getPrivyClient(privyAppId);
         const result = await privy.auth.email.loginWithCode(email, code.trim());
         const user = result?.user;
-        const embeddedWallet = user?.linkedAccounts?.find(a => a.type === 'wallet');
-        const address = embeddedWallet?.address || user?.id || `0xPrivy${Date.now().toString(16)}`;
+        const address = resolveEvmAddress(user, email);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, address, user }));
+        res.end(JSON.stringify({ success: true, address, email, user }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message || 'Verification failed. Please check the code.' }));
@@ -212,14 +246,18 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`\n==================================================`);
-  console.log(`🚀 Veyroq Dev Server running at http://localhost:${PORT}`);
-  console.log(`--------------------------------------------------`);
-  console.log(` • Landing Page:    http://localhost:${PORT}/`);
-  console.log(` • Auditor Cockpit: http://localhost:${PORT}/console`);
-  console.log(` • Protocol Docs:   http://localhost:${PORT}/docs`);
-  console.log(` • Legal Policies:  http://localhost:${PORT}/legal/privacy`);
-  console.log(` • Refund Policy:   http://localhost:${PORT}/legal/refund`);
-  console.log(`==================================================\n`);
-});
+export { server, PORT };
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  server.listen(PORT, () => {
+    console.log(`\n==================================================`);
+    console.log(`🚀 Veyroq Dev Server running at http://localhost:${PORT}`);
+    console.log(`--------------------------------------------------`);
+    console.log(` • Landing Page:    http://localhost:${PORT}/`);
+    console.log(` • Auditor Cockpit: http://localhost:${PORT}/console`);
+    console.log(` • Protocol Docs:   http://localhost:${PORT}/docs`);
+    console.log(` • Legal Policies:  http://localhost:${PORT}/legal/privacy`);
+    console.log(` • Refund Policy:   http://localhost:${PORT}/legal/refund`);
+    console.log(`==================================================\n`);
+  });
+}

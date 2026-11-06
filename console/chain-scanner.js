@@ -39,6 +39,12 @@ export const NETWORKS = {
   }
 };
 
+export function getExplorerAddressUrl(networkKey, address) {
+  const net = NETWORKS[networkKey] || NETWORKS['Arc'];
+  const base = (net.explorerTxUrl || 'https://explorer.testnet.arc.io/tx/').replace('/tx/', '/address/');
+  return `${base}${address || ''}`;
+}
+
 const TAG_STORAGE_KEY = 'veyroq_tagged_transactions_v1';
 
 // In-memory fallback for test environments without localStorage
