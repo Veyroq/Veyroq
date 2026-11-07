@@ -102,3 +102,35 @@ test('Integration: Server Privy API validates verify-code parameters', async () 
   assert.equal(res.body.success, false);
 });
 
+test('Integration: Server SIWE API generates nonce and verifies signed challenge', async () => {
+  // 1. Fetch Nonce
+  const nonceRes = await fetchUrl('/api/auth/siwe/nonce');
+  assert.equal(nonceRes.statusCode, 200);
+  const nonceData = JSON.parse(nonceRes.body);
+  assert.equal(nonceData.success, true);
+  assert.ok(nonceData.nonce);
+
+  // 2. Reject verification with missing parameters
+  const postData = JSON.stringify({ message: '', signature: '' });
+  const res = await new Promise((resolve, reject) => {
+    const req = http.request(new URL('/api/auth/siwe/verify', BASE_URL), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, r => {
+      let body = '';
+      r.on('data', chunk => body += chunk);
+      r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.success, false);
+});
+
+

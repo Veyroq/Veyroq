@@ -1100,3 +1100,147 @@ body {
   background: var(--burgundy);
   color: #FAF6ED;
 }
+
+/* --------------------------------------------------------------------------
+   8. TREASURY VAULT TWO-TIER CONTROLS & SIWE MODAL (EIP-4361 Guardrails)
+   -------------------------------------------------------------------------- */
+.vault-tier-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding: 4px 0;
+}
+
+.badge-tier {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-tier.unverified {
+  background: var(--cream-surface);
+  color: var(--ink-secondary);
+  border: 1px solid var(--sage-dark);
+}
+
+.badge-tier.verified {
+  background: #EAF4EE;
+  color: #1E6B37;
+  border: 1px solid #B8DEC3;
+}
+
+.btn-verify-tier {
+  background: transparent;
+  border: 1px solid var(--burgundy);
+  color: var(--burgundy);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-verify-tier:hover {
+  background: var(--burgundy);
+  color: #FAF6ED;
+}
+
+.btn-verify-tier.verified {
+  border-color: #1E6B37;
+  color: #1E6B37;
+  cursor: default;
+}
+
+.btn-verify-tier.verified:hover {
+  background: transparent;
+  color: #1E6B37;
+}
+
+.siwe-security-notice {
+  background: var(--cream-surface);
+  border: 1px solid var(--sage-dark);
+  border-left: 3px solid var(--burgundy);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.security-notice-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--burgundy);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.security-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.security-checklist li {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-primary);
+  position: relative;
+  padding-left: 14px;
+}
+
+.security-checklist li::before {
+  content: "•";
+  position: absolute;
+  left: 4px;
+  color: var(--burgundy);
+  font-weight: bold;
+}
+
+.security-checklist code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--cream-light);
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid var(--sage-hairline);
+}
+
+.security-warning-box {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8A201C;
+  background: #FDF2F0;
+  border: 1px solid #F5C6C2;
+  padding: 6px 10px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.siwe-challenge-box {
+  background: var(--cream-surface);
+  border: 1px solid var(--sage-dark);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--ink-primary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 140px;
+  overflow-y: auto;
+  margin: 0;
+}

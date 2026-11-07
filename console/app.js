@@ -152,6 +152,194 @@ if (typeof document !== 'undefined') {
   const getNetName = () => $('network-select')?.value || 'Arc';
   const getNetFullName = () => $('network-select')?.options[$('network-select').selectedIndex]?.text || 'Circle Arc L1';
 
+  // ---------------------------------------------------------------------------
+  // Two-Tier Vault Management (Draft Mode vs EIP-4361 Verified Organization Vault)
+  // ---------------------------------------------------------------------------
+  function getVerifiedVaults() {
+    try {
+      return JSON.parse(localStorage.getItem('veyroq_verified_vaults') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function isVaultVerified(address) {
+    if (!address) return false;
+    const vaults = getVerifiedVaults();
+    return !!vaults[address.toLowerCase()];
+  }
+
+  function setVaultVerified(address, details = {}) {
+    if (!address) return;
+    const vaults = getVerifiedVaults();
+    vaults[address.toLowerCase()] = {
+      verifiedAt: details.verifiedAt || new Date().toISOString(),
+      domain: details.domain || window.location.host,
+      chainId: details.chainId || 5042002
+    };
+    localStorage.setItem('veyroq_verified_vaults', JSON.stringify(vaults));
+    updateVaultTierUI(address);
+  }
+
+  function updateVaultTierUI(address) {
+    const target = address || $('org-address')?.value?.trim();
+    const isVerified = isVaultVerified(target);
+    const badge = $('vault-status-badge');
+    const btn = $('btn-open-verify-modal');
+    const stripStatus = $('merkle-status');
+
+    if (badge) {
+      if (isVerified) {
+        badge.className = 'badge-tier verified';
+        badge.textContent = '✓ Verified Organization Vault';
+      } else {
+        badge.className = 'badge-tier unverified';
+        badge.textContent = 'Draft Mode (Unverified)';
+      }
+    }
+
+    if (btn) {
+      if (isVerified) {
+        btn.className = 'btn-verify-tier verified';
+        btn.textContent = 'Verified ✓';
+        btn.title = 'Vault ownership cryptographically verified via EIP-4361';
+      } else {
+        btn.className = 'btn-verify-tier';
+        btn.textContent = 'Verify Ownership ↗';
+        btn.title = 'Sign EIP-4361 zero-gas challenge to verify vault ownership';
+      }
+    }
+
+    if (stripStatus) {
+      if (isVerified) {
+        stripStatus.innerHTML = '<span class="status-verified-text" style="color:#1E6B37;">✓ Verified Organization Vault</span>';
+      } else {
+        stripStatus.innerHTML = '<span class="status-verified-text">Draft Workspace (Unverified)</span>';
+      }
+    }
+  }
+
+  let currentSiweChallenge = null;
+
+  async function openVerifyModal() {
+    const addr = $('org-address')?.value?.trim();
+    if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
+      alert('Please enter a valid 42-character EVM address (0x...) in Treasury Wallet Address.');
+      $('org-address')?.focus();
+      return;
+    }
+
+    const modal = $('verify-treasury-modal');
+    const preview = $('siwe-challenge-preview');
+    const nonceDisplay = $('siwe-nonce-display');
+    const domainPreview = $('siwe-modal-domain');
+    const feedback = $('siwe-verification-feedback');
+    const signBtn = $('btn-submit-siwe-sign');
+    const signText = $('btn-siwe-sign-text');
+
+    if (modal) modal.style.display = 'flex';
+    if (feedback) feedback.textContent = '';
+    if (signBtn) signBtn.disabled = false;
+    if (signText) signText.textContent = 'Sign Verification Challenge';
+
+    const domain = window.location.host;
+    if (domainPreview) domainPreview.textContent = domain;
+    if (preview) preview.textContent = 'Requesting challenge from server...';
+    if (nonceDisplay) nonceDisplay.textContent = 'Nonce: loading...';
+
+    try {
+      const res = await fetch(`/api/auth/siwe/nonce?address=${encodeURIComponent(addr)}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to fetch challenge');
+
+      const chainId = 5042002;
+      const issuedAt = new Date().toISOString();
+      const expiresAt = data.expiresAt;
+
+      const message = `${data.domain || domain} wants you to sign in with your Ethereum account:\n${addr}\n\nVerify treasury ownership for Veyroq Institutional Cockpit. This action is zero-gas and NEVER approves token transfers or contract allowances.\n\nURI: ${window.location.origin}\nVersion: 1\nChain ID: ${chainId}\nNonce: ${data.nonce}\nIssued At: ${issuedAt}\nExpiration Time: ${expiresAt}`;
+
+      currentSiweChallenge = {
+        message,
+        address: addr,
+        nonce: data.nonce,
+        domain: data.domain || domain,
+        chainId
+      };
+
+      if (preview) preview.textContent = message;
+      if (nonceDisplay) nonceDisplay.textContent = `Nonce: ${data.nonce.slice(0, 8)}...`;
+    } catch (err) {
+      if (preview) preview.textContent = `Error: ${err.message}`;
+      if (feedback) {
+        feedback.style.color = '#8A201C';
+        feedback.textContent = `Failed to generate challenge: ${err.message}`;
+      }
+    }
+  }
+
+  function closeVerifyModal() {
+    if ($('verify-treasury-modal')) $('verify-treasury-modal').style.display = 'none';
+    currentSiweChallenge = null;
+  }
+
+  async function submitSiweSign() {
+    if (!currentSiweChallenge) return;
+    const { message, address } = currentSiweChallenge;
+    const feedback = $('siwe-verification-feedback');
+    const signBtn = $('btn-submit-siwe-sign');
+    const signText = $('btn-siwe-sign-text');
+
+    try {
+      if (signBtn) signBtn.disabled = true;
+      if (signText) signText.textContent = 'Awaiting wallet signature...';
+      if (feedback) {
+        feedback.style.color = 'var(--ink-secondary)';
+        feedback.textContent = 'Confirm on your wallet / Ledger screen: No balance change...';
+      }
+
+      let provider = window.ethereum;
+      if (!provider) {
+        throw new Error('No Web3 wallet extension (Rabby, MetaMask, Safe) detected in browser.');
+      }
+
+      const signature = await provider.request({
+        method: 'personal_sign',
+        params: [message, address]
+      });
+
+      if (signText) signText.textContent = 'Verifying signature on server...';
+
+      const verifyRes = await fetch('/api/auth/siwe/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature, address })
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        throw new Error(verifyData.error || 'Server rejected verification signature.');
+      }
+
+      setVaultVerified(address, verifyData);
+      if (feedback) {
+        feedback.style.color = '#1E6B37';
+        feedback.textContent = '✓ Treasury ownership verified! Replay protection locked.';
+      }
+      if (signText) signText.textContent = 'Verified Successfully ✓';
+
+      setTimeout(() => {
+        closeVerifyModal();
+      }, 1200);
+    } catch (err) {
+      if (signBtn) signBtn.disabled = false;
+      if (signText) signText.textContent = 'Sign Verification Challenge';
+      if (feedback) {
+        feedback.style.color = '#8A201C';
+        feedback.textContent = err.message || 'Signature failed or rejected.';
+      }
+    }
+  }
+
   function applyConnectedWallet(address, label, email = null) {
     if (!address) return;
     connectedAddress = address;
@@ -187,14 +375,18 @@ if (typeof document !== 'undefined') {
     if ($('account-modal-network')) $('account-modal-network').textContent = getNetFullName();
     if ($('link-account-explorer')) $('link-account-explorer').href = getExplorerAddressUrl(getNetName(), address);
 
-    const emailRow = $('account-modal-email-row');
-    const emailVal = $('account-modal-email');
-    if (email && emailRow && emailVal) {
-      emailVal.textContent = email;
-      emailRow.style.display = 'flex';
-    } else if (emailRow) {
-      emailRow.style.display = 'none';
+    if ($('account-modal-email-row')) {
+      const emailRow = $('account-modal-email-row');
+      const emailVal = $('account-modal-email');
+      if (email && emailRow && emailVal) {
+        emailVal.textContent = email;
+        emailRow.style.display = 'flex';
+      } else if (emailRow) {
+        emailRow.style.display = 'none';
+      }
     }
+
+    updateVaultTierUI(address);
 
     if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
   }
@@ -226,6 +418,7 @@ if (typeof document !== 'undefined') {
     if ($('privy-auth-status')) $('privy-auth-status').textContent = '';
 
     if ($('account-modal')) $('account-modal').style.display = 'none';
+    updateVaultTierUI();
   }
 
   function openWalletModal() {
@@ -246,6 +439,7 @@ if (typeof document !== 'undefined') {
 
   function closeAccountModal() {
     if ($('account-modal')) $('account-modal').style.display = 'none';
+    updateVaultTierUI();
   }
 
   function setScope(scope) {
@@ -509,6 +703,13 @@ if (typeof document !== 'undefined') {
     if (existingSession && existingSession.address) {
       applyConnectedWallet(existingSession.address, existingSession.method, existingSession.email);
     }
+
+    // Two-Tier Treasury Verification Events
+    $('org-address')?.addEventListener('input', () => updateVaultTierUI());
+    $('btn-open-verify-modal')?.addEventListener('click', openVerifyModal);
+    $('btn-close-verify-modal')?.addEventListener('click', closeVerifyModal);
+    $('btn-submit-siwe-sign')?.addEventListener('click', submitSiweSign);
+    updateVaultTierUI();
 
     // Tag Save Action
     $('btn-save-tag')?.addEventListener('click', () => {

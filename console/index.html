@@ -171,6 +171,11 @@
               </button>
             </div>
             <input type="text" class="field-control font-mono" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
+            
+            <div class="vault-tier-row" id="vault-tier-row">
+              <span class="badge-tier unverified" id="vault-status-badge">Draft Mode (Unverified)</span>
+              <button type="button" class="btn-verify-tier" id="btn-open-verify-modal">Verify Ownership ↗</button>
+            </div>
           </div>
 
           <div class="field-group">
@@ -463,6 +468,57 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- 5B. TREASURY OWNERSHIP VERIFICATION MODAL (EIP-4361 SIWE) -->
+  <div class="modal-overlay" id="verify-treasury-modal" style="display: none;">
+    <div class="modal-card" style="width: 520px; max-width: 95vw;">
+      <button class="btn-close" id="btn-close-verify-modal" aria-label="Close modal">&times;</button>
+
+      <div class="modal-header-brand" style="margin-bottom: 12px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:24px; height:24px;">
+        <span class="modal-title">Verify Treasury Vault</span>
+        <span class="session-badge" style="margin-left: 8px;">EIP-4361 SIWE</span>
+      </div>
+
+      <p class="modal-desc" style="font-size: 13px; margin-bottom: 14px; line-height: 1.5; color: var(--ink-secondary);">
+        Cryptographic proof of vault custody. Zero-gas, non-custodial, and strictly isolated from assets.
+      </p>
+
+      <!-- Institutional Pre-Sign Safety Notice based on security.md -->
+      <div class="siwe-security-notice">
+        <div class="security-notice-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Institutional Pre-Sign Safety Checks</span>
+        </div>
+        <ul class="security-checklist">
+          <li><strong>Domain Binding:</strong> Confirm wallet displays domain <code id="siwe-modal-domain">localhost:3000</code>.</li>
+          <li><strong>Zero Asset Transfer:</strong> Confirm Rabby or Ledger displays <em>"No balance change"</em>.</li>
+          <li><strong>Replay Protection:</strong> Single-use challenge token expires in 15 minutes.</li>
+        </ul>
+        <div class="security-warning-box">
+          Reject immediately if your wallet prompts for token approval, Permit, or contract execution.
+        </div>
+      </div>
+
+      <!-- Raw SIWE Challenge Preview -->
+      <div style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary);">EIP-4361 Challenge Message</span>
+          <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-secondary);" id="siwe-nonce-display">Nonce: loading...</span>
+        </div>
+        <pre class="siwe-challenge-box font-mono" id="siwe-challenge-preview">Fetching challenge from server...</pre>
+      </div>
+
+      <!-- Action Button Row -->
+      <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-primary" id="btn-submit-siwe-sign" type="button" style="width: 100%; justify-content: center; padding: 10px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          <span id="btn-siwe-sign-text">Sign Verification Challenge</span>
+        </button>
+        <div id="siwe-verification-feedback" style="font-size: 12px; text-align: center; min-height: 18px; font-family: var(--font-body); font-weight: 500;"></div>
+      </div>
     </div>
   </div>
 
