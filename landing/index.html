@@ -34,30 +34,32 @@
 </head>
 <body>
 
-  <!-- Navigation -->
-  <header class="navbar" id="main-nav">
-    <div class="nav-container">
-      <a href="/" class="brand-logo" id="logo-link">
-        <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
-        <span class="logo-text">Veyroq</span>
-      </a>
-
-      <nav class="nav-links">
-        <a href="#features" class="nav-link">Pillars</a>
-        <a href="#slip" class="nav-link">The Audit Slip</a>
-        <a href="#workflow" class="nav-link">Workflow</a>
-        <a href="#pricing" class="nav-link">Licensing</a>
-        <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
-      </nav>
-
-      <div class="nav-actions">
-        <a href="/console" class="btn btn-primary" id="launch-console-btn" target="_blank" rel="noopener noreferrer">
-          <span>Launch Cockpit</span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  <!-- Navigation (Floating Pill matching Cockpit) -->
+  <div class="navbar-wrapper">
+    <header class="navbar" id="main-nav">
+      <div class="nav-container">
+        <a href="/" class="brand-logo" id="logo-link">
+          <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
+          <span class="logo-text">Veyroq</span>
         </a>
+
+        <nav class="nav-links">
+          <a href="#features" class="nav-link">Pillars</a>
+          <a href="#slip" class="nav-link">The Audit Slip</a>
+          <a href="#workflow" class="nav-link">Workflow</a>
+          <a href="#pricing" class="nav-link">Licensing</a>
+          <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a href="/console" class="btn btn-primary" id="launch-console-btn" target="_blank" rel="noopener noreferrer">
+            <span>Launch Cockpit</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
+  </div>
 
   <!-- Hero Section -->
   <section class="hero-section" id="hero">
@@ -91,6 +93,61 @@
     </div>
 
     <div class="container hero-slip-wrap">
+      <!-- Signature Cockpit Unified Metric Strip (Enterprise Audit Overview) -->
+      <div class="landing-metric-strip-container">
+        <div class="landing-strip-label">Live Enterprise Cockpit Telemetry</div>
+        <div class="unified-metric-strip">
+          <!-- Col 1: Reconciled Volume -->
+          <div class="metric-cell">
+            <div>
+              <div class="cell-title">Reconciled treasury volume</div>
+              <div class="cell-stat-big tabular-nums">$14,820,500.00 <small class="cell-unit">USDC</small></div>
+            </div>
+            <div class="cell-meta-row">
+              <span class="status-verified-text">✓ 100% on-chain balanced</span>
+            </div>
+          </div>
+
+          <!-- Col 2: Verified Items -->
+          <div class="metric-cell">
+            <div>
+              <div class="cell-title">Verified line items</div>
+              <div class="cell-stat-big tabular-nums" style="color: var(--ink-primary);">450 <small class="cell-unit">/ 450 classified</small></div>
+            </div>
+            <div class="cell-meta-row">
+              <span>Zero unclassified leaves</span>
+            </div>
+          </div>
+
+          <!-- Col 3: Treasury Identity -->
+          <div class="metric-cell">
+            <div>
+              <div class="cell-title">Treasury vault identity</div>
+              <div class="cell-vault-name">Acme Foundation Vault</div>
+              <div class="cell-vault-addr">0x71C8...22Ec</div>
+            </div>
+            <div class="cell-meta-row">
+              <span class="badge-vault-verified">✓ EIP-4361 Verified Vault</span>
+            </div>
+          </div>
+
+          <!-- Col 4: Statutory Compliance -->
+          <div class="metric-cell">
+            <div>
+              <div class="cell-title">Statutory compliance</div>
+              <div class="cell-compliance-tag">GAAP Proof Active</div>
+              <div class="cell-compliance-sub">Direct sync for QuickBooks &amp; Xero</div>
+            </div>
+            <div class="cell-action-row">
+              <a href="/console" class="btn-strip-cta" target="_blank" rel="noopener noreferrer">
+                <span>Open in Cockpit</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- The Signature Postcard / Audit Slip Centerpiece -->
       <div class="audit-slip-container" id="slip">
         <div class="audit-slip">

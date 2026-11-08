@@ -33,37 +33,39 @@
 </head>
 <body>
 
-  <!-- Top Global Header -->
-  <header class="docs-topbar">
-    <div class="topbar-left">
-      <button class="mobile-toggle-btn" id="mobile-sidebar-toggle" aria-label="Toggle Navigation">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
-      <a href="/" class="topbar-brand">
-        <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
-        <span class="brand-title">Veyroq</span>
-        <span class="badge-tag">Docs</span>
-      </a>
-    </div>
+  <!-- Top Global Header (Floating Pill matching Cockpit) -->
+  <div class="docs-topbar-wrapper">
+    <header class="docs-topbar">
+      <div class="topbar-left">
+        <button class="mobile-toggle-btn" id="mobile-sidebar-toggle" aria-label="Toggle Navigation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <a href="/" class="topbar-brand">
+          <img src="/assets/veyroq-mark.svg" alt="" class="brand-mark-img" width="32" height="26">
+          <span class="brand-title">Veyroq</span>
+          <span class="badge-tag">Docs</span>
+        </a>
+      </div>
 
-    <!-- Center Search Bar (Command Palette Trigger) -->
-    <div class="topbar-search">
-      <button class="search-trigger-btn" id="search-trigger-btn" aria-label="Search documentation">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <span class="search-placeholder">Search docs, guides, APIs...</span>
-        <kbd class="search-shortcut">⌘K</kbd>
-      </button>
-    </div>
+      <!-- Center Search Bar (Command Palette Trigger) -->
+      <div class="topbar-search">
+        <button class="search-trigger-btn" id="search-trigger-btn" aria-label="Search documentation">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span class="search-placeholder">Search docs, guides, APIs...</span>
+          <kbd class="search-shortcut">⌘K</kbd>
+        </button>
+      </div>
 
-    <div class="topbar-right">
-      <a href="/" class="topbar-link" target="_blank" rel="noopener noreferrer">Landing ↗</a>
-      <a href="/legal/privacy" class="topbar-link" target="_blank" rel="noopener noreferrer">Legal ↗</a>
-      <a href="/console" class="btn-cockpit-top" target="_blank" rel="noopener noreferrer">
-        <span>Auditor Cockpit</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-    </div>
-  </header>
+      <div class="topbar-right">
+        <a href="/" class="topbar-link" target="_blank" rel="noopener noreferrer">Landing ↗</a>
+        <a href="/legal/privacy" class="topbar-link" target="_blank" rel="noopener noreferrer">Legal ↗</a>
+        <a href="/console" class="btn-cockpit-top" target="_blank" rel="noopener noreferrer">
+          <span>Auditor Cockpit</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </header>
+  </div>
 
   <!-- 3-Column Documentation Container -->
   <div class="docs-container">
@@ -158,6 +160,58 @@
           <p class="lead-text">
             Veyroq is the chain-agnostic selective disclosure, audit, and tax-compliance infrastructure layer built for <strong>institutional digital asset treasuries</strong> across EVM and confidential settlement networks.
           </p>
+
+          <!-- Cockpit Metric Strip Reference Component -->
+          <div class="docs-hero-strip-wrapper" style="margin: 28px 0 32px 0;">
+            <div class="docs-section-label" style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary); margin-bottom: 8px;">
+              Live Auditor Cockpit Interface Architecture
+            </div>
+            <div class="unified-metric-strip" style="background: var(--cream-beige); border: 1px solid var(--sage-dark); border-radius: 12px; display: grid; grid-template-columns: 1.15fr 1fr 1fr 1.15fr; min-height: 96px; box-shadow: 0 2px 8px rgba(21, 23, 22, 0.04);">
+              <!-- Cell 1 -->
+              <div class="metric-cell" style="padding: 16px 20px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--sage-dark);">
+                <div>
+                  <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary); margin-bottom: 3px;">Reconciled treasury volume</div>
+                  <div style="font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--burgundy); font-variant-numeric: tabular-nums;">$14,820,500.00 <small style="font-size: 13px; font-weight: 500; color: var(--ink-secondary);">USDC</small></div>
+                </div>
+                <div style="font-size: 11.5px; font-weight: 600; color: #1E6B37; margin-top: 4px;">✓ 100% on-chain balanced</div>
+              </div>
+
+              <!-- Cell 2 -->
+              <div class="metric-cell" style="padding: 16px 20px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--sage-dark);">
+                <div>
+                  <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary); margin-bottom: 3px;">Verified line items</div>
+                  <div style="font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--ink-primary); font-variant-numeric: tabular-nums;">450 <small style="font-size: 13px; font-weight: 500; color: var(--ink-secondary);">/ 450 classified</small></div>
+                </div>
+                <div style="font-size: 11.5px; color: var(--ink-secondary); margin-top: 4px;">Zero unclassified leaves</div>
+              </div>
+
+              <!-- Cell 3 -->
+              <div class="metric-cell" style="padding: 16px 20px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--sage-dark);">
+                <div>
+                  <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary); margin-bottom: 3px;">Treasury vault identity</div>
+                  <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--ink-primary);">Acme Foundation Vault</div>
+                  <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-secondary); margin-top: 2px;">0x71C8...22Ec</div>
+                </div>
+                <div style="margin-top: 4px;">
+                  <span style="font-size: 10px; font-weight: 600; color: #1E6B37; background: #EAF4EE; border: 1px solid #B8DEC3; padding: 2px 7px; border-radius: 4px; display: inline-block;">✓ EIP-4361 Verified Vault</span>
+                </div>
+              </div>
+
+              <!-- Cell 4 -->
+              <div class="metric-cell" style="padding: 16px 20px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary); margin-bottom: 3px;">Statutory compliance</div>
+                  <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--burgundy);">GAAP Proof Active</div>
+                  <div style="font-size: 12px; color: var(--ink-secondary); margin-top: 2px;">Direct sync for QuickBooks &amp; Xero</div>
+                </div>
+                <div style="margin-top: 6px;">
+                  <a href="/console" target="_blank" rel="noopener noreferrer" style="font-size: 11.5px; font-weight: 700; color: var(--burgundy); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    <span>Open in Cockpit</span> →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="callout callout-info">
             <div class="callout-icon">
