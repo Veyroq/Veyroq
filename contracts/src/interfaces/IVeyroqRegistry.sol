@@ -7,10 +7,17 @@ pragma solidity ^0.8.24;
  * Anchors cryptographic Merkle completeness proofs and manages scoped auditor authorizations.
  */
 interface IVeyroqRegistry {
+    enum PlanTier { Free, Enterprise, Partner }
+
     struct AuditorPermission {
         bool isAuthorized;
         uint256 validUntil;
         bytes32 scopeHash; // Hash of the agreed audit engagement scope
+    }
+
+    struct Subscription {
+        PlanTier tier;
+        uint256 expiresAt;
     }
 
     struct AuditCommitment {
@@ -49,8 +56,17 @@ interface IVeyroqRegistry {
     event TreasuryUpdated(address indexed newTreasury);
     event FeeUpdated(uint256 newFee);
     event USDCTokenUpdated(address indexed newUsdc);
+    event Subscribed(
+        address indexed organization,
+        PlanTier tier,
+        uint256 expiresAt,
+        uint256 feePaid
+    );
+    event TierFeesUpdated(uint256 newEnterpriseFee, uint256 newPartnerFee);
 
     // Core Functions
+    function subscribe(PlanTier tier, uint256 months) external payable;
+    function getSubscription(address organization) external view returns (PlanTier tier, uint256 expiresAt, bool isActive);
     function authorizeAuditor(address auditor, uint256 validUntil, bytes32 scopeHash) external;
     function revokeAuditor(address auditor) external;
     function commitAuditProof(

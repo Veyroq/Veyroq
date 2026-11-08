@@ -29,6 +29,8 @@ contract DeployVeyroqRegistry is Script {
         address usdcToken = vm.envOr("USDC_TOKEN", address(0));
         address treasury = vm.envAddress("TREASURY");
         uint256 protocolFee = vm.envOr("PROTOCOL_FEE", uint256(500_000)); // Default: $0.50 USDC
+        uint256 enterpriseFee = vm.envOr("ENTERPRISE_FEE", uint256(1_000_000)); // Default testnet: 1 USDC
+        uint256 partnerFee = vm.envOr("PARTNER_FEE", uint256(2_000_000));       // Default testnet: 2 USDC
 
         require(treasury != address(0), "Deploy: TREASURY env var must be set");
 
@@ -36,6 +38,8 @@ contract DeployVeyroqRegistry is Script {
         console.log("  USDC Token:", usdcToken);
         console.log("  Treasury:", treasury);
         console.log("  Protocol Fee:", protocolFee);
+        console.log("  Enterprise Fee:", enterpriseFee);
+        console.log("  Partner Fee:", partnerFee);
         console.log("  Deployer:", msg.sender);
         console.log("========================================");
 
@@ -44,7 +48,9 @@ contract DeployVeyroqRegistry is Script {
         VeyroqRegistry registry = new VeyroqRegistry(
             usdcToken,
             treasury,
-            protocolFee
+            protocolFee,
+            enterpriseFee,
+            partnerFee
         );
 
         console.log("VeyroqRegistry deployed at:", address(registry));

@@ -16,18 +16,20 @@ contract VeyroqRegistryTest is Test {
     address public unauthorized = address(0x99);
 
     uint256 public constant PROTOCOL_FEE = 25 * 10 ** 6; // 25 USDC (6 decimals)
+    uint256 public constant ENTERPRISE_FEE = 499 * 10 ** 6; // $499 USDC (6 decimals)
+    uint256 public constant PARTNER_FEE = 1499 * 10 ** 6; // $1,499 USDC (6 decimals)
 
     function setUp() public {
         vm.warp(1_700_000_000); // Set realistic timestamp to prevent underflow
 
         vm.startPrank(owner);
         usdc = new MockUSDC();
-        registry = new VeyroqRegistry(address(usdc), treasury, PROTOCOL_FEE);
+        registry = new VeyroqRegistry(address(usdc), treasury, PROTOCOL_FEE, ENTERPRISE_FEE, PARTNER_FEE);
         vm.stopPrank();
 
-        // Mint USDC to test parties
-        usdc.mint(organization, 1_000 * 10 ** 6);
-        usdc.mint(auditor, 1_000 * 10 ** 6);
+        // Mint USDC to test parties (enough for multi-month enterprise subscriptions)
+        usdc.mint(organization, 50_000 * 10 ** 6);
+        usdc.mint(auditor, 50_000 * 10 ** 6);
 
         // Approve registry
         vm.prank(organization);
@@ -211,7 +213,7 @@ contract VeyroqRegistryTest is Test {
         // Deploy registry configured for native gas USDC (usdcToken = address(0))
         uint256 nativeFee = 1 ether / 100; // 0.01 native gas
         vm.prank(owner);
-        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
         uint256 treasuryBefore = treasury.balance;
@@ -233,7 +235,7 @@ contract VeyroqRegistryTest is Test {
     function test_RevertIf_IncorrectNativeFeePaid() public {
         uint256 nativeFee = 1 ether / 100;
         vm.prank(owner);
-        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
 
@@ -366,5 +368,111 @@ contract VeyroqRegistryTest is Test {
 
         bool verified = registry.verifyTransactionInclusion(organization, proofId, leaf1, proof);
         assertTrue(verified);
+    }
+
+    // ─── Subscription Engine Tests ──────────────────────────────────────────
+
+    function test_Subscribe_Enterprise_USDC() public {
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 enterpriseMonthly = registry.enterpriseFee(); // 1 USDC default
+
+        vm.prank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 3);
+
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(expiresAt, block.timestamp + (3 * 30 days));
+        assertTrue(isActive);
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + (enterpriseMonthly * 3));
+    }
+
+    function test_Subscribe_Partner_USDC() public {
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 partnerMonthly = registry.partnerFee(); // 2 USDC default
+
+        vm.prank(auditor);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Partner, 1);
+
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(auditor);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Partner));
+        assertEq(expiresAt, block.timestamp + (1 * 30 days));
+        assertTrue(isActive);
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + partnerMonthly);
+    }
+
+    function test_Subscribe_ExtendExistingDuration() public {
+        vm.startPrank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+        uint256 firstExpiry = block.timestamp + 30 days;
+
+        // Extend by 2 more months
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 2);
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        vm.stopPrank();
+
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(expiresAt, firstExpiry + (2 * 30 days));
+        assertTrue(isActive);
+    }
+
+    function test_Subscribe_NativeFee() public {
+        // Deploy registry with address(0) for usdcToken (native coin payments)
+        vm.prank(owner);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, 0, 0.1 ether, 0.2 ether);
+
+        address subscriber = address(0x444);
+        vm.deal(subscriber, 10 ether);
+
+        uint256 fee = nativeRegistry.enterpriseFee() * 2; // 2 months
+        vm.prank(subscriber);
+        nativeRegistry.subscribe{value: fee}(IVeyroqRegistry.PlanTier.Enterprise, 2);
+
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = nativeRegistry.getSubscription(subscriber);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(expiresAt, block.timestamp + 60 days);
+        assertTrue(isActive);
+    }
+
+    function test_RevertIf_Subscribe_ZeroMonths() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Invalid duration");
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 0);
+    }
+
+    function test_RevertIf_Subscribe_Exceeds12Months() public {
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Invalid duration");
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 13);
+    }
+
+    function test_RevertIf_Subscribe_ValueSentForERC20() public {
+        vm.deal(organization, 1 ether);
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Value not accepted for ERC20 fee");
+        registry.subscribe{value: 0.1 ether}(IVeyroqRegistry.PlanTier.Enterprise, 1);
+    }
+
+    function test_Admin_SetTierFees() public {
+        vm.prank(owner);
+        registry.setTierFees(499 * 10 ** 6, 1499 * 10 ** 6);
+
+        assertEq(registry.enterpriseFee(), 499 * 10 ** 6);
+        assertEq(registry.partnerFee(), 1499 * 10 ** 6);
+
+        // Unauthorized caller reverts
+        vm.prank(unauthorized);
+        vm.expectRevert();
+        registry.setTierFees(1, 2);
+    }
+
+    function testFuzz_SubscriptionExpiry(uint8 months) public {
+        vm.assume(months >= 1 && months <= 12);
+
+        vm.prank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, months);
+
+        (, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        assertEq(expiresAt, block.timestamp + (uint256(months) * 30 days));
+        assertTrue(isActive);
     }
 }

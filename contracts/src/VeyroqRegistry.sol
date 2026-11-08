@@ -24,6 +24,13 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     // Protocol registration fee in native units (or USDC 6-decimal units)
     uint256 public protocolFee;
 
+    // On-chain subscription tier fees (USDC 6-decimal units or native)
+    uint256 public enterpriseFee;
+    uint256 public partnerFee;
+
+    // Mapping: Organization => Active Subscription
+    mapping(address => Subscription) public subscriptions;
+
     // Mapping: Organization => (Auditor => Permission)
     mapping(address => mapping(address => AuditorPermission)) public auditorPermissions;
 
@@ -33,17 +40,81 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     /**
      * @param _usdcToken Address of the ERC-20 USDC contract on Arc (or address(0) for native msg.value)
      * @param _treasury Treasury address collecting Veyroq protocol audit anchoring fees
-     * @param _initialFee Initial protocol anchoring fee
+     * @param _protocolFee Initial protocol anchoring fee (per committed proof)
+     * @param _enterpriseFee Initial monthly subscription fee for Enterprise Treasury tier
+     * @param _partnerFee Initial monthly subscription fee for Audit Firm Partner tier
      */
     constructor(
         address _usdcToken,
         address _treasury,
-        uint256 _initialFee
+        uint256 _protocolFee,
+        uint256 _enterpriseFee,
+        uint256 _partnerFee
     ) Ownable(msg.sender) {
         require(_treasury != address(0), "VeyroqRegistry: Invalid treasury");
         usdcToken = IERC20(_usdcToken);
         treasury = _treasury;
-        protocolFee = _initialFee;
+        protocolFee = _protocolFee;
+        enterpriseFee = _enterpriseFee;
+        partnerFee = _partnerFee;
+    }
+
+    /**
+     * @notice Purchases or extends an on-chain tier subscription for an organization.
+     * Strictly enforces Checks-Effects-Interactions (CEI).
+     * @param tier PlanTier.Enterprise or PlanTier.Partner
+     * @param months Duration in 30-day billing intervals (1 to 12 months)
+     */
+    function subscribe(
+        PlanTier tier,
+        uint256 months
+    ) external payable override nonReentrant {
+        // 1. CHECKS
+        require(tier == PlanTier.Enterprise || tier == PlanTier.Partner, "VeyroqRegistry: Invalid tier");
+        require(months > 0 && months <= 12, "VeyroqRegistry: Invalid duration");
+
+        uint256 monthlyFee = (tier == PlanTier.Enterprise) ? enterpriseFee : partnerFee;
+        uint256 totalFee = monthlyFee * months;
+
+        // Payment validation
+        if (address(usdcToken) != address(0)) {
+            require(msg.value == 0, "VeyroqRegistry: Value not accepted for ERC20 fee");
+        } else {
+            require(msg.value == totalFee, "VeyroqRegistry: Incorrect native fee paid");
+        }
+
+        // 2. EFFECTS (Update state prior to external token transfers)
+        uint256 currentExpiry = subscriptions[msg.sender].expiresAt;
+        uint256 startPoint = (currentExpiry > block.timestamp) ? currentExpiry : block.timestamp;
+        uint256 newExpiry = startPoint + (months * 30 days);
+
+        subscriptions[msg.sender] = Subscription({
+            tier: tier,
+            expiresAt: newExpiry
+        });
+
+        emit Subscribed(msg.sender, tier, newExpiry, totalFee);
+
+        // 3. INTERACTIONS (Token transfers or native fee forwarding)
+        if (totalFee > 0) {
+            if (address(usdcToken) != address(0)) {
+                usdcToken.safeTransferFrom(msg.sender, treasury, totalFee);
+            } else {
+                (bool success, ) = treasury.call{value: totalFee}("");
+                require(success, "VeyroqRegistry: Fee transfer failed");
+            }
+        }
+    }
+
+    /**
+     * @notice Queries the active subscription status for an organization.
+     */
+    function getSubscription(
+        address organization
+    ) external view override returns (PlanTier tier, uint256 expiresAt, bool isActive) {
+        Subscription memory sub = subscriptions[organization];
+        bool active = sub.expiresAt >= block.timestamp;
+        return (active ? sub.tier : PlanTier.Free, sub.expiresAt, active);
     }
 
     /**
@@ -248,6 +319,12 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     function setProtocolFee(uint256 newFee) external onlyOwner {
         protocolFee = newFee;
         emit FeeUpdated(newFee);
+    }
+
+    function setTierFees(uint256 newEnterpriseFee, uint256 newPartnerFee) external onlyOwner {
+        enterpriseFee = newEnterpriseFee;
+        partnerFee = newPartnerFee;
+        emit TierFeesUpdated(newEnterpriseFee, newPartnerFee);
     }
 
     function setTreasury(address newTreasury) external onlyOwner {
