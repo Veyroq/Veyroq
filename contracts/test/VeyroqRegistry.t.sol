@@ -15,9 +15,9 @@ contract VeyroqRegistryTest is Test {
     address public auditor = address(0x20);
     address public unauthorized = address(0x99);
 
-    uint256 public constant PROTOCOL_FEE = 25 * 10 ** 6; // 25 USDC (6 decimals)
-    uint256 public constant ENTERPRISE_FEE = 499 * 10 ** 6; // $499 USDC (6 decimals)
-    uint256 public constant PARTNER_FEE = 1499 * 10 ** 6; // $1,499 USDC (6 decimals)
+    uint256 public constant PROTOCOL_FEE = 5 * 10 ** 6; // 5 USDC (6 decimals)
+    uint256 public constant ENTERPRISE_FEE = 50 * 10 ** 6; // $50 USDC (6 decimals)
+    uint256 public constant PARTNER_FEE = 150 * 10 ** 6; // $150 USDC (6 decimals)
 
     function setUp() public {
         vm.warp(1_700_000_000); // Set realistic timestamp to prevent underflow
