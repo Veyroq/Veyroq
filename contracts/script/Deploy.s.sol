@@ -26,6 +26,7 @@ contract DeployVeyroqRegistry is Script {
 
     function run() external {
         // Read deployment parameters from environment variables
+        uint256 deployerKey = vm.envOr("DEPLOYER_KEY", uint256(0));
         address usdcToken = vm.envOr("USDC_TOKEN", address(0));
         address treasury = vm.envAddress("TREASURY");
         uint256 protocolFee = vm.envOr("PROTOCOL_FEE", uint256(5_000_000)); // Default testnet: $5 USDC
@@ -40,10 +41,13 @@ contract DeployVeyroqRegistry is Script {
         console.log("  Protocol Fee:", protocolFee);
         console.log("  Enterprise Fee:", enterpriseFee);
         console.log("  Partner Fee:", partnerFee);
-        console.log("  Deployer:", msg.sender);
         console.log("========================================");
 
-        vm.startBroadcast();
+        if (deployerKey != 0) {
+            vm.startBroadcast(deployerKey);
+        } else {
+            vm.startBroadcast();
+        }
 
         VeyroqRegistry registry = new VeyroqRegistry(
             usdcToken,

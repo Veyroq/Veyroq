@@ -1,4 +1,7 @@
 # Veyroq Contracts Makefile
+-include .env
+export
+
 FORGE := /home/binlawal/.foundry/bin/forge
 CAST  := /home/binlawal/.foundry/bin/cast
 
