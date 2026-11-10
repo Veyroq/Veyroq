@@ -131,6 +131,18 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         require(auditor != address(0), "VeyroqRegistry: Invalid auditor");
         require(validUntil > block.timestamp, "VeyroqRegistry: Expiry in past");
 
+        Subscription memory orgSub = subscriptions[msg.sender];
+        require(
+            (orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt >= block.timestamp,
+            "VeyroqRegistry: Enterprise or Partner subscription required"
+        );
+
+        Subscription memory auditorSub = subscriptions[auditor];
+        require(
+            auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt >= block.timestamp,
+            "VeyroqRegistry: Auditor must have active Partner subscription"
+        );
+
         auditorPermissions[msg.sender][auditor] = AuditorPermission({
             isAuthorized: true,
             validUntil: validUntil,
@@ -170,12 +182,24 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         require(periodEnd >= periodStart, "VeyroqRegistry: Invalid period range");
         require(transactionCount > 0, "VeyroqRegistry: Zero transactions");
 
-        // Submitter authorization: must be organization itself or an authorized auditor
-        if (msg.sender != organization) {
+        // Submitter authorization & strict subscription tier enforcement
+        if (msg.sender == organization) {
+            Subscription memory orgSub = subscriptions[organization];
+            require(
+                (orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt >= block.timestamp,
+                "VeyroqRegistry: Enterprise or Partner subscription required"
+            );
+        } else {
             AuditorPermission memory perm = auditorPermissions[organization][msg.sender];
             require(
                 perm.isAuthorized && perm.validUntil >= block.timestamp,
                 "VeyroqRegistry: Submitter unauthorized"
+            );
+
+            Subscription memory auditorSub = subscriptions[msg.sender];
+            require(
+                auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt >= block.timestamp,
+                "VeyroqRegistry: Submitting firm requires active Partner subscription"
             );
         }
 

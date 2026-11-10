@@ -37,6 +37,13 @@ contract VeyroqRegistryTest is Test {
 
         vm.prank(auditor);
         usdc.approve(address(registry), type(uint256).max);
+
+        // Activate baseline Enterprise & Partner subscriptions for core tests
+        vm.prank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+
+        vm.prank(auditor);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Partner, 1);
     }
 
     function test_AuthorizeAuditor() public {
@@ -216,6 +223,9 @@ contract VeyroqRegistryTest is Test {
         VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
+        vm.prank(organization);
+        nativeRegistry.subscribe{value: 0.1 ether}(IVeyroqRegistry.PlanTier.Enterprise, 1);
+
         uint256 treasuryBefore = treasury.balance;
 
         vm.prank(organization);
@@ -238,6 +248,8 @@ contract VeyroqRegistryTest is Test {
         VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
+        vm.prank(organization);
+        nativeRegistry.subscribe{value: 0.1 ether}(IVeyroqRegistry.PlanTier.Enterprise, 1);
 
         // Underpayment
         vm.prank(organization);
@@ -373,13 +385,18 @@ contract VeyroqRegistryTest is Test {
     // ─── Subscription Engine Tests ──────────────────────────────────────────
 
     function test_Subscribe_Enterprise_USDC() public {
-        uint256 treasuryBefore = usdc.balanceOf(treasury);
-        uint256 enterpriseMonthly = registry.enterpriseFee(); // 1 USDC default
+        address newOrg = address(0x30);
+        usdc.mint(newOrg, 10_000 * 10 ** 6);
+        vm.prank(newOrg);
+        usdc.approve(address(registry), type(uint256).max);
 
-        vm.prank(organization);
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 enterpriseMonthly = registry.enterpriseFee();
+
+        vm.prank(newOrg);
         registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 3);
 
-        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newOrg);
         assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
         assertEq(expiresAt, block.timestamp + (3 * 30 days));
         assertTrue(isActive);
@@ -387,13 +404,18 @@ contract VeyroqRegistryTest is Test {
     }
 
     function test_Subscribe_Partner_USDC() public {
-        uint256 treasuryBefore = usdc.balanceOf(treasury);
-        uint256 partnerMonthly = registry.partnerFee(); // 2 USDC default
+        address newFirm = address(0x40);
+        usdc.mint(newFirm, 10_000 * 10 ** 6);
+        vm.prank(newFirm);
+        usdc.approve(address(registry), type(uint256).max);
 
-        vm.prank(auditor);
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 partnerMonthly = registry.partnerFee();
+
+        vm.prank(newFirm);
         registry.subscribe(IVeyroqRegistry.PlanTier.Partner, 1);
 
-        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(auditor);
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newFirm);
         assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Partner));
         assertEq(expiresAt, block.timestamp + (1 * 30 days));
         assertTrue(isActive);
@@ -401,13 +423,17 @@ contract VeyroqRegistryTest is Test {
     }
 
     function test_Subscribe_ExtendExistingDuration() public {
-        vm.startPrank(organization);
+        address newOrg = address(0x31);
+        usdc.mint(newOrg, 10_000 * 10 ** 6);
+        vm.startPrank(newOrg);
+        usdc.approve(address(registry), type(uint256).max);
+
         registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
         uint256 firstExpiry = block.timestamp + 30 days;
 
         // Extend by 2 more months
         registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 2);
-        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newOrg);
         vm.stopPrank();
 
         assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
@@ -452,6 +478,48 @@ contract VeyroqRegistryTest is Test {
         registry.subscribe{value: 0.1 ether}(IVeyroqRegistry.PlanTier.Enterprise, 1);
     }
 
+    function test_RevertIf_FreeTierCommitsProof() public {
+        address freeOrg = address(0x50);
+        usdc.mint(freeOrg, 1_000 * 10 ** 6);
+        vm.startPrank(freeOrg);
+        usdc.approve(address(registry), type(uint256).max);
+
+        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        registry.commitAuditProof(freeOrg, keccak256("ROOT"), 100, 200, 5, bytes32(0));
+        vm.stopPrank();
+    }
+
+    function test_RevertIf_FreeTierAuthorizesAuditor() public {
+        address freeOrg = address(0x51);
+        vm.prank(freeOrg);
+        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        registry.authorizeAuditor(auditor, block.timestamp + 30 days, bytes32(0));
+    }
+
+    function test_RevertIf_AuthorizeNonPartnerAuditor() public {
+        address nonPartnerAuditor = address(0x52);
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Auditor must have active Partner subscription");
+        registry.authorizeAuditor(nonPartnerAuditor, block.timestamp + 30 days, bytes32(0));
+    }
+
+    function test_RevertIf_ExpiredPartnerAuditorCommitsProof() public {
+        // Extend organization subscription for 3 months so org remains valid
+        vm.prank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 3);
+
+        // Authorize auditor for 60 days
+        vm.prank(organization);
+        registry.authorizeAuditor(auditor, block.timestamp + 60 days, bytes32(0));
+
+        // Fast-forward 31 days so auditor's 1-month Partner subscription expires while authorization is still valid
+        vm.warp(block.timestamp + 31 days);
+
+        vm.prank(auditor);
+        vm.expectRevert("VeyroqRegistry: Submitting firm requires active Partner subscription");
+        registry.commitAuditProof(organization, keccak256("ROOT"), 100, 200, 5, bytes32(0));
+    }
+
     function test_Admin_SetTierFees() public {
         vm.prank(owner);
         registry.setTierFees(499 * 10 ** 6, 1499 * 10 ** 6);
@@ -468,10 +536,14 @@ contract VeyroqRegistryTest is Test {
     function testFuzz_SubscriptionExpiry(uint8 months) public {
         vm.assume(months >= 1 && months <= 12);
 
-        vm.prank(organization);
+        address fuzzedSubscriber = address(0x60);
+        usdc.mint(fuzzedSubscriber, 50_000 * 10 ** 6);
+        vm.startPrank(fuzzedSubscriber);
+        usdc.approve(address(registry), type(uint256).max);
         registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, months);
+        vm.stopPrank();
 
-        (, uint256 expiresAt, bool isActive) = registry.getSubscription(organization);
+        (, uint256 expiresAt, bool isActive) = registry.getSubscription(fuzzedSubscriber);
         assertEq(expiresAt, block.timestamp + (uint256(months) * 30 days));
         assertTrue(isActive);
     }

@@ -3,16 +3,17 @@ import assert from 'node:assert/strict';
 import http from 'http';
 import { server } from '../../server.js';
 
-const BASE_URL = 'http://localhost:3000';
-
+let BASE_URL = 'http://localhost:3000';
 let testServerInstance = null;
 
 before(async () => {
-  if (!server.listening) {
-    await new Promise(resolve => {
-      testServerInstance = server.listen(3000, resolve);
+  await new Promise(resolve => {
+    testServerInstance = server.listen(0, () => {
+      const addr = testServerInstance.address();
+      BASE_URL = `http://localhost:${addr.port}`;
+      resolve();
     });
-  }
+  });
 });
 
 after(async () => {
