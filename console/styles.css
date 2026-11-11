@@ -1244,3 +1244,41 @@ body {
   overflow-y: auto;
   margin: 0;
 }
+
+/* Auditor Policy Items & List */
+.auditor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.auditor-item {
+  background: var(--cream-surface);
+  border: 1px solid var(--sage-dark);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auditor-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.auditor-meta strong {
+  color: var(--burgundy);
+  font-weight: 600;
+}
+
+.auditor-meta small {
+  color: var(--ink-secondary);
+  font-size: 11px;
+}

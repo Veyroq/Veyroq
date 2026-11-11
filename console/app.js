@@ -13,6 +13,16 @@ import {
   disconnectWallet, 
   copyToClipboard 
 } from './privy-auth.js';
+import {
+  REGISTRY_ADDRESS,
+  USDC_ADDRESS,
+  ARC_CHAIN_ID_HEX,
+  ARC_EXPLORER_TX,
+  fetchOnChainSubscription,
+  executeSubscribeOnChain,
+  executeCommitProofOnChain,
+  executeAuthorizeAuditorOnChain
+} from './contract-client.js';
 
 export const DEMO_TRANSACTIONS = [
   {
@@ -387,6 +397,7 @@ if (typeof document !== 'undefined') {
     }
 
     updateVaultTierUI(address);
+    syncOnChainSubscription(address);
 
     if ($('wallet-modal')) $('wallet-modal').style.display = 'none';
   }
@@ -513,6 +524,96 @@ if (typeof document !== 'undefined') {
     }).join('');
   }
 
+  function updateTierButtons(activeKey) {
+    ['free', 'enterprise', 'partner'].forEach(k => {
+      const btn = $('btn-tier-' + k);
+      if (btn) {
+        if (k === activeKey) {
+          btn.className = 'btn-select-tier current';
+          btn.textContent = 'Active Plan';
+        } else {
+          btn.className = 'btn-select-tier';
+          btn.textContent = 'Select';
+        }
+      }
+    });
+  }
+
+  async function syncOnChainSubscription(address) {
+    const target = address || connectedAddress || $('org-address')?.value?.trim();
+    if (!target) return;
+    try {
+      const sub = await fetchOnChainSubscription(target);
+      const badge = $('plan-badge-display');
+      if (sub.isActive && sub.tierCode > 0) {
+        if (badge) {
+          badge.textContent = `${sub.tier} (On-Chain)`;
+          badge.className = sub.tierCode === 2 ? 'plan-badge partner' : 'plan-badge enterprise';
+        }
+        updateTierButtons(sub.tierCode === 2 ? 'partner' : 'enterprise');
+      }
+    } catch (err) {
+      console.warn('Subscription sync error:', err);
+    }
+  }
+
+  window.handlePlanTierSelect = async function(tierKey, tierLabel) {
+    const badge = $('plan-badge-display');
+    const closePlanModal = () => {
+      if ($('plan-modal')) $('plan-modal').style.display = 'none';
+    };
+
+    if (tierKey === 'free') {
+      if (badge) {
+        badge.textContent = tierLabel;
+        badge.className = 'plan-badge free';
+      }
+      updateTierButtons('free');
+      closePlanModal();
+      return;
+    }
+
+    const tierCode = tierKey === 'partner' ? 2 : 1;
+    const provider = window.ethereum;
+
+    if (!provider) {
+      if (badge) {
+        badge.textContent = tierLabel;
+        badge.className = 'plan-badge ' + tierKey;
+      }
+      updateTierButtons(tierKey);
+      closePlanModal();
+      alert(`Set ${tierLabel} locally.\nTo anchor and pay in testnet USDC, connect a Web3 wallet (MetaMask, Rabby) to Circle Arc Testnet.`);
+      return;
+    }
+
+    const targetBtn = $('btn-tier-' + tierKey);
+    const originalText = targetBtn ? targetBtn.textContent : 'Select';
+    if (targetBtn) {
+      targetBtn.disabled = true;
+      targetBtn.textContent = 'Subscribing...';
+    }
+
+    try {
+      const txHash = await executeSubscribeOnChain(provider, tierCode, 1);
+      if (badge) {
+        badge.textContent = `${tierLabel} (On-Chain)`;
+        badge.className = 'plan-badge ' + tierKey;
+      }
+      updateTierButtons(tierKey);
+      closePlanModal();
+      alert(`Successfully subscribed on Circle Arc Testnet!\nTx Hash: ${txHash}\nView on Explorer: ${ARC_EXPLORER_TX + txHash}`);
+    } catch (err) {
+      console.error('On-chain subscription failed:', err);
+      alert(`On-chain subscription failed: ${err.message || err}`);
+    } finally {
+      if (targetBtn) {
+        targetBtn.disabled = false;
+        targetBtn.textContent = originalText;
+      }
+    }
+  };
+
   async function calculateCompleteness() {
     const leaves = [];
     for (const item of loadedTransactions) {
@@ -542,7 +643,7 @@ if (typeof document !== 'undefined') {
     if ($('banner-root-hash')) $('banner-root-hash').innerText = calculatedMerkleRoot;
     if ($('slip-card-preview')) $('slip-card-preview').style.display = 'flex';
 
-    ['btn-export-csv', 'btn-export-xero', 'btn-export-cert'].forEach(id => {
+    ['btn-export-csv', 'btn-export-xero', 'btn-export-cert', 'btn-anchor-proof-modal'].forEach(id => {
       if ($(id)) $(id).disabled = false;
     });
   }
@@ -705,11 +806,15 @@ if (typeof document !== 'undefined') {
     }
 
     // Two-Tier Treasury Verification Events
-    $('org-address')?.addEventListener('input', () => updateVaultTierUI());
+    $('org-address')?.addEventListener('input', () => {
+      updateVaultTierUI();
+      syncOnChainSubscription();
+    });
     $('btn-open-verify-modal')?.addEventListener('click', openVerifyModal);
     $('btn-close-verify-modal')?.addEventListener('click', closeVerifyModal);
     $('btn-submit-siwe-sign')?.addEventListener('click', submitSiweSign);
     updateVaultTierUI();
+    syncOnChainSubscription();
 
     // Tag Save Action
     $('btn-save-tag')?.addEventListener('click', () => {
@@ -804,36 +909,100 @@ if (typeof document !== 'undefined') {
       if ($('disclosure-controls')) $('disclosure-controls').style.display = 'none';
     });
 
-    // Auditor Policy Authorization
-    $('btn-submit-policy')?.addEventListener('click', () => {
-      const addr = $('auditor-addr-input')?.value?.trim();
-      const date = $('auditor-expiry-input')?.value || '2026-12-31';
-      const scope = $('auditor-scope-input')?.value || 'ALL_TRANSACTIONS';
-      const net = getNetName();
+    // Anchor Audit Proof On-Chain Action
+    $('btn-anchor-proof-modal')?.addEventListener('click', async () => {
+      const provider = window.ethereum;
+      const feedback = $('anchor-proof-feedback');
+      const btn = $('btn-anchor-proof-modal');
+      const btnText = $('anchor-btn-text');
 
-      if (!addr) {
-        alert("Please enter the auditor's EVM address.");
+      if (!calculatedMerkleRoot) {
+        alert('Please calculate or fetch transactions first to generate a Merkle root proof.');
+        return;
+      }
+
+      if (!provider) {
+        alert('Please connect a Web3 wallet (MetaMask, Rabby) to anchor proofs on Circle Arc Testnet.');
+        return;
+      }
+
+      const orgAddress = connectedAddress || $('org-address')?.value?.trim();
+      const now = Math.floor(Date.now() / 1000);
+      const periodStart = now - (90 * 86400);
+      const periodEnd = now;
+      const count = loadedTransactions.length;
+
+      try {
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.textContent = 'Anchoring to Circle Arc...';
+        if (feedback) feedback.innerHTML = '<span style="color:var(--burgundy);">Approving $5 protocol fee &amp; submitting proof...</span>';
+
+        const txHash = await executeCommitProofOnChain(provider, orgAddress, calculatedMerkleRoot, periodStart, periodEnd, count);
+
+        if (feedback) {
+          feedback.innerHTML = `<span style="color:var(--green-verified); font-weight:600;">✓ Proof anchored on Arc Testnet!</span> <a href="${ARC_EXPLORER_TX}${txHash}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline; font-weight:600; margin-left:4px;">Explorer Tx ↗</a>`;
+        }
+        if ($('cert-display-proof')) {
+          $('cert-display-proof').innerHTML = `${calculatedMerkleRoot.slice(0, 10)}... <a href="${ARC_EXPLORER_TX}${txHash}" target="_blank" rel="noopener noreferrer" style="color:var(--green-verified); text-decoration:underline;">(Anchored on Arc)</a>`;
+        }
+      } catch (err) {
+        console.error('Anchor proof failed:', err);
+        if (feedback) feedback.innerHTML = `<span style="color:#C93B2B;">Failed: ${err.message || err}</span>`;
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Anchor Proof on Arc Testnet ($5 USDC)';
+      }
+    });
+
+    // Auditor Policy Authorization On-Chain Action
+    $('btn-submit-policy')?.addEventListener('click', async () => {
+      const addr = $('auditor-addr-input')?.value?.trim();
+      const dateVal = $('auditor-expiry-input')?.value || '2026-12-31';
+      const scope = $('auditor-scope-input')?.value || 'ALL_TRANSACTIONS';
+      const feedback = $('policy-tx-feedback');
+      const btn = $('btn-submit-policy');
+      const btnText = $('btn-submit-policy-text');
+
+      if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
+        alert("Please enter a valid 20-byte EVM address (0x...).");
         $('auditor-addr-input')?.focus();
         return;
       }
 
-      const btn = $('btn-submit-policy');
-      btn.disabled = true;
-      btn.innerText = `Anchoring to ${net} VeyroqRegistry...`;
+      const expiryTimestamp = Math.floor(new Date(dateVal).getTime() / 1000);
+      const provider = window.ethereum;
 
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Authorize Auditor Policy On-Chain</span>`;
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = 'Authorizing on Arc Testnet...';
+      if (feedback) feedback.innerHTML = '<span style="color:var(--burgundy);">Submitting transaction to Arc Testnet...</span>';
+
+      try {
+        let txHash = null;
+        if (provider) {
+          txHash = await executeAuthorizeAuditorOnChain(provider, addr, expiryTimestamp, null);
+        }
 
         const list = $('auditor-list-container');
         if (list) {
           const item = document.createElement('div');
           item.className = 'auditor-item';
-          item.innerHTML = `<div class="auditor-meta"><strong>Authorized Auditor (Active)</strong><span class="font-mono text-cyan">${addr.slice(0, 6)}...${addr.slice(-4)}</span><small>Network: ${net} · Scope: ${scope} · Valid until ${date}</small></div><button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'Auditor')">Revoke</button>`;
+          const explorerLink = txHash ? `<a href="${ARC_EXPLORER_TX}${txHash}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline; font-size:11px; margin-left:6px;">Tx ↗</a>` : '';
+          item.innerHTML = `<div class="auditor-meta"><strong>Authorized Auditor (Active On-Chain)</strong><span class="font-mono text-cyan" style="font-size:11px;">${addr.slice(0, 6)}...${addr.slice(-4)}${explorerLink}</span><small>Scope: ${scope} · Valid until ${dateVal}</small></div><button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'Auditor')">Revoke</button>`;
           list.prepend(item);
         }
-        alert(`Auditor policy successfully registered and anchored to VeyroqRegistry on ${net}!`);
-      }, 750);
+
+        if (feedback) {
+          feedback.innerHTML = txHash 
+            ? `<span style="color:var(--green-verified); font-weight:600;">✓ Auditor authorized on Arc!</span> <a href="${ARC_EXPLORER_TX}${txHash}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline;">Tx on Explorer ↗</a>`
+            : `<span style="color:var(--green-verified); font-weight:600;">✓ Auditor policy registered locally!</span>`;
+        }
+      } catch (err) {
+        console.error('Authorize auditor failed:', err);
+        if (feedback) feedback.innerHTML = `<span style="color:#C93B2B;">Failed: ${err.message || err}</span>`;
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Authorize Auditor Policy on Arc Testnet';
+      }
     });
   }
 

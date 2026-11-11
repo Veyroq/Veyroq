@@ -207,11 +207,6 @@
             <button id="tab-btn-policies"></button>
             <div id="view-ledger"></div>
             <div id="view-policies"></div>
-            <input type="text" id="auditor-addr-input">
-            <input type="date" id="auditor-expiry-input">
-            <select id="auditor-scope-input"><option value="ALL">All</option></select>
-            <button id="btn-submit-policy"></button>
-            <div id="auditor-list-container"></div>
           </div>
         </div>
       </aside>
@@ -223,9 +218,14 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             Decrypted Treasury Transactions <span style="font-size:11px; font-weight:500; color:var(--ink-secondary);" id="synced-tx-count">(4 Synced)</span>
           </span>
-          <button class="btn btn-secondary btn-sm" id="btn-open-comp-top">
-            Live Compliance Output
-          </button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-secondary btn-sm" id="btn-open-auditor-modal" type="button">
+              Auditor Policies
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-open-comp-top" type="button">
+              Live Compliance Output
+            </button>
+          </div>
         </div>
 
         <div class="card-inner-body">
@@ -344,6 +344,15 @@
       <button class="btn btn-secondary btn-sm" id="btn-export-cert" disabled style="width:100%; margin-top:8px; padding:10px;">
         Download Cryptographic Audit JSON
       </button>
+
+      <!-- On-Chain Proof Anchoring to Arc Testnet -->
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--sage-hairline);">
+        <button class="btn btn-primary btn-sm" id="btn-anchor-proof-modal" disabled style="width:100%; padding:10px; justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span id="anchor-btn-text">Anchor Proof on Arc Testnet ($5 USDC)</span>
+        </button>
+        <div id="anchor-proof-feedback" style="font-size:11px; margin-top:6px; text-align:center; min-height:16px;"></div>
+      </div>
     </div>
   </div>
 
@@ -617,6 +626,67 @@
     </div>
   </div>
 
+  <!-- 8. AUDITOR POLICY MODAL -->
+  <div class="modal-overlay" id="auditor-modal" style="display: none;">
+    <div class="modal-card" style="width: 520px; max-width: 95vw;">
+      <button class="btn-close" id="btn-close-auditor-modal" aria-label="Close modal">&times;</button>
+
+      <div class="modal-header-brand" style="margin-bottom: 12px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:24px; height:24px;">
+        <span class="modal-title">Delegated Auditor Authorization</span>
+        <span class="session-badge" style="margin-left: 8px;">VeyroqRegistry</span>
+      </div>
+
+      <p class="modal-desc" style="font-size: 13px; margin-bottom: 14px; line-height: 1.5; color: var(--ink-secondary);">
+        Grant cryptographic on-chain authority to an independent external accounting firm to verify and submit proofs on behalf of your treasury vault.
+      </p>
+
+      <div class="field-group">
+        <label class="field-label" for="auditor-addr-input">Auditor EVM Address</label>
+        <input type="text" class="field-control font-mono" id="auditor-addr-input" placeholder="0x... (Audit Firm Safe or EOA)">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="auditor-expiry-input">Authorization Expiration Date</label>
+        <input type="date" class="field-control" id="auditor-expiry-input" value="2026-12-31">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="auditor-scope-input">Audit Scope Permission</label>
+        <select class="field-control" id="auditor-scope-input">
+          <option value="ALL_TRANSACTIONS">All Treasury Transactions (Statutory Annual Audit)</option>
+          <option value="PAYROLL_ONLY">Payroll &amp; Executive Compensation Only</option>
+          <option value="SUPPLIERS_ONLY">Supplier &amp; Operational Invoices Only</option>
+        </select>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn btn-primary" id="btn-submit-policy" type="button" style="width: 100%; justify-content: center; padding: 10px 16px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span id="btn-submit-policy-text">Authorize Auditor Policy on Arc Testnet</span>
+        </button>
+        <div id="policy-tx-feedback" style="font-size:11px; margin-top:6px; text-align:center; min-height:16px;"></div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary);">
+          Active Authorized Auditors
+        </span>
+        <div class="auditor-list" id="auditor-list-container">
+          <div class="auditor-item">
+            <div class="auditor-meta">
+              <strong>Deloitte &amp; Touche Digital Asset Practice</strong>
+              <span class="font-mono text-cyan" style="font-size:11px;">0xa742...9902</span>
+              <small>Scope: ALL_TRANSACTIONS · Valid until 2026-12-31</small>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'Deloitte')">Revoke</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script type="module" src="/console/exporter.js"></script>
   <script type="module" src="/console/chain-scanner.js"></script>
@@ -641,6 +711,16 @@
 
     function closePlanModal() {
       const modal = document.getElementById('plan-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openAuditorModal() {
+      const modal = document.getElementById('auditor-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeAuditorModal() {
+      const modal = document.getElementById('auditor-modal');
       if (modal) modal.style.display = 'none';
     }
 
@@ -674,6 +754,12 @@
         if (e.target === document.getElementById('compliance-modal')) closeComplianceModal();
       });
 
+      document.getElementById('btn-open-auditor-modal')?.addEventListener('click', openAuditorModal);
+      document.getElementById('btn-close-auditor-modal')?.addEventListener('click', closeAuditorModal);
+      document.getElementById('auditor-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('auditor-modal')) closeAuditorModal();
+      });
+
       document.getElementById('btn-strip-quick-export')?.addEventListener('click', () => {
         const exportBtn = document.getElementById('btn-export-csv');
         if (exportBtn && !exportBtn.disabled) {
@@ -693,15 +779,27 @@
 
       document.getElementById('btn-tier-free')?.addEventListener('click', e => {
         e.stopPropagation();
-        changePlanTier('free', 'Single Org · Free');
+        if (window.handlePlanTierSelect) {
+          window.handlePlanTierSelect('free', 'Single Org · Free');
+        } else {
+          changePlanTier('free', 'Single Org · Free');
+        }
       });
       document.getElementById('btn-tier-enterprise')?.addEventListener('click', e => {
         e.stopPropagation();
-        changePlanTier('enterprise', 'Enterprise Treasury');
+        if (window.handlePlanTierSelect) {
+          window.handlePlanTierSelect('enterprise', 'Enterprise Treasury');
+        } else {
+          changePlanTier('enterprise', 'Enterprise Treasury');
+        }
       });
       document.getElementById('btn-tier-partner')?.addEventListener('click', e => {
         e.stopPropagation();
-        changePlanTier('partner', 'Audit Firm Partner');
+        if (window.handlePlanTierSelect) {
+          window.handlePlanTierSelect('partner', 'Audit Firm Partner');
+        } else {
+          changePlanTier('partner', 'Audit Firm Partner');
+        }
       });
 
       document.getElementById('table-search-input')?.addEventListener('input', e => {
