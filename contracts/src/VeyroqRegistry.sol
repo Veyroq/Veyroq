@@ -363,6 +363,27 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Emergency admin recovery to migrate an active subscription from a compromised
+     * or deprecated corporate wallet to a new verified wallet.
+     */
+    function adminMigrateSubscription(
+        address oldWallet,
+        address newWallet
+    ) external override onlyOwner {
+        require(oldWallet != address(0) && newWallet != address(0), "VeyroqRegistry: Invalid wallet");
+        require(oldWallet != newWallet, "VeyroqRegistry: Same wallet");
+
+        Subscription memory sub = subscriptions[oldWallet];
+        require(sub.expiresAt >= block.timestamp, "VeyroqRegistry: No active subscription to migrate");
+        require(subscriptions[newWallet].expiresAt < block.timestamp, "VeyroqRegistry: Target already subscribed");
+
+        delete subscriptions[oldWallet];
+        subscriptions[newWallet] = sub;
+
+        emit SubscriptionMigrated(oldWallet, newWallet, sub.tier, sub.expiresAt);
+    }
+
+    /**
      * @notice Emergency rescue for accidentally sent ERC-20 tokens.
      */
     function rescueToken(address token, address to, uint256 amount) external onlyOwner {

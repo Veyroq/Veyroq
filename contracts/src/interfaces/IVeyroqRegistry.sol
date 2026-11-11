@@ -63,10 +63,17 @@ interface IVeyroqRegistry {
         uint256 feePaid
     );
     event TierFeesUpdated(uint256 newEnterpriseFee, uint256 newPartnerFee);
+    event SubscriptionMigrated(
+        address indexed oldWallet,
+        address indexed newWallet,
+        PlanTier tier,
+        uint256 expiresAt
+    );
 
     // Core Functions
     function subscribe(PlanTier tier, uint256 months) external payable;
     function getSubscription(address organization) external view returns (PlanTier tier, uint256 expiresAt, bool isActive);
+    function adminMigrateSubscription(address oldWallet, address newWallet) external;
     function authorizeAuditor(address auditor, uint256 validUntil, bytes32 scopeHash) external;
     function revokeAuditor(address auditor) external;
     function commitAuditProof(

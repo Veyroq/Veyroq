@@ -533,6 +533,70 @@ contract VeyroqRegistryTest is Test {
         registry.setTierFees(1, 2);
     }
 
+    function test_Admin_MigrateSubscription() public {
+        address cleanRecoveryWallet = address(0x70);
+        usdc.mint(cleanRecoveryWallet, 1_000 * 10 ** 6);
+        vm.prank(cleanRecoveryWallet);
+        usdc.approve(address(registry), type(uint256).max);
+
+        (, uint256 originalExpiry, ) = registry.getSubscription(organization);
+
+        // Admin migrates subscription from compromised organization wallet to cleanRecoveryWallet
+        vm.prank(owner);
+        registry.adminMigrateSubscription(organization, cleanRecoveryWallet);
+
+        // Old compromised wallet is immediately wiped
+        (IVeyroqRegistry.PlanTier oldTier, uint256 oldExpiry, bool oldActive) = registry.getSubscription(organization);
+        assertEq(uint256(oldTier), uint256(IVeyroqRegistry.PlanTier.Free));
+        assertEq(oldExpiry, 0);
+        assertFalse(oldActive);
+
+        // Compromised wallet can no longer commit proofs
+        vm.prank(organization);
+        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        registry.commitAuditProof(organization, keccak256("ROOT"), 100, 200, 5, bytes32(0));
+
+        // Clean recovery wallet now holds the exact remaining subscription and can commit proofs
+        (IVeyroqRegistry.PlanTier newTier, uint256 newExpiry, bool newActive) = registry.getSubscription(cleanRecoveryWallet);
+        assertEq(uint256(newTier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(newExpiry, originalExpiry);
+        assertTrue(newActive);
+
+        vm.prank(cleanRecoveryWallet);
+        uint256 proofId = registry.commitAuditProof(cleanRecoveryWallet, keccak256("RECOVERED_ROOT"), 100, 200, 5, bytes32(0));
+        assertEq(proofId, 0);
+    }
+
+    function test_RevertIf_MigrateSubscription_InvalidOrUnauthorized() public {
+        address cleanWallet = address(0x71);
+
+        // Non-owner cannot call
+        vm.prank(unauthorized);
+        vm.expectRevert();
+        registry.adminMigrateSubscription(organization, cleanWallet);
+
+        // Zero address checks
+        vm.startPrank(owner);
+        vm.expectRevert("VeyroqRegistry: Invalid wallet");
+        registry.adminMigrateSubscription(address(0), cleanWallet);
+
+        vm.expectRevert("VeyroqRegistry: Invalid wallet");
+        registry.adminMigrateSubscription(organization, address(0));
+
+        // Same wallet check
+        vm.expectRevert("VeyroqRegistry: Same wallet");
+        registry.adminMigrateSubscription(organization, organization);
+
+        // No active subscription on source wallet
+        vm.expectRevert("VeyroqRegistry: No active subscription to migrate");
+        registry.adminMigrateSubscription(cleanWallet, address(0x72));
+
+        // Target wallet already has an active subscription (e.g. auditor)
+        vm.expectRevert("VeyroqRegistry: Target already subscribed");
+        registry.adminMigrateSubscription(organization, auditor);
+        vm.stopPrank();
+    }
+
     function testFuzz_SubscriptionExpiry(uint8 months) public {
         vm.assume(months >= 1 && months <= 12);
 
