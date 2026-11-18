@@ -43,59 +43,51 @@
     <div class="legal-tabs">
       <a href="/legal/privacy" class="legal-tab-pill active">Privacy Policy</a>
       <a href="/legal/terms" class="legal-tab-pill">Terms of Service</a>
-      <a href="/legal/refund" class="legal-tab-pill">Refund & Billing</a>
+      <a href="/legal/refund" class="legal-tab-pill">Refund &amp; Billing</a>
       <a href="/legal/disclaimer" class="legal-tab-pill">Regulatory Disclaimer</a>
     </div>
 
     <article class="legal-card">
       <header class="legal-header">
         <span class="legal-eyebrow">Institutional Compliance Document</span>
-        <h1 class="legal-title">Privacy Policy & Zero-Custody Architecture</h1>
+        <h1 class="legal-title">Privacy Policy &amp; Zero-Custody Architecture</h1>
         <div class="legal-meta">
-          <span><strong>Effective Date:</strong> November 1, 2026</span>
-          <span><strong>Entity:</strong> Veyroq Protocol & Veyroq Labs</span>
+          <span><strong>Effective Date:</strong> November 18, 2026</span>
+          <span><strong>Entity:</strong> Veyroq Protocol &amp; Veyroq Labs</span>
         </div>
       </header>
 
       <div class="legal-body">
         <h2>1. Foundational Principle: Client-Side Zero-Custody</h2>
         <p>
-          Veyroq provides institutional auditability, selective disclosure, and compliance infrastructure for digital asset treasuries across supported blockchain networks and enterprise stablecoin rails.
+          Veyroq provides institutional auditability, selective disclosure, and compliance export infrastructure for digital asset treasuries across supported EVM networks.
         </p>
         <div class="legal-callout">
-          <strong>Non-Custodial Architecture:</strong> We do not collect, view, store, transmit, or custody your private spending keys, read-only Scoped View Keys, or decrypted corporate transaction records. All cryptographic operations occur exclusively in local browser RAM.
+          <strong>Non-Custodial Architecture:</strong> Veyroq servers never collect, view, store, or custody private spending keys, read-only Scoped View Keys, or decrypted corporate transaction databases. Cryptographic Merkle hashing and local verification execute in client browser memory via the Web Crypto API.
         </div>
 
         <h2>2. Data We Do NOT Collect</h2>
         <ul>
-          <li><strong>No Cryptographic Keys:</strong> Your Scoped View Keys, passkey credentials, seed phrases, and private keys remain strictly within your local computing environment. Decryption occurs exclusively in volatile client memory.</li>
-          <li><strong>No Financial Plaintext:</strong> We do not store or transmit decrypted financial amounts, counterparty addresses, payroll records, or commercial contract data to our servers.</li>
-          <li><strong>No Custodial Balances:</strong> Veyroq is a software utility and never takes custody of funds, stablecoins, or treasury assets.</li>
+          <li><strong>No Spending Keys or View Keys on Backend:</strong> Your seed phrases, embedded signer shards, and Scoped View Keys remain local to your wallet signer and client environment.</li>
+          <li><strong>No Financial Plaintext Database:</strong> We do not maintain a central database of decrypted transaction values, counterparties, tags, or exported CSV journals.</li>
+          <li><strong>No Custodial Balances:</strong> Veyroq is non-custodial software and never holds user funds or stablecoins.</li>
         </ul>
 
-        <h2>3. Minimal Operational Data Processed</h2>
+        <h2>3. Operational, Session &amp; Client-Storage Data Processed</h2>
         <ul>
-          <li><strong>Public Network Metadata:</strong> Publicly broadcast on-chain transaction hashes, block timestamps, and smart contract event logs.</li>
-          <li><strong>Anonymous Telemetry (Opt-In):</strong> High-level performance metrics (page load latency, user-agent) with IP addresses anonymized. We never correlate web analytics with on-chain wallet addresses.</li>
+          <li><strong>Authentication &amp; Signed Session Cookies:</strong> Signing in via Privy Email OTP or EVM wallet SIWE issues an <code>HttpOnly</code> HMAC-signed 24-hour cookie (<code>veyroq_session</code>) containing your wallet address, login method, email address (if authenticated with email), and SIWE-verified treasury vault addresses.</li>
+          <li><strong>Local Browser Storage (<code>localStorage</code>):</strong> Session metadata (<code>veyroq_auth_session_v1</code>) and custom transaction classification tags remain on your device in <code>localStorage</code> across tab reloads until you sign out, disconnect, or clear browser storage. Volatile decrypted memory state clears when the tab closes.</li>
+          <li><strong>Third-Party Auth, RPC &amp; Explorer APIs:</strong> Email login/key management uses Privy (<code>auth.privy.io</code>). Balance, subscription, and USDC transfer lookups query configured RPC nodes (e.g., <code>rpc.testnet.arc.io</code>) and Blockscout explorer APIs (<code>explorer.testnet.arc.io</code>). Backend HTTP logs record request IDs, routes, status codes, and latency with cookies and signatures redacted.</li>
         </ul>
 
-        <h2>4. Local Ephemeral Decryption Workflow</h2>
-        <p>When an enterprise CFO, accountant, or auditor utilizes the Veyroq Compliance Console:</p>
-        <ol>
-          <li>The Scoped View Key is loaded into local browser volatile memory (RAM) only.</li>
-          <li>Encrypted transaction payloads are retrieved directly from network RPC nodes.</li>
-          <li>Cryptographic decryption and Merkle completeness proofs execute locally via WebAssembly and the native Web Crypto API.</li>
-          <li>When the browser tab is closed, all plaintext and key representations are immediately cleared from local memory.</li>
-        </ol>
-
-        <h2>5. Global Privacy Standards (GDPR & CCPA)</h2>
+        <h2>4. Global Privacy Standards (GDPR &amp; CCPA)</h2>
         <p>
-          Because Veyroq does not store personal financial records or corporate identity profiles on central databases, Veyroq adheres to the principles of "Privacy by Design" and data minimization under the EU General Data Protection Regulation (GDPR) and the California Consumer Privacy Act (CCPA).
+          By keeping financial records, accounting tags, and View Keys client-side without central financial databases, Veyroq adheres to data-minimization and Privacy-by-Design principles under GDPR and CCPA.
         </p>
 
-        <h2>6. Contact & Legal Inquiries</h2>
+        <h2>5. Contact &amp; Legal Inquiries</h2>
         <p>
-          For questions regarding Veyroq software security, contact our compliance desk at <strong>legal@veyroq.xyz</strong>.
+          For questions regarding Veyroq software privacy or security, contact our compliance desk at <strong>legal@veyroq.xyz</strong>.
         </p>
       </div>
     </article>

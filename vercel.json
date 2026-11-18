@@ -1,9 +1,83 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{landing,console,docs,legal,assets}/**"
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/:path*",
       "destination": "/api"
+    },
+    {
+      "source": "/health",
+      "destination": "/api"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/assets/favicon.ico"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "^app\\..*" }],
+      "destination": "/console/index.html"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "^docs\\..*" }],
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/landing/index.html"
+    },
+    {
+      "source": "/console",
+      "destination": "/console/index.html"
+    },
+    {
+      "source": "/console/",
+      "destination": "/console/index.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/docs/",
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/legal/:slug(terms|privacy|disclaimer|refund)",
+      "destination": "/legal/:slug.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; frame-src 'self' https://auth.privy.io; child-src 'self' https://auth.privy.io; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://auth.privy.io https://arc-testnet.rpc.privy.systems https://rpc.testnet.arc.io https://explorer.testnet.arc.io https://sepolia.base.org https://testnet-rpc.monad.xyz https://sepolia-rollup.arbitrum.io https://ethereum-sepolia-rpc.publicnode.com"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
     }
   ]
 }

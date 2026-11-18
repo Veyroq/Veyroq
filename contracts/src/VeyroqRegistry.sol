@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import "./interfaces/IVeyroqRegistry.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * Enables enterprises to register scoped auditor permissions, anchor Merkle completeness proofs,
  * and verify on-chain that decrypted tax/audit line items were not omitted or tampered with.
  */
-contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
+contract VeyroqRegistry is IVeyroqRegistry, Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // Optional ERC-20 USDC token reference (can be address(0) for native gas USDC)
@@ -25,6 +25,7 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
     uint256 public protocolFee;
 
     // On-chain subscription tier fees (USDC 6-decimal units or native)
+    uint256 public singleOrgFee;
     uint256 public enterpriseFee;
     uint256 public partnerFee;
 
@@ -41,39 +42,56 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
      * @param _usdcToken Address of the ERC-20 USDC contract on Arc (or address(0) for native msg.value)
      * @param _treasury Treasury address collecting Veyroq protocol audit anchoring fees
      * @param _protocolFee Initial protocol anchoring fee (per committed proof)
-     * @param _enterpriseFee Initial monthly subscription fee for Enterprise Treasury tier
-     * @param _partnerFee Initial monthly subscription fee for Audit Firm Partner tier
+     * @param _singleOrgFee Initial 30-day subscription fee for Single Organization tier ($5 USDC)
+     * @param _enterpriseFee Initial 30-day subscription fee for Enterprise Treasury tier ($50 USDC)
+     * @param _partnerFee Initial 30-day subscription fee for Audit Firm Partner tier ($150 USDC)
      */
     constructor(
         address _usdcToken,
         address _treasury,
         uint256 _protocolFee,
+        uint256 _singleOrgFee,
         uint256 _enterpriseFee,
         uint256 _partnerFee
     ) Ownable(msg.sender) {
         require(_treasury != address(0), "VeyroqRegistry: Invalid treasury");
+        require(
+            _singleOrgFee > 0 && _enterpriseFee >= _singleOrgFee && _partnerFee >= _enterpriseFee,
+            "VeyroqRegistry: Invalid tier fees"
+        );
         usdcToken = IERC20(_usdcToken);
         treasury = _treasury;
         protocolFee = _protocolFee;
+        singleOrgFee = _singleOrgFee;
         enterpriseFee = _enterpriseFee;
         partnerFee = _partnerFee;
     }
 
     /**
-     * @notice Purchases or extends an on-chain tier subscription for an organization.
+     * @notice Purchases a 30-day on-chain tier subscription for the calling organization.
+     * Reverts if the organization already has an active 30-day subscription in progress.
      * Strictly enforces Checks-Effects-Interactions (CEI).
-     * @param tier PlanTier.Enterprise or PlanTier.Partner
-     * @param months Duration in 30-day billing intervals (1 to 12 months)
+     * @param tier PlanTier.SingleOrg, PlanTier.Enterprise, or PlanTier.Partner
+     * @param months Must be 1 (single 30-day manual billing cycle; no auto-deduction)
      */
     function subscribe(
         PlanTier tier,
         uint256 months
     ) external payable override nonReentrant {
         // 1. CHECKS
-        require(tier == PlanTier.Enterprise || tier == PlanTier.Partner, "VeyroqRegistry: Invalid tier");
-        require(months > 0 && months <= 12, "VeyroqRegistry: Invalid duration");
+        require(
+            tier == PlanTier.SingleOrg || tier == PlanTier.Enterprise || tier == PlanTier.Partner,
+            "VeyroqRegistry: Invalid tier"
+        );
+        require(months == 1, "VeyroqRegistry: Invalid duration");
+        require(
+            subscriptions[msg.sender].expiresAt <= block.timestamp,
+            "VeyroqRegistry: Active subscription in progress"
+        );
 
-        uint256 monthlyFee = (tier == PlanTier.Enterprise) ? enterpriseFee : partnerFee;
+        uint256 monthlyFee = (tier == PlanTier.SingleOrg)
+            ? singleOrgFee
+            : ((tier == PlanTier.Enterprise) ? enterpriseFee : partnerFee);
         uint256 totalFee = monthlyFee * months;
 
         // Payment validation
@@ -84,9 +102,7 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         }
 
         // 2. EFFECTS (Update state prior to external token transfers)
-        uint256 currentExpiry = subscriptions[msg.sender].expiresAt;
-        uint256 startPoint = (currentExpiry > block.timestamp) ? currentExpiry : block.timestamp;
-        uint256 newExpiry = startPoint + (months * 30 days);
+        uint256 newExpiry = block.timestamp + (months * 30 days);
 
         subscriptions[msg.sender] = Subscription({
             tier: tier,
@@ -108,20 +124,19 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @notice Queries the active subscription status for an organization.
+     * Automatically opts out (returns PlanTier.Free and isActive = false) once 30 days expire.
      */
     function getSubscription(
         address organization
     ) external view override returns (PlanTier tier, uint256 expiresAt, bool isActive) {
         Subscription memory sub = subscriptions[organization];
-        bool active = sub.expiresAt >= block.timestamp;
+        bool active = sub.expiresAt > block.timestamp;
         return (active ? sub.tier : PlanTier.Free, sub.expiresAt, active);
     }
 
     /**
      * @notice Grants an auditor permission to submit and certify proofs for the calling organization.
-     * @param auditor The address of the accounting firm or auditor
-     * @param validUntil Timestamp after which the authorization expires
-     * @param scopeHash Hash of the agreed engagement letter or audit scope
+     * Enforces Enterprise or Partner tier on-chain so SingleOrg callers cannot bypass UI gating.
      */
     function authorizeAuditor(
         address auditor,
@@ -129,17 +144,18 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         bytes32 scopeHash
     ) external override {
         require(auditor != address(0), "VeyroqRegistry: Invalid auditor");
+        require(auditor != msg.sender, "VeyroqRegistry: Cannot self-authorize");
         require(validUntil > block.timestamp, "VeyroqRegistry: Expiry in past");
 
         Subscription memory orgSub = subscriptions[msg.sender];
         require(
-            (orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt >= block.timestamp,
+            (orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt > block.timestamp,
             "VeyroqRegistry: Enterprise or Partner subscription required"
         );
 
         Subscription memory auditorSub = subscriptions[auditor];
         require(
-            auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt >= block.timestamp,
+            auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt > block.timestamp,
             "VeyroqRegistry: Auditor must have active Partner subscription"
         );
 
@@ -186,19 +202,19 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         if (msg.sender == organization) {
             Subscription memory orgSub = subscriptions[organization];
             require(
-                (orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt >= block.timestamp,
-                "VeyroqRegistry: Enterprise or Partner subscription required"
+                (orgSub.tier == PlanTier.SingleOrg || orgSub.tier == PlanTier.Enterprise || orgSub.tier == PlanTier.Partner) && orgSub.expiresAt > block.timestamp,
+                "VeyroqRegistry: Active paid subscription required"
             );
         } else {
             AuditorPermission memory perm = auditorPermissions[organization][msg.sender];
             require(
-                perm.isAuthorized && perm.validUntil >= block.timestamp,
+                perm.isAuthorized && perm.validUntil > block.timestamp,
                 "VeyroqRegistry: Submitter unauthorized"
             );
 
             Subscription memory auditorSub = subscriptions[msg.sender];
             require(
-                auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt >= block.timestamp,
+                auditorSub.tier == PlanTier.Partner && auditorSub.expiresAt > block.timestamp,
                 "VeyroqRegistry: Submitting firm requires active Partner subscription"
             );
         }
@@ -294,7 +310,7 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         address auditor
     ) external view override returns (bool) {
         AuditorPermission memory perm = auditorPermissions[organization][auditor];
-        return perm.isAuthorized && perm.validUntil >= block.timestamp;
+        return perm.isAuthorized && perm.validUntil > block.timestamp;
     }
 
     /**
@@ -345,10 +361,19 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         emit FeeUpdated(newFee);
     }
 
-    function setTierFees(uint256 newEnterpriseFee, uint256 newPartnerFee) external onlyOwner {
+    function setTierFees(
+        uint256 newSingleOrgFee,
+        uint256 newEnterpriseFee,
+        uint256 newPartnerFee
+    ) external onlyOwner {
+        require(
+            newSingleOrgFee > 0 && newEnterpriseFee >= newSingleOrgFee && newPartnerFee >= newEnterpriseFee,
+            "VeyroqRegistry: Invalid tier fees"
+        );
+        singleOrgFee = newSingleOrgFee;
         enterpriseFee = newEnterpriseFee;
         partnerFee = newPartnerFee;
-        emit TierFeesUpdated(newEnterpriseFee, newPartnerFee);
+        emit TierFeesUpdated(newSingleOrgFee, newEnterpriseFee, newPartnerFee);
     }
 
     function setTreasury(address newTreasury) external onlyOwner {
@@ -374,8 +399,8 @@ contract VeyroqRegistry is IVeyroqRegistry, Ownable, ReentrancyGuard {
         require(oldWallet != newWallet, "VeyroqRegistry: Same wallet");
 
         Subscription memory sub = subscriptions[oldWallet];
-        require(sub.expiresAt >= block.timestamp, "VeyroqRegistry: No active subscription to migrate");
-        require(subscriptions[newWallet].expiresAt < block.timestamp, "VeyroqRegistry: Target already subscribed");
+        require(sub.expiresAt > block.timestamp, "VeyroqRegistry: No active subscription to migrate");
+        require(subscriptions[newWallet].expiresAt <= block.timestamp, "VeyroqRegistry: Target already subscribed");
 
         delete subscriptions[oldWallet];
         subscriptions[newWallet] = sub;

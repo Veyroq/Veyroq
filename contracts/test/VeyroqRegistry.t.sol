@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/VeyroqRegistry.sol";
@@ -11,11 +11,13 @@ contract VeyroqRegistryTest is Test {
 
     address public owner = address(0x1);
     address public treasury = address(0x2);
+    address public newOwnerCandidate = address(0x3);
     address public organization = address(0x10);
     address public auditor = address(0x20);
     address public unauthorized = address(0x99);
 
     uint256 public constant PROTOCOL_FEE = 5 * 10 ** 6; // 5 USDC (6 decimals)
+    uint256 public constant SINGLE_ORG_FEE = 5 * 10 ** 6; // $5 USDC (6 decimals)
     uint256 public constant ENTERPRISE_FEE = 50 * 10 ** 6; // $50 USDC (6 decimals)
     uint256 public constant PARTNER_FEE = 150 * 10 ** 6; // $150 USDC (6 decimals)
 
@@ -24,7 +26,7 @@ contract VeyroqRegistryTest is Test {
 
         vm.startPrank(owner);
         usdc = new MockUSDC();
-        registry = new VeyroqRegistry(address(usdc), treasury, PROTOCOL_FEE, ENTERPRISE_FEE, PARTNER_FEE);
+        registry = new VeyroqRegistry(address(usdc), treasury, PROTOCOL_FEE, SINGLE_ORG_FEE, ENTERPRISE_FEE, PARTNER_FEE);
         vm.stopPrank();
 
         // Mint USDC to test parties (enough for multi-month enterprise subscriptions)
@@ -220,7 +222,7 @@ contract VeyroqRegistryTest is Test {
         // Deploy registry configured for native gas USDC (usdcToken = address(0))
         uint256 nativeFee = 1 ether / 100; // 0.01 native gas
         vm.prank(owner);
-        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.01 ether, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
         vm.prank(organization);
@@ -245,7 +247,7 @@ contract VeyroqRegistryTest is Test {
     function test_RevertIf_IncorrectNativeFeePaid() public {
         uint256 nativeFee = 1 ether / 100;
         vm.prank(owner);
-        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.1 ether, 0.2 ether);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, nativeFee, 0.01 ether, 0.1 ether, 0.2 ether);
 
         vm.deal(organization, 1 ether);
         vm.prank(organization);
@@ -384,6 +386,26 @@ contract VeyroqRegistryTest is Test {
 
     // ─── Subscription Engine Tests ──────────────────────────────────────────
 
+    function test_Subscribe_SingleOrg_USDC() public {
+        address newOrg = address(0x29);
+        usdc.mint(newOrg, 10_000 * 10 ** 6);
+        vm.prank(newOrg);
+        usdc.approve(address(registry), type(uint256).max);
+
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 singleOrgMonthly = registry.singleOrgFee();
+        assertEq(singleOrgMonthly, 5 * 10 ** 6);
+
+        vm.prank(newOrg);
+        registry.subscribe(IVeyroqRegistry.PlanTier.SingleOrg, 1);
+
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newOrg);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.SingleOrg));
+        assertEq(expiresAt, block.timestamp + 30 days);
+        assertTrue(isActive);
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + singleOrgMonthly);
+    }
+
     function test_Subscribe_Enterprise_USDC() public {
         address newOrg = address(0x30);
         usdc.mint(newOrg, 10_000 * 10 ** 6);
@@ -394,13 +416,13 @@ contract VeyroqRegistryTest is Test {
         uint256 enterpriseMonthly = registry.enterpriseFee();
 
         vm.prank(newOrg);
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 3);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
 
         (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newOrg);
         assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
-        assertEq(expiresAt, block.timestamp + (3 * 30 days));
+        assertEq(expiresAt, block.timestamp + 30 days);
         assertTrue(isActive);
-        assertEq(usdc.balanceOf(treasury), treasuryBefore + (enterpriseMonthly * 3));
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + enterpriseMonthly);
     }
 
     function test_Subscribe_Partner_USDC() public {
@@ -422,58 +444,105 @@ contract VeyroqRegistryTest is Test {
         assertEq(usdc.balanceOf(treasury), treasuryBefore + partnerMonthly);
     }
 
-    function test_Subscribe_ExtendExistingDuration() public {
+    function test_SelfCustodialUser_SubscribesAndCommitsDirectly() public {
+        address privyWallet = address(0x89);
+        usdc.mint(privyWallet, 1_000 * 10 ** 6);
+
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+
+        vm.startPrank(privyWallet);
+        usdc.approve(address(registry), type(uint256).max);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+
+        uint256 proofId = registry.commitAuditProof(privyWallet, keccak256("PRIVY_ROOT"), 100, 200, 4, bytes32(0));
+        assertEq(proofId, 0);
+        registry.authorizeAuditor(auditor, block.timestamp + 30 days, keccak256("SCOPE"));
+        vm.stopPrank();
+
+        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(privyWallet);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(expiresAt, block.timestamp + 30 days);
+        assertTrue(isActive);
+        assertTrue(registry.isAuditorAuthorized(privyWallet, auditor));
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + ENTERPRISE_FEE + PROTOCOL_FEE);
+
+        IVeyroqRegistry.AuditCommitment memory c = registry.getAuditCommitment(privyWallet, 0);
+        assertEq(c.submitter, privyWallet);
+    }
+
+    function test_RevertIf_DoubleSubscribeBefore30DaysExpire_And_RenewAfterOptOut() public {
         address newOrg = address(0x31);
         usdc.mint(newOrg, 10_000 * 10 ** 6);
         vm.startPrank(newOrg);
         usdc.approve(address(registry), type(uint256).max);
 
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+        registry.subscribe(IVeyroqRegistry.PlanTier.SingleOrg, 1);
         uint256 firstExpiry = block.timestamp + 30 days;
 
-        // Extend by 2 more months
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 2);
-        (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = registry.getSubscription(newOrg);
+        // Attempting to subscribe again during the active 30-day window reverts on-chain
+        vm.expectRevert("VeyroqRegistry: Active subscription in progress");
+        registry.subscribe(IVeyroqRegistry.PlanTier.SingleOrg, 1);
+
+        vm.expectRevert("VeyroqRegistry: Active subscription in progress");
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+
+        // Warp to 1 second before expiry: still active, still reverts
+        vm.warp(firstExpiry - 1);
+        vm.expectRevert("VeyroqRegistry: Active subscription in progress");
+        registry.subscribe(IVeyroqRegistry.PlanTier.SingleOrg, 1);
+
+        // Warp to exact 30-day completion: automatically opted out (PlanTier.Free, isActive == false)
+        vm.warp(firstExpiry);
+        (IVeyroqRegistry.PlanTier expiredTier, , bool expiredActive) = registry.getSubscription(newOrg);
+        assertEq(uint256(expiredTier), uint256(IVeyroqRegistry.PlanTier.Free));
+        assertFalse(expiredActive);
+
+        // Manual renewal now succeeds for a fresh 30-day countdown
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
+        (IVeyroqRegistry.PlanTier renewedTier, uint256 renewedExpiry, bool renewedActive) = registry.getSubscription(newOrg);
         vm.stopPrank();
 
-        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
-        assertEq(expiresAt, firstExpiry + (2 * 30 days));
-        assertTrue(isActive);
+        assertEq(uint256(renewedTier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
+        assertEq(renewedExpiry, block.timestamp + 30 days);
+        assertTrue(renewedActive);
     }
 
     function test_Subscribe_NativeFee() public {
         // Deploy registry with address(0) for usdcToken (native coin payments)
         vm.prank(owner);
-        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, 0, 0.1 ether, 0.2 ether);
+        VeyroqRegistry nativeRegistry = new VeyroqRegistry(address(0), treasury, 0, 0.01 ether, 0.1 ether, 0.2 ether);
 
         address subscriber = address(0x444);
         vm.deal(subscriber, 10 ether);
 
-        uint256 fee = nativeRegistry.enterpriseFee() * 2; // 2 months
+        uint256 fee = nativeRegistry.enterpriseFee(); // 1 month (30 days)
         vm.prank(subscriber);
-        nativeRegistry.subscribe{value: fee}(IVeyroqRegistry.PlanTier.Enterprise, 2);
+        nativeRegistry.subscribe{value: fee}(IVeyroqRegistry.PlanTier.Enterprise, 1);
 
         (IVeyroqRegistry.PlanTier tier, uint256 expiresAt, bool isActive) = nativeRegistry.getSubscription(subscriber);
         assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
-        assertEq(expiresAt, block.timestamp + 60 days);
+        assertEq(expiresAt, block.timestamp + 30 days);
         assertTrue(isActive);
     }
 
     function test_RevertIf_Subscribe_ZeroMonths() public {
-        vm.prank(organization);
+        address unsub = address(0x32);
+        vm.prank(unsub);
         vm.expectRevert("VeyroqRegistry: Invalid duration");
         registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 0);
     }
 
-    function test_RevertIf_Subscribe_Exceeds12Months() public {
-        vm.prank(organization);
+    function test_RevertIf_Subscribe_MultiMonthBlocked() public {
+        address unsub = address(0x33);
+        vm.prank(unsub);
         vm.expectRevert("VeyroqRegistry: Invalid duration");
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 13);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 2);
     }
 
     function test_RevertIf_Subscribe_ValueSentForERC20() public {
-        vm.deal(organization, 1 ether);
-        vm.prank(organization);
+        address unsub = address(0x34);
+        vm.deal(unsub, 1 ether);
+        vm.prank(unsub);
         vm.expectRevert("VeyroqRegistry: Value not accepted for ERC20 fee");
         registry.subscribe{value: 0.1 ether}(IVeyroqRegistry.PlanTier.Enterprise, 1);
     }
@@ -484,7 +553,7 @@ contract VeyroqRegistryTest is Test {
         vm.startPrank(freeOrg);
         usdc.approve(address(registry), type(uint256).max);
 
-        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        vm.expectRevert("VeyroqRegistry: Active paid subscription required");
         registry.commitAuditProof(freeOrg, keccak256("ROOT"), 100, 200, 5, bytes32(0));
         vm.stopPrank();
     }
@@ -504,16 +573,16 @@ contract VeyroqRegistryTest is Test {
     }
 
     function test_RevertIf_ExpiredPartnerAuditorCommitsProof() public {
-        // Extend organization subscription for 3 months so org remains valid
-        vm.prank(organization);
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 3);
-
-        // Authorize auditor for 60 days
+        // Authorize auditor for 60 days while both subscriptions are active
         vm.prank(organization);
         registry.authorizeAuditor(auditor, block.timestamp + 60 days, bytes32(0));
 
-        // Fast-forward 31 days so auditor's 1-month Partner subscription expires while authorization is still valid
+        // Fast-forward 31 days so auditor's 30-day Partner subscription expires while authorization is still valid
         vm.warp(block.timestamp + 31 days);
+
+        // Organization manually renews its 30-day subscription, but auditor does NOT renew
+        vm.prank(organization);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
 
         vm.prank(auditor);
         vm.expectRevert("VeyroqRegistry: Submitting firm requires active Partner subscription");
@@ -522,15 +591,16 @@ contract VeyroqRegistryTest is Test {
 
     function test_Admin_SetTierFees() public {
         vm.prank(owner);
-        registry.setTierFees(499 * 10 ** 6, 1499 * 10 ** 6);
+        registry.setTierFees(9 * 10 ** 6, 499 * 10 ** 6, 1499 * 10 ** 6);
 
+        assertEq(registry.singleOrgFee(), 9 * 10 ** 6);
         assertEq(registry.enterpriseFee(), 499 * 10 ** 6);
         assertEq(registry.partnerFee(), 1499 * 10 ** 6);
 
         // Unauthorized caller reverts
         vm.prank(unauthorized);
         vm.expectRevert();
-        registry.setTierFees(1, 2);
+        registry.setTierFees(1, 2, 3);
     }
 
     function test_Admin_MigrateSubscription() public {
@@ -553,7 +623,7 @@ contract VeyroqRegistryTest is Test {
 
         // Compromised wallet can no longer commit proofs
         vm.prank(organization);
-        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        vm.expectRevert("VeyroqRegistry: Active paid subscription required");
         registry.commitAuditProof(organization, keccak256("ROOT"), 100, 200, 5, bytes32(0));
 
         // Clean recovery wallet now holds the exact remaining subscription and can commit proofs
@@ -597,18 +667,84 @@ contract VeyroqRegistryTest is Test {
         vm.stopPrank();
     }
 
-    function testFuzz_SubscriptionExpiry(uint8 months) public {
-        vm.assume(months >= 1 && months <= 12);
+    function testFuzz_Subscription30DayLockAndRenewal(uint8 tierSeed, uint32 elapsedBeforeRetry) public {
+        uint8 tierIdx = (tierSeed % 3) + 1; // 1 = SingleOrg, 2 = Enterprise, 3 = Partner
+        IVeyroqRegistry.PlanTier chosenTier = IVeyroqRegistry.PlanTier(tierIdx);
 
         address fuzzedSubscriber = address(0x60);
         usdc.mint(fuzzedSubscriber, 50_000 * 10 ** 6);
         vm.startPrank(fuzzedSubscriber);
         usdc.approve(address(registry), type(uint256).max);
-        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, months);
+        registry.subscribe(chosenTier, 1);
+
+        uint256 startTs = block.timestamp;
+        (, uint256 expiresAt, bool isActive) = registry.getSubscription(fuzzedSubscriber);
+        assertEq(expiresAt, startTs + 30 days);
+        assertTrue(isActive);
+
+        // Any time strictly before 30 days elapse must revert on duplicate subscription attempt
+        uint256 insideWindow = startTs + (uint256(elapsedBeforeRetry) % 30 days);
+        vm.warp(insideWindow);
+        vm.expectRevert("VeyroqRegistry: Active subscription in progress");
+        registry.subscribe(chosenTier, 1);
+
+        // At 30 days elapsed, subscription opts out automatically and manual renewal succeeds
+        vm.warp(startTs + 30 days);
+        (, , bool activeAt30d) = registry.getSubscription(fuzzedSubscriber);
+        assertFalse(activeAt30d);
+
+        registry.subscribe(chosenTier, 1);
+        (, uint256 newExpiresAt, bool activeAfterRenew) = registry.getSubscription(fuzzedSubscriber);
+        assertEq(newExpiresAt, block.timestamp + 30 days);
+        assertTrue(activeAfterRenew);
+        vm.stopPrank();
+    }
+
+    // ─── On-Chain Hardening & Self-Custodial Access Tests ────────────────────
+
+    function test_Owner_CanSelfSubscribe() public {
+        usdc.mint(owner, 1_000 * 10 ** 6);
+        vm.startPrank(owner);
+        usdc.approve(address(registry), type(uint256).max);
+        registry.subscribe(IVeyroqRegistry.PlanTier.Enterprise, 1);
         vm.stopPrank();
 
-        (, uint256 expiresAt, bool isActive) = registry.getSubscription(fuzzedSubscriber);
-        assertEq(expiresAt, block.timestamp + (uint256(months) * 30 days));
+        (IVeyroqRegistry.PlanTier tier, , bool isActive) = registry.getSubscription(owner);
+        assertEq(uint256(tier), uint256(IVeyroqRegistry.PlanTier.Enterprise));
         assertTrue(isActive);
+    }
+
+    function test_RevertIf_SingleOrgAuthorizesExternalAuditor() public {
+        address singleOrg = address(0x53);
+        usdc.mint(singleOrg, 100 * 10 ** 6);
+        vm.startPrank(singleOrg);
+        usdc.approve(address(registry), type(uint256).max);
+        registry.subscribe(IVeyroqRegistry.PlanTier.SingleOrg, 1);
+
+        // SingleOrg CAN commit its own audit proof
+        uint256 proofId = registry.commitAuditProof(singleOrg, keccak256("SINGLE_ORG_ROOT"), 100, 200, 3, bytes32(0));
+        assertEq(proofId, 0);
+
+        // SingleOrg CANNOT delegate external Big-4 auditors on-chain
+        vm.expectRevert("VeyroqRegistry: Enterprise or Partner subscription required");
+        registry.authorizeAuditor(auditor, block.timestamp + 30 days, bytes32(0));
+        vm.stopPrank();
+    }
+
+    function test_RevertIf_SelfAuthorizeAuditor() public {
+        vm.prank(auditor);
+        vm.expectRevert("VeyroqRegistry: Cannot self-authorize");
+        registry.authorizeAuditor(auditor, block.timestamp + 30 days, bytes32(0));
+    }
+
+    function test_Ownable2Step_TwoStepOwnershipTransfer() public {
+        vm.prank(owner);
+        registry.transferOwnership(newOwnerCandidate);
+        assertEq(registry.pendingOwner(), newOwnerCandidate);
+        assertEq(registry.owner(), owner);
+
+        vm.prank(newOwnerCandidate);
+        registry.acceptOwnership();
+        assertEq(registry.owner(), newOwnerCandidate);
     }
 }

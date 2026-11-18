@@ -39,10 +39,9 @@
           <span class="brand-title">Veyroq</span>
         </a>
 
-        <!-- Dynamic Plan Badge -->
+        <!-- Dynamic Plan Action -->
         <div class="plan-cluster">
-          <span class="plan-badge enterprise" id="plan-badge-display">Enterprise Treasury</span>
-          <button class="btn-plan-manage" id="btn-open-plan-modal">Upgrade / Downgrade</button>
+          <button class="btn-plan-manage" id="btn-open-plan-modal">Subscribe / Plans</button>
         </div>
       </div>
 
@@ -51,9 +50,6 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span id="wallet-btn-text">Connect Wallet</span>
         </button>
-
-        <a href="/docs" class="doc-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
-        <a href="/legal/privacy" class="doc-link" target="_blank" rel="noopener noreferrer">Privacy ↗</a>
       </div>
     </header>
   </div>
@@ -70,7 +66,7 @@
           <div class="cell-stat-big tabular-nums" id="stat-volume">$0.00 <small style="font-size: 14px; font-weight: 500; color: var(--ink-secondary);">USDC</small></div>
         </div>
         <div class="cell-meta-row" id="merkle-status">
-          <span class="status-verified-text">100% on-chain balanced</span>
+          <span class="status-verified-text">Awaiting on-chain history</span>
         </div>
       </div>
 
@@ -78,7 +74,7 @@
       <div class="metric-cell">
         <div>
           <div class="cell-title">Verified line items</div>
-          <div class="cell-stat-big tabular-nums" id="stat-items" style="color: var(--ink-primary);">0 <small style="font-size: 14px; font-weight: 500; color: var(--ink-secondary);">/ 0 classified</small></div>
+          <div class="cell-stat-big tabular-nums" id="stat-items" style="color: var(--ink-primary);">0 <small style="font-size: 14px; font-weight: 500; color: var(--ink-secondary);">Transactions</small></div>
         </div>
         <div class="cell-meta-row">
           <span style="font-size: 12px; color: var(--ink-secondary);">Zero unclassified leaves</span>
@@ -90,20 +86,20 @@
         <div>
           <div class="cell-title">Treasury vault identity</div>
           <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--ink-primary); margin-top: 2px;" id="display-treasury-name">
-            Acme Foundation Vault
+            Unassigned Vault
           </div>
           <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
             <span style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-secondary);" id="display-treasury-addr">
-              0x71C8...22Ec
+              Not connected
             </span>
-            <button type="button" class="btn-copy-micro" id="btn-copy-strip-addr" title="Copy Address">
+            <button type="button" class="btn-copy-micro" id="btn-copy-strip-addr" title="Copy Address" style="display:none;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
             </button>
           </div>
         </div>
         <div class="cell-meta-row" style="margin-top: 6px;">
-          <span class="badge-tag" id="connected-wallet-pill" style="font-size: 10px; font-weight: 600; color: var(--burgundy); background: var(--cream-light); border: 1px solid var(--sage-dark); padding: 2px 8px; border-radius: 4px; display: inline-block; cursor: pointer;" title="Manage connected account">
-            Privy Core Verified
+          <span class="badge-tag" id="connected-wallet-pill" style="display:none; font-size: 10px; font-weight: 600; color: var(--burgundy); background: var(--cream-light); border: 1px solid var(--sage-dark); padding: 2px 8px; border-radius: 4px; cursor: pointer;" title="Manage connected account">
+            Connected
           </span>
         </div>
       </div>
@@ -113,10 +109,10 @@
         <div>
           <div class="cell-title">Statutory compliance</div>
           <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--burgundy);" id="stat-assurance">
-            GAAP Proof Active
+            Awaiting Audit
           </div>
           <div style="font-size: 12px; color: var(--ink-secondary); margin-top: 2px;">
-            Direct sync for QuickBooks &amp; Xero
+            CSV exports for QuickBooks &amp; Xero
           </div>
         </div>
         <button class="btn-strip-export" id="btn-strip-quick-export">
@@ -135,7 +131,6 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             Audit Configuration
           </span>
-          <span class="version-tag">v2.4 Pro</span>
         </div>
 
         <div class="card-inner-body">
@@ -154,11 +149,10 @@
           <div class="field-group">
             <label class="field-label" for="network-select">Settlement Network</label>
             <select class="field-control" id="network-select">
-              <option value="Arc">Circle Arc L1 (Chain ID: 5042002)</option>
-              <option value="Base">Base Mainnet (EVM L2)</option>
-              <option value="Monad">Monad (Parallel EVM)</option>
-              <option value="Arbitrum">Arbitrum One</option>
-              <option value="Ethereum">Ethereum Mainnet</option>
+              <option value="Arc">Arc Testnet</option>
+              <option value="Base">Base Testnet</option>
+              <option value="Monad">Monad Testnet</option>
+              <option value="Arbitrum">Arbitrum Testnet</option>
             </select>
           </div>
 
@@ -170,7 +164,7 @@
                 <span id="copy-org-text">Copy</span>
               </button>
             </div>
-            <input type="text" class="field-control font-mono" id="org-address" value="0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
+            <input type="text" class="field-control font-mono" id="org-address" value="" spellcheck="false" placeholder="0x... (Safe, Ledger, EOA)">
             
             <div class="vault-tier-row" id="vault-tier-row">
               <span class="badge-tier unverified" id="vault-status-badge">Draft Mode (Unverified)</span>
@@ -195,7 +189,6 @@
 
           <!-- Hidden verification helper hooks for app.js calculateCompleteness -->
           <div style="display:none;" id="status-card">
-            <button id="btn-load-demo-key"></button>
             <span id="network-rpc-status">RPC Active</span>
             <span id="active-network-label">Circle Arc L1</span>
             <span id="verified-count">0</span>
@@ -233,7 +226,7 @@
           <div class="table-filter-bar">
             <div class="search-box">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="table-search-input" placeholder="Search recipient, block, or hash">
+              <input type="text" id="table-search-input" aria-label="Search decrypted transactions" placeholder="Search recipient, block, or hash">
             </div>
 
             <div class="category-filter-pills">
@@ -268,26 +261,27 @@
             </table>
           </div>
 
-          <!-- Bottom Trigger Strip for Live Compliance Output Modal -->
-          <div class="compliance-footer-strip" id="btn-open-compliance-footer">
-            <div class="strip-left">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--burgundy);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-              <div>
-                <div class="strip-title">Live Compliance Output &amp; Zero-Knowledge Audit Scope</div>
-                <div class="strip-meta">Inspect redacted certificate, GAAP accounting proofs, and statutory exports</div>
-              </div>
-            </div>
-            <button class="btn-open-compliance" type="button">
-              <span>Inspect Certificate Modal →</span>
-            </button>
-          </div>
-
         </div>
       </section>
 
     </div>
 
   </main>
+
+  <!-- 3b. COCKPIT FOOTER -->
+  <div class="cockpit-footer-wrapper">
+    <footer class="cockpit-footer">
+      <div class="footer-left">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:18px; height:18px; opacity:0.85;">
+        <span>Veyroq Treasury Audit Console</span>
+      </div>
+      <div class="footer-right">
+        <a href="/docs" class="doc-link" target="_blank" rel="noopener noreferrer">Docs ↗</a>
+        <a href="/legal/privacy" class="doc-link" target="_blank" rel="noopener noreferrer">Privacy Policy ↗</a>
+        <a href="/legal/refund" class="doc-link" target="_blank" rel="noopener noreferrer">Refund Policy ↗</a>
+      </div>
+    </footer>
+  </div>
 
   <!-- 4. LIVE COMPLIANCE OUTPUT MODAL -->
   <div class="modal-overlay" id="compliance-modal" style="display: none;">
@@ -309,7 +303,7 @@
 
         <div class="cert-detail-row">
           <span class="lbl">Treasury vault address:</span>
-          <span class="val font-mono" id="cert-display-vault">0x71C8...22Ec</span>
+          <span class="val font-mono" id="cert-display-vault">—</span>
         </div>
         <div class="cert-detail-row">
           <span class="lbl">Accounting period:</span>
@@ -317,11 +311,11 @@
         </div>
         <div class="cert-detail-row">
           <span class="lbl">Total reconciled outflow:</span>
-          <span class="val font-mono tabular-nums" id="cert-display-outflow">$148,250.00 USDC</span>
+          <span class="val font-mono tabular-nums" id="cert-display-outflow">$0.00 USDC</span>
         </div>
         <div class="cert-detail-row">
           <span class="lbl">Reconciled items:</span>
-          <span class="val tabular-nums" id="cert-display-items">6 Verified (100% on-chain)</span>
+          <span class="val tabular-nums" id="cert-display-items">0 Verified</span>
         </div>
         <div class="cert-detail-row">
           <span class="lbl">Recipient names &amp; details:</span>
@@ -329,7 +323,7 @@
         </div>
         <div class="cert-detail-row">
           <span class="lbl">Cryptographic proof:</span>
-          <span class="val font-mono" style="font-size:11px; color:var(--green-verified);" id="cert-display-proof">0x9df8...e021 (Valid Merkle Proof)</span>
+          <span class="val font-mono" style="font-size:11px; color:var(--ink-muted);" id="cert-display-proof">—</span>
         </div>
       </div>
 
@@ -349,7 +343,7 @@
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--sage-hairline);">
         <button class="btn btn-primary btn-sm" id="btn-anchor-proof-modal" disabled style="width:100%; padding:10px; justify-content:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span id="anchor-btn-text">Anchor Proof on Arc Testnet ($5 USDC)</span>
+          <span id="anchor-btn-text">Commit Audit Proof</span>
         </button>
         <div id="anchor-proof-feedback" style="font-size:11px; margin-top:6px; text-align:center; min-height:16px;"></div>
       </div>
@@ -364,7 +358,6 @@
       <div class="modal-header-brand">
         <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
         <span style="font-family:var(--font-heading); font-weight:700; font-size:16px; color:var(--burgundy);">VEYROQ</span>
-        <span class="plan-badge enterprise" style="margin-left: 6px;">Enterprise Treasury</span>
       </div>
 
       <h3 style="font-family:var(--font-heading); font-size:20px; font-weight:700; color:var(--burgundy); margin-bottom:4px;">
@@ -381,7 +374,7 @@
         </div>
         <div class="wallet-info">
           <span class="wallet-name">Browser Web3 Wallet</span>
-          <span class="wallet-detail">MetaMask, Rabby, Rainbow, Coinbase, Brave</span>
+          <span class="wallet-detail">SafePal, Rabby, MetaMask, Coinbase, Rainbow</span>
         </div>
         <span class="wallet-badge" id="detected-ext-badge">Ready</span>
       </button>
@@ -389,7 +382,7 @@
       <!-- Option 2: Privy Email OTP -->
       <div class="privy-email-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <label style="font-family:var(--font-mono); font-size:11px; font-weight:600; text-transform:uppercase; color:var(--ink-secondary);">
+          <label for="privy-email-input" style="font-family:var(--font-mono); font-size:11px; font-weight:600; text-transform:uppercase; color:var(--ink-secondary);">
             Privy Email OTP
           </label>
           <span style="font-size:10px; font-weight:600; color:var(--burgundy); background:var(--cream-beige); padding:2px 6px; border-radius:4px;">Privy Core</span>
@@ -397,14 +390,14 @@
 
         <div id="privy-email-step">
           <div style="display:flex; gap:8px;">
-            <input type="email" id="privy-email-input" placeholder="cfo@foundation.xyz" style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--sage-dark); font-size:12px; background:var(--cream-surface); outline:none;">
+            <input type="email" id="privy-email-input" aria-label="Email address for Privy OTP" placeholder="cfo@foundation.xyz" style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--sage-dark); font-size:12px; background:var(--cream-surface); outline:none;">
             <button class="btn btn-primary btn-sm" id="btn-privy-send-otp" style="white-space:nowrap;">Send Code</button>
           </div>
         </div>
 
         <div id="privy-otp-step" style="display:none; margin-top:8px;">
           <div style="display:flex; gap:8px;">
-            <input type="text" id="privy-otp-input" placeholder="6-digit code" maxlength="6" style="width:120px; padding:8px 10px; font-family:var(--font-mono); font-size:13px; text-align:center; border:1px solid var(--sage-dark); border-radius:8px; background:var(--cream-surface);">
+            <input type="text" id="privy-otp-input" aria-label="6-digit Privy OTP verification code" placeholder="6-digit code" maxlength="6" style="width:120px; padding:8px 10px; font-family:var(--font-mono); font-size:13px; text-align:center; border:1px solid var(--sage-dark); border-radius:8px; background:var(--cream-surface);">
             <button class="btn btn-primary btn-sm" id="btn-privy-verify-otp" style="flex:1;">Verify &amp; Connect</button>
           </div>
         </div>
@@ -448,13 +441,26 @@
           <span class="detail-value" id="account-modal-email">—</span>
         </div>
 
+        <div class="session-balance-block">
+          <div class="address-header-row">
+            <span class="address-label">USDC Balance</span>
+            <span class="address-network-label" id="account-modal-usdc-chain">Arc Testnet</span>
+          </div>
+          <div class="balance-display-row">
+            <span class="balance-amount font-mono" id="account-modal-usdc-balance">— USDC</span>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-usdc-balance" type="button" title="Refresh on-chain USDC balance" style="padding: 4px 10px; font-size: 11px;">
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+
         <div class="session-address-block">
           <div class="address-header-row">
             <span class="address-label">Treasury Address</span>
             <span class="address-network-label" id="account-modal-network">Circle Arc L1</span>
           </div>
           <div class="address-display-box font-mono" id="account-modal-full-address">
-            0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec
+            —
           </div>
           <div class="address-action-row">
             <button class="btn btn-secondary btn-sm" id="btn-copy-account-addr" type="button">
@@ -495,7 +501,7 @@
         Cryptographic proof of vault custody. Zero-gas, non-custodial, and strictly isolated from assets.
       </p>
 
-      <!-- Institutional Pre-Sign Safety Notice based on security.md -->
+      <!-- Institutional Pre-Sign Safety Notice -->
       <div class="siwe-security-notice">
         <div class="security-notice-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -511,10 +517,31 @@
         </div>
       </div>
 
+      <!-- Wallet / Signing Method Selector -->
+      <div class="field-group" style="margin-top: 12px; margin-bottom: 10px;">
+        <label class="field-label" for="siwe-wallet-select">Select Signer Wallet (Direct Owner or Safe Multisig Signer)</label>
+        <select class="field-control" id="siwe-wallet-select">
+          <option value="privy">Privy Wallet (Active Session)</option>
+          <option value="rabby">Rabby Extension (EOA / Ledger / Safe Owner)</option>
+          <option value="metamask">MetaMask Extension (EOA / Ledger / Safe Owner)</option>
+          <option value="safepal">SafePal Extension (EOA / Safe Owner)</option>
+          <option value="hardware">Paste Signed Challenge Hex (EIP-1271 / Offline Signer)</option>
+        </select>
+        <div style="font-size: 11px; color: var(--ink-muted); margin-top: 5px; line-height: 1.4;">
+          For a Safe / MultiSafe treasury, connect any authorized Safe Owner wallet above (or Ledger via Rabby/MetaMask) — Veyroq verifies <code>Safe.isOwner()</code> on-chain automatically.
+        </div>
+      </div>
+
+      <!-- Optional Offline / EIP-1271 Signature Input -->
+      <div class="field-group" id="siwe-manual-sig-group" style="display: none; margin-bottom: 10px;">
+        <label class="field-label" for="siwe-manual-sig-input">Paste Signed Challenge Hex (0x...)</label>
+        <input type="text" class="field-control font-mono" id="siwe-manual-sig-input" placeholder="0x... (EIP-1271 Safe message or offline ECDSA signature)" spellcheck="false">
+      </div>
+
       <!-- Raw SIWE Challenge Preview -->
-      <div style="margin-top: 14px;">
+      <div style="margin-top: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-secondary);">EIP-4361 Challenge Message</span>
+          <span style="font-size: 11px; font-weight: 600; color: var(--ink-secondary);">EIP-4361 Challenge Message</span>
           <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-secondary);" id="siwe-nonce-display">Nonce: loading...</span>
         </div>
         <pre class="siwe-challenge-box font-mono" id="siwe-challenge-preview">Fetching challenge from server...</pre>
@@ -538,44 +565,97 @@
 
       <div class="modal-header-brand">
         <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:26px; height:26px;">
-        <span class="modal-title">Manage Institutional Tier</span>
+        <span class="modal-title">Institutional Tier Required</span>
       </div>
 
       <p class="modal-desc">
-        Select your organization's compliance tier. Changes apply prior to the start of the next billing cycle.
+        Select an active subscription tier for Circle Arc Testnet. All tiers are live and verified on-chain.
       </p>
 
       <div class="plan-manage-grid">
         <!-- Tier 1 -->
-        <div class="plan-tile" onclick="changePlanTier('free', 'Single Org · Free')">
+        <div class="plan-tile" id="tile-tier-single">
           <div class="plan-tile-left">
             <span class="plan-tile-title">Single Org</span>
-            <span class="plan-tile-sub">Free / Open-Source Core · Single-treasury testing</span>
+            <span class="plan-tile-sub">$5 / 30 days in testnet USDC · Single-treasury testing</span>
           </div>
-          <button class="btn-select-tier" id="btn-tier-free">Select</button>
+          <button class="btn-select-tier" id="btn-tier-single" type="button">Subscribe ($5 USDC)</button>
         </div>
 
         <!-- Tier 2 -->
-        <div class="plan-tile active-tier" onclick="changePlanTier('enterprise', 'Enterprise Treasury')">
+        <div class="plan-tile" id="tile-tier-enterprise">
           <div class="plan-tile-left">
             <span class="plan-tile-title" style="color:var(--burgundy);">Enterprise Treasury</span>
-            <span class="plan-tile-sub">$50 / month in testnet USDC · QuickBooks &amp; Xero sync</span>
+            <span class="plan-tile-sub">$50 / 30 days in testnet USDC · QuickBooks &amp; Xero CSVs</span>
           </div>
-          <button class="btn-select-tier current" id="btn-tier-enterprise">Active Plan</button>
+          <button class="btn-select-tier" id="btn-tier-enterprise" type="button">Subscribe ($50 USDC)</button>
         </div>
 
         <!-- Tier 3 -->
-        <div class="plan-tile" onclick="changePlanTier('partner', 'Audit Firm Partner')">
+        <div class="plan-tile" id="tile-tier-partner">
           <div class="plan-tile-left">
             <span class="plan-tile-title">Audit Firm Partner</span>
-            <span class="plan-tile-sub">$150 / month in testnet USDC · Multi-client firm licensing</span>
+            <span class="plan-tile-sub">$150 / 30 days in testnet USDC · Client auditor licensing</span>
           </div>
-          <button class="btn-select-tier" id="btn-tier-partner">Select</button>
+          <button class="btn-select-tier" id="btn-tier-partner" type="button">Subscribe ($150 USDC)</button>
         </div>
       </div>
 
       <div class="billing-notice-box">
-        <strong>Billing Notice:</strong> Tier upgrades or downgrades take effect prior to the coming month's billing cycle. All existing on-chain cryptographic proofs and local view keys remain valid indefinitely.
+        <strong>Billing Notice:</strong> Each subscription grants a 30-day on-chain cycle enforced by <code>VeyroqRegistry</code>. Wallets cannot double-subscribe during an active 30-day period and automatically opt out upon expiry with zero auto-deduction.
+      </div>
+    </div>
+  </div>
+
+  <!-- 6b. SUBSCRIPTION SUCCESS MODAL (Auto-closes after 5s, dismissible anytime) -->
+  <div class="modal-overlay" id="subscription-success-modal" style="display: none;">
+    <div class="modal-card" style="width: 440px; padding: 24px;">
+      <button class="btn-close" id="btn-close-sub-success" aria-label="Close modal">&times;</button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--green-tint); color:var(--green-verified); font-weight:700; font-size:14px;">✓</span>
+        <span id="sub-success-title" style="font-family:var(--font-heading); font-size:16px; font-weight:600; color:var(--ink-primary);">
+          Successfully subscribed to Single Organization ($5 USDC)
+        </span>
+      </div>
+
+      <div style="background:var(--cream-light); border:1px solid var(--sage-dark); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <span style="font-size:12px; color:var(--ink-secondary); font-weight:500;">Transaction</span>
+        <a id="sub-success-tx-link" href="https://explorer.testnet.arc.io" target="_blank" rel="noopener noreferrer" class="font-mono" style="font-size:12px; font-weight:600; color:var(--burgundy); text-decoration:underline;">
+          0x... ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6c. TRANSACTION CONFIRMATION MODAL (Replaces native browser confirm()) -->
+  <div class="modal-overlay" id="confirm-tx-modal" style="display: none; z-index: 1200;">
+    <div class="modal-card" style="width: 440px; max-width: 94vw; padding: 24px;">
+      <button class="btn-close" id="btn-confirm-close" aria-label="Cancel confirmation">&times;</button>
+
+      <div class="modal-header-brand" style="margin-bottom: 12px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:22px; height:22px;">
+        <span class="modal-title" id="confirm-modal-title" style="font-size: 16px;">Confirm On-Chain Action</span>
+      </div>
+
+      <p id="confirm-modal-message" style="font-size: 13px; color: var(--ink-secondary); line-height: 1.55; margin-bottom: 14px;">
+        Review signing details before submitting.
+      </p>
+
+      <div id="confirm-modal-meta" style="background:var(--cream-light); border:1px solid var(--sage-dark); border-radius:10px; padding:10px 12px; font-size:12px; margin-bottom:16px; display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; justify-content:space-between; gap:8px;">
+          <span style="color:var(--ink-muted);">Signing Wallet</span>
+          <span id="confirm-modal-wallet" class="font-mono" style="color:var(--ink-primary); font-weight:600;">—</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:8px;">
+          <span style="color:var(--ink-muted);">Network</span>
+          <span id="confirm-modal-network" style="color:var(--burgundy); font-weight:600;">Circle Arc Testnet</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondary" id="btn-confirm-cancel" type="button" style="flex:1; justify-content:center;">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-ok" type="button" style="flex:1; justify-content:center;">Confirm &amp; Sign</button>
       </div>
     </div>
   </div>
@@ -724,28 +804,6 @@
       if (modal) modal.style.display = 'none';
     }
 
-    function changePlanTier(tierKey, tierLabel) {
-      const badge = document.getElementById('plan-badge-display');
-      if (badge) {
-        badge.textContent = tierLabel;
-        badge.className = 'plan-badge ' + tierKey;
-      }
-
-      ['free', 'enterprise', 'partner'].forEach(k => {
-        const btn = document.getElementById('btn-tier-' + k);
-        if (btn) {
-          if (k === tierKey) {
-            btn.className = 'btn-select-tier current';
-            btn.textContent = 'Active Plan';
-          } else {
-            btn.className = 'btn-select-tier';
-            btn.textContent = 'Select';
-          }
-        }
-      });
-      closePlanModal();
-    }
-
     function initInlineModals() {
       document.getElementById('btn-open-comp-top')?.addEventListener('click', openComplianceModal);
       document.getElementById('btn-open-compliance-footer')?.addEventListener('click', openComplianceModal);
@@ -765,40 +823,32 @@
         if (exportBtn && !exportBtn.disabled) {
           exportBtn.click();
         } else {
-          document.getElementById('btn-load-demo-key')?.click();
-          openComplianceModal();
+          alert('No on-chain transactions loaded. Enter a treasury address and fetch real history first.');
         }
       });
 
       document.getElementById('btn-open-plan-modal')?.addEventListener('click', openPlanModal);
-      document.getElementById('plan-badge-display')?.addEventListener('click', openPlanModal);
       document.getElementById('btn-close-plan-modal')?.addEventListener('click', closePlanModal);
       document.getElementById('plan-modal')?.addEventListener('click', e => {
         if (e.target === document.getElementById('plan-modal')) closePlanModal();
       });
 
-      document.getElementById('btn-tier-free')?.addEventListener('click', e => {
+      document.getElementById('btn-tier-single')?.addEventListener('click', e => {
         e.stopPropagation();
         if (window.handlePlanTierSelect) {
-          window.handlePlanTierSelect('free', 'Single Org · Free');
-        } else {
-          changePlanTier('free', 'Single Org · Free');
+          window.handlePlanTierSelect('single_org', 'Single Organization ($5 USDC)');
         }
       });
       document.getElementById('btn-tier-enterprise')?.addEventListener('click', e => {
         e.stopPropagation();
         if (window.handlePlanTierSelect) {
-          window.handlePlanTierSelect('enterprise', 'Enterprise Treasury');
-        } else {
-          changePlanTier('enterprise', 'Enterprise Treasury');
+          window.handlePlanTierSelect('enterprise', 'Enterprise Treasury ($50 USDC)');
         }
       });
       document.getElementById('btn-tier-partner')?.addEventListener('click', e => {
         e.stopPropagation();
         if (window.handlePlanTierSelect) {
-          window.handlePlanTierSelect('partner', 'Audit Firm Partner');
-        } else {
-          changePlanTier('partner', 'Audit Firm Partner');
+          window.handlePlanTierSelect('partner', 'Audit Firm Partner ($150 USDC)');
         }
       });
 

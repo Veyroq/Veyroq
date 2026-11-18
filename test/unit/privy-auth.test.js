@@ -6,6 +6,7 @@ import {
   clearAuthState,
   connectInjectedWallet,
   initPrivy,
+  getPrivyProvider,
   sendEmailOtp,
   verifyEmailOtp,
   saveAuthSession,
@@ -171,5 +172,55 @@ test('Unit: resolveEvmAddress in server resolves linked wallet and deterministic
   // Deterministic output
   const resolvedAgain = resolveEvmAddress(userWithoutWallet, 'treasury@fund.xyz');
   assert.equal(resolved2, resolvedAgain);
+});
+
+test('Unit: verifyEmailOtp auto-provisions embedded wallet when missing and binds getPrivyProvider', async () => {
+  clearAuthState();
+  const provisionedAddress = '0x9999000011112222333344445555666677778888';
+  let createCalled = false;
+  const mockEip1193 = {
+    request: async ({ method }) => {
+      if (method === 'eth_accounts') return [provisionedAddress];
+      if (method === 'eth_sendTransaction') return '0xprivytx';
+      return null;
+    }
+  };
+
+  class MockEmbeddedPrivy {
+    constructor() {
+      this.auth = {
+        email: {
+          sendCode: async () => ({ success: true }),
+          loginWithCode: async () => ({
+            user: { id: 'did:privy:newuser', linked_accounts: [{ type: 'email', address: 'founder@veyroq.xyz' }] }
+          })
+        }
+      };
+      this.embeddedWallet = {
+        create: async () => {
+          createCalled = true;
+          return {
+            user: {
+              id: 'did:privy:newuser',
+              linked_accounts: [
+                { type: 'wallet', chain_type: 'ethereum', wallet_client_type: 'privy', address: provisionedAddress, id: 'w1', recovery_method: 'privy-v2' }
+              ]
+            }
+          };
+        },
+        getEthereumProvider: async () => mockEip1193
+      };
+    }
+  }
+
+  await initPrivy('test-app-id', MockEmbeddedPrivy);
+  const res = await verifyEmailOtp('founder@veyroq.xyz', '123456');
+  assert.equal(createCalled, true);
+  assert.equal(res.address, provisionedAddress);
+
+  const signer = await getPrivyProvider();
+  assert.ok(signer);
+  const accts = await signer.request({ method: 'eth_accounts' });
+  assert.deepEqual(accts, [provisionedAddress]);
 });
 

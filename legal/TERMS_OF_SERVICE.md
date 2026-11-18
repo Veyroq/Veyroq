@@ -1,7 +1,7 @@
 # Veyroq — Institutional Terms of Service
 
-**Last Updated:** November 1, 2026  
-**Effective Date:** November 1, 2026  
+**Last Updated:** November 18, 2026  
+**Effective Date:** November 18, 2026  
 **Platform:** Veyroq (`veyroq.xyz`)  
 
 ---
@@ -14,16 +14,16 @@ By accessing or using the Veyroq software, website (`veyroq.xyz`), documentation
 ### 2. Software Utility Only — No Financial, Tax, or Legal Advice
 **VEYROQ IS NOT A REGISTERED ACCOUNTING FIRM, CERTIFIED PUBLIC ACCOUNTANT (CPA), BROKER-DEALER, TAX ADVISOR, OR LEGAL COUNSEL.**
 
-* The Services provide decentralized, client-side cryptographic tools to assist users in decrypting, verifying, and exporting transaction records across supported blockchain networks.
-* Veyroq makes no representations or warranties regarding whether generated audit proofs or reports satisfy specific local tax laws, court evidentiary standards, or regulatory filings (such as IRS, SEC, HMRC, or international accounting standards).
+* The Services provide decentralized, client-side cryptographic tools to assist users in inspecting, reconciling, and exporting CSV transaction records across supported blockchain networks.
+* Veyroq makes no representations or warranties regarding whether generated audit certificates or CSV exports satisfy specific local tax laws, court evidentiary standards, or regulatory filings (such as IRS, SEC, HMRC, or international accounting standards).
 * You are solely responsible for verifying the accuracy of all financial statements and consulting licensed legal, tax, and accounting professionals.
 
 ---
 
 ### 3. Non-Custodial Nature of Services
 * Veyroq does not hold, custody, manage, or control any private keys, View Keys, or digital assets.
-* Transactions executed on supported blockchain networks or via Veyroq smart contracts (`VeyroqRegistry.sol`) are non-custodial and irreversible.
-* You are solely responsible for securing your private keys, View Keys, device biometrics, and local computing environment.
+* Transactions executed on supported blockchain networks or via Veyroq smart contracts (`VeyroqRegistry.sol`) are self-signed, non-custodial, and irreversible.
+* You are solely responsible for securing your private keys, Privy email credentials, View Keys, and local computing environment.
 
 ---
 
@@ -31,7 +31,7 @@ By accessing or using the Veyroq software, website (`veyroq.xyz`), documentation
 You agree not to use Veyroq to:
 1. Evade lawful sanctions (including sanctions enforced by the U.S. Treasury's OFAC, the EU, or the UN).
 2. Conceal proceeds of criminal activity, terrorism financing, or money laundering.
-3. Attempt to exploit, reverse engineer, or disrupt network validator nodes or the Veyroq protocol.
+3. Attempt to exploit, reverse engineer, or disrupt network validator nodes, authentication endpoints, or the Veyroq protocol.
 
 ---
 

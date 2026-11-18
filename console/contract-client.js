@@ -1,8 +1,8 @@
 // Veyroq Live Contract Client for Circle Arc Testnet
-// Interacts with deployed VeyroqRegistry (0x56204E81959cE4015507d8d20434d28DBC166fE2)
+// Interacts with deployed VeyroqRegistry (0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3)
 // and official Circle Arc Testnet USDC (0x3600000000000000000000000000000000000000).
 
-export const REGISTRY_ADDRESS = '0x56204E81959cE4015507d8d20434d28DBC166fE2';
+export const REGISTRY_ADDRESS = '0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3';
 export const USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
 export const ARC_CHAIN_ID_DEC = 5042002;
 export const ARC_CHAIN_ID_HEX = '0x4cef52';
@@ -11,6 +11,7 @@ export const ARC_EXPLORER_TX = 'https://explorer.testnet.arc.io/tx/';
 
 export const TIER_FEES = {
   free: 0n,
+  single_org: 5_000_000n,  // $5 USDC (6 decimals)
   enterprise: 50_000_000n, // $50 USDC (6 decimals)
   partner: 150_000_000n    // $150 USDC (6 decimals)
 };
@@ -57,6 +58,27 @@ export async function arcRpcCall(method, params = []) {
   return data.result;
 }
 
+// Wait for on-chain transaction receipt before dependent contract calls
+export async function waitForTxReceipt(txHash, timeoutMs = 45000) {
+  if (!txHash || typeof txHash !== 'string' || !txHash.startsWith('0x')) return null;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const receipt = await arcRpcCall('eth_getTransactionReceipt', [txHash]);
+      if (receipt) {
+        if (receipt.status === '0x0') {
+          throw new Error(`Transaction reverted on-chain (${txHash.slice(0, 10)}...)`);
+        }
+        return receipt;
+      }
+    } catch (err) {
+      if (err.message?.includes('reverted')) throw err;
+    }
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  return null;
+}
+
 // Network Switcher
 export async function ensureArcNetwork(provider) {
   if (!provider || !provider.request) return false;
@@ -88,51 +110,71 @@ export async function ensureArcNetwork(provider) {
   }
 }
 
-// Read On-Chain Subscription
+// Read On-Chain Subscription directly from VeyroqRegistry smart contract
 export async function fetchOnChainSubscription(orgAddress) {
   if (!orgAddress || !orgAddress.startsWith('0x')) {
-    return { tier: 'Free', tierCode: 0, expiresAt: 0, isActive: false };
+    return { tier: 'Free', tierKey: 'free', tierCode: 0, expiresAt: 0, isActive: false };
   }
+
+  // 1. Query Arc Testnet RPC getSubscription(address) on VeyroqRegistry (Single Source of Truth)
   try {
     const data = SELECTORS.getSubscription + padAddress(orgAddress);
     const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data }, 'latest']);
-    if (!result || result === '0x') {
-      return { tier: 'Free', tierCode: 0, expiresAt: 0, isActive: false };
-    }
-    const clean = result.replace(/^0x/, '');
-    const tierCode = parseInt(clean.slice(0, 64), 16) || 0;
-    const expiresAt = parseInt(clean.slice(64, 128), 16) || 0;
-    const isActive = parseInt(clean.slice(128, 192), 16) === 1;
+    if (result && result !== '0x') {
+      const clean = result.replace(/^0x/, '');
+      const tierCode = parseInt(clean.slice(0, 64), 16) || 0;
+      const expiresAt = parseInt(clean.slice(64, 128), 16) || 0;
+      const isActive = parseInt(clean.slice(128, 192), 16) === 1 && tierCode > 0;
 
-    const tierName = tierCode === 2 ? 'Audit Firm Partner' : (tierCode === 1 ? 'Enterprise Treasury' : 'Single Org · Free');
-    return {
-      tier: tierName,
-      tierCode,
-      expiresAt: expiresAt * 1000,
-      isActive
-    };
+      if (isActive) {
+        const tierName = tierCode === 3
+          ? 'Audit Firm Partner'
+          : (tierCode === 2 ? 'Enterprise Treasury' : 'Single Org ($5 USDC)');
+        const tierKey = tierCode === 3
+          ? 'partner'
+          : (tierCode === 2 ? 'enterprise' : 'single_org');
+        return {
+          tier: tierName,
+          tierKey,
+          tierCode,
+          expiresAt: expiresAt * 1000,
+          isActive: true
+        };
+      }
+      return { tier: 'Free', tierKey: 'free', tierCode: 0, expiresAt: expiresAt * 1000, isActive: false };
+    }
   } catch (err) {
     console.warn('Failed to fetch on-chain subscription:', err);
-    return { tier: 'Free', tierCode: 0, expiresAt: 0, isActive: false };
   }
+
+  return { tier: 'Free', tierKey: 'free', tierCode: 0, expiresAt: 0, isActive: false };
 }
 
-// On-Chain Subscription Execution (Approve + Subscribe)
+// On-Chain Subscription Execution (Approve + Subscribe for 1 single 30-day cycle)
 export async function executeSubscribeOnChain(provider, tierCode, months = 1) {
   await ensureArcNetwork(provider);
   const accounts = await provider.request({ method: 'eth_accounts' });
   const user = accounts[0];
   if (!user) throw new Error('No connected wallet account found.');
 
-  const monthlyFee = tierCode === 2 ? TIER_FEES.partner : TIER_FEES.enterprise;
-  const totalFee = monthlyFee * BigInt(months);
+  // Pre-flight check against on-chain VeyroqRegistry 30-day lock
+  const currentSub = await fetchOnChainSubscription(user);
+  if (currentSub && currentSub.isActive && currentSub.expiresAt > Date.now()) {
+    const expiryDate = new Date(currentSub.expiresAt).toISOString().split('T')[0];
+    throw new Error(`Active 30-day subscription (${currentSub.tier}) already in progress on-chain until ${expiryDate}. Renewal unlocks after your 30-day period expires.`);
+  }
+
+  const monthlyFee = tierCode === 3
+    ? TIER_FEES.partner
+    : (tierCode === 2 ? TIER_FEES.enterprise : TIER_FEES.single_org);
+  const totalFee = monthlyFee * 1n;
 
   // 1. Check USDC allowance
   const allowanceData = SELECTORS.allowance + padAddress(user) + padAddress(REGISTRY_ADDRESS);
   const currentAllowanceHex = await arcRpcCall('eth_call', [{ to: USDC_ADDRESS, data: allowanceData }, 'latest']);
   const currentAllowance = BigInt(currentAllowanceHex || '0');
 
-  // 2. Approve if necessary
+  // 2. Approve if necessary and wait for mining before calling subscribe()
   if (currentAllowance < totalFee) {
     const approveData = SELECTORS.approve + padAddress(REGISTRY_ADDRESS) + padUint256(totalFee);
     const approveTx = await provider.request({
@@ -144,12 +186,11 @@ export async function executeSubscribeOnChain(provider, tierCode, months = 1) {
         value: '0x0'
       }]
     });
-    // Give RPC 2 seconds to register approval
-    await new Promise(r => setTimeout(r, 2000));
+    await waitForTxReceipt(approveTx);
   }
 
-  // 3. Call subscribe(tierCode, months)
-  const subscribeData = SELECTORS.subscribe + padUint256(tierCode) + padUint256(months);
+  // 3. Call subscribe(tierCode, 1) — 30-day single cycle enforced by VeyroqRegistry
+  const subscribeData = SELECTORS.subscribe + padUint256(tierCode) + padUint256(1);
   const txHash = await provider.request({
     method: 'eth_sendTransaction',
     params: [{
@@ -159,6 +200,7 @@ export async function executeSubscribeOnChain(provider, tierCode, months = 1) {
       value: '0x0'
     }]
   });
+  await waitForTxReceipt(txHash);
 
   return txHash;
 }
@@ -177,11 +219,11 @@ export async function executeCommitProofOnChain(provider, orgAddress, auditRootH
 
   if (currentAllowance < PROTOCOL_FEE) {
     const approveData = SELECTORS.approve + padAddress(REGISTRY_ADDRESS) + padUint256(PROTOCOL_FEE);
-    await provider.request({
+    const approveTx = await provider.request({
       method: 'eth_sendTransaction',
       params: [{ from: user, to: USDC_ADDRESS, data: approveData, value: '0x0' }]
     });
-    await new Promise(r => setTimeout(r, 2000));
+    await waitForTxReceipt(approveTx);
   }
 
   // 2. Call commitAuditProof(orgAddress, auditRootHash, periodStart, periodEnd, txCount, metadataHash)
@@ -203,6 +245,7 @@ export async function executeCommitProofOnChain(provider, orgAddress, auditRootH
       value: '0x0'
     }]
   });
+  await waitForTxReceipt(txHash);
 
   return txHash;
 }
@@ -229,6 +272,8 @@ export async function executeAuthorizeAuditorOnChain(provider, auditorAddress, v
       value: '0x0'
     }]
   });
+  await waitForTxReceipt(txHash);
 
   return txHash;
 }
+

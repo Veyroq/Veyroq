@@ -1,0 +1,34 @@
+# Render Blueprint for the persistent Veyroq API & Auth backend (server.js).
+# autoDeploy is false so CI (GitHub Actions) triggers deployment only after all tests pass.
+
+services:
+  - type: web
+    name: veyroq-api
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VEYROQ_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: PORT
+        value: "10000"
+      - key: VEYROQ_REGISTRY_ADDRESS
+        value: "0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3"
+      - key: ARC_RPC_URL
+        value: "https://rpc.testnet.arc.io"
+      - key: PRIVY_APP_ID
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: VEYROQ_CROSS_SITE_COOKIES
+        value: "false"

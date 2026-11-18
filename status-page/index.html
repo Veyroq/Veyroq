@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veyroq System Status — Independent Health &amp; Reliability Monitor</title>
+  <meta name="description" content="Independent standalone status page for Veyroq Protocol API, Circle Arc RPC, and Audit Console availability.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <div class="brand">
+        <svg width="34" height="28" viewBox="0 0 36 30" fill="none" aria-hidden="true">
+          <path d="M3 4L18 26L33 4" stroke="#590907" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11 4L18 15L25 4" stroke="#A5A79B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1>Veyroq System Status</h1>
+          <p class="subtitle">Standalone Reliability Monitor (Hosted Separately From App Infra)</p>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn btn-ghost" href="https://veyroq.xyz" target="_blank" rel="noopener noreferrer">veyroq.xyz</a>
+        <button class="btn" id="btn-refresh" type="button">Refresh Checks</button>
+      </div>
+    </header>
+
+    <section class="banner" id="overall-banner" aria-live="polite">
+      <div>
+        <p class="banner-title" id="overall-title">Checking Veyroq services...</p>
+        <div class="banner-meta" id="overall-meta">Target API: loading...</div>
+      </div>
+      <span class="pill pending" id="overall-pill">PROBING</span>
+    </section>
+
+    <section class="card">
+      <h2>Live Service Components</h2>
+      <div id="services-list">
+        <p class="empty-note">Running health probes...</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Scheduled Maintenance</h2>
+      <div id="maintenance-list">
+        <p class="empty-note">No scheduled maintenance windows.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Per-Endpoint Error Budgets &amp; Burn-Rate Policy</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Criticality</th>
+              <th>30-Day SLO</th>
+              <th>Monthly Error Budget</th>
+              <th>Burn-Rate / Freeze Rule</th>
+            </tr>
+          </thead>
+          <tbody id="budgets-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Active &amp; Recent Incidents</h2>
+      <div id="incidents-list">
+        <p class="empty-note">No active incidents reported.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Incident Communication Workflow Templates</h2>
+      <div id="templates-list"></div>
+    </section>
+
+    <footer>
+      Deploy this directory independently on Cloudflare Pages, Netlify, or GitHub Pages (<code>status.veyroq.xyz</code>). Overrides: <code>?api=http://localhost:3000</code>.
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

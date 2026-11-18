@@ -5,6 +5,17 @@
 const VeyroqExporter = (() => {
 
   /**
+   * Neutralize spreadsheet formula injection (CWE-1236) and escape CSV quotes.
+   */
+  function csvCell(val) {
+    let str = val === null || val === undefined ? '' : String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  /**
    * Generate a QuickBooks-compatible General Journal CSV
    * Maps each decrypted transaction to a debit/credit double-entry pair.
    */
@@ -30,13 +41,13 @@ const VeyroqExporter = (() => {
 
       // Debit line (expense side)
       rows.push([
-        `VQ-${period}-${String(lineNo).padStart(4, '0')}`,
+        csvCell(`VQ-${period}-${String(lineNo).padStart(4, '0')}`),
         dateFormatted,
-        mapCategoryToAccount(tx.category, 'debit'),
+        csvCell(mapCategoryToAccount(tx.category, 'debit')),
         tx.grossAmount.toFixed(2),
         '',
-        `"${tx.plainCounterparty} — ${tx.category}"`,
-        tx.type,
+        csvCell(`${tx.plainCounterparty} — ${tx.category}`),
+        csvCell(tx.type),
         tx.block,
         tx.leafHash || '',
         'CONFIRMED_AUDITED'
@@ -44,13 +55,13 @@ const VeyroqExporter = (() => {
 
       // Credit line (cash/USDC side)
       rows.push([
-        `VQ-${period}-${String(lineNo).padStart(4, '0')}`,
+        csvCell(`VQ-${period}-${String(lineNo).padStart(4, '0')}`),
         dateFormatted,
         'Digital Assets:USDC Operating',
         '',
         tx.grossAmount.toFixed(2),
-        `"${tx.plainCounterparty} — Settlement"`,
-        tx.type,
+        csvCell(`${tx.plainCounterparty} — Settlement`),
+        csvCell(tx.type),
         tx.block,
         '',
         ''
@@ -86,27 +97,27 @@ const VeyroqExporter = (() => {
       // Debit
       rows.push([
         dateFormatted,
-        `"${tx.plainCounterparty} — ${tx.category}"`,
+        csvCell(`${tx.plainCounterparty} — ${tx.category}`),
         mapCategoryToXeroCode(tx.category),
         'NO GST',
         tx.grossAmount.toFixed(2),
         '',
         ref,
         'AuditPeriod',
-        period
+        csvCell(period)
       ].join(','));
 
       // Credit
       rows.push([
         dateFormatted,
-        `"USDC Settlement — ${tx.plainCounterparty}"`,
+        csvCell(`USDC Settlement — ${tx.plainCounterparty}`),
         '090',
         'NO GST',
         '',
         tx.grossAmount.toFixed(2),
         ref,
         'AuditPeriod',
-        period
+        csvCell(period)
       ].join(','));
     });
 
@@ -136,27 +147,27 @@ const VeyroqExporter = (() => {
       const dateFormatted = formatDateISO(tx.date);
 
       rows.push([
-        `VQ-NS-${tx.id}`,
+        csvCell(`VQ-NS-${tx.id}`),
         dateFormatted,
         'Primary',
-        mapCategoryToAccount(tx.category, 'debit'),
+        csvCell(mapCategoryToAccount(tx.category, 'debit')),
         tx.grossAmount.toFixed(2),
         '',
-        `"${tx.plainCounterparty}"`,
-        tx.type,
+        csvCell(tx.plainCounterparty),
+        csvCell(tx.type),
         tx.block,
         tx.leafHash || ''
       ].join(','));
 
       rows.push([
-        `VQ-NS-${tx.id}`,
+        csvCell(`VQ-NS-${tx.id}`),
         dateFormatted,
         'Primary',
         'Digital Currency - USDC',
         '',
         tx.grossAmount.toFixed(2),
-        `"Settlement — ${tx.plainCounterparty}"`,
-        tx.type,
+        csvCell(`Settlement — ${tx.plainCounterparty}`),
+        csvCell(tx.type),
         tx.block,
         ''
       ].join(','));

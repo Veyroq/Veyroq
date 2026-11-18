@@ -5,6 +5,7 @@ import {
   generateSiweNonce,
   parseSiweMessage,
   verifySiweSignature,
+  verifyVaultOwnershipSiwe,
   activeNonces
 } from '../../server.js';
 
@@ -209,6 +210,27 @@ Issued At: ${new Date().toISOString()}`;
   });
   assert.equal(resDomain.valid, false);
   assert.ok(resDomain.error.includes('Domain mismatch'));
+
+  // Localhost SIWE message MUST be rejected against production expectedDomain
+  const { nonce: nonceLocal } = generateSiweNonce(wallet.address, 'app.veyroq.xyz');
+  const localSpoofMsg = `localhost wants you to sign in with your Ethereum account:
+${wallet.address}
+
+Notice.
+
+URI: http://localhost:3000
+Version: 1
+Chain ID: 5042002
+Nonce: ${nonceLocal}
+Issued At: ${new Date().toISOString()}`;
+  const resProdSpoof = verifySiweSignature({
+    message: localSpoofMsg,
+    signature: '0x1234',
+    expectedAddress: wallet.address,
+    expectedDomain: 'app.veyroq.xyz'
+  });
+  assert.equal(resProdSpoof.valid, false);
+  assert.ok(resProdSpoof.error.includes('Domain mismatch'));
 });
 
 test('Unit: generateSiweNonce prunes expired nonces when map grows', () => {
@@ -237,4 +259,89 @@ test('Unit: generateSiweNonce prunes expired nonces when map grows', () => {
   for (let i = 0; i < 1002; i++) {
     activeNonces.delete(`dummy-${i}`);
   }
+});
+
+test('Unit: verifyVaultOwnershipSiwe verifies Safe Multisig via on-chain Safe.isOwner(signer) and EIP-1271', async () => {
+  const safeAddr = '0x2793309a81D4111b8a5FEDb9A16a1DdE49D3bfeA';
+  const safeOwnerWallet = ethers.Wallet.createRandom();
+  const attackerWallet = ethers.Wallet.createRandom();
+  const domain = 'localhost';
+
+  const makeMsg = (nonce, exp) => `${domain} wants you to sign in with your Ethereum account:
+${safeAddr}
+
+Verify treasury ownership for Veyroq Institutional Cockpit.
+
+URI: http://localhost:3000
+Version: 1
+Chain ID: 5042002
+Nonce: ${nonce}
+Issued At: ${new Date().toISOString()}
+Expiration Time: ${exp}`;
+
+  const mockSafeProvider = {
+    getCode: async () => '0x60806040',
+    call: async ({ data }) => {
+      const selector = String(data || '').slice(0, 10).toLowerCase();
+      if (selector === '0x2f54bf6e') {
+        const argAddr = '0x' + String(data).slice(-40).toLowerCase();
+        const isOwner = argAddr === safeOwnerWallet.address.toLowerCase();
+        return '0x' + (isOwner ? '1' : '0').padStart(64, '0');
+      }
+      if (selector === '0x1626ba7e') {
+        return '0x00000000' + '0'.repeat(56);
+      }
+      return '0x';
+    }
+  };
+
+  // 1. Authorized Safe Owner signs -> PASS (role: safe_owner)
+  const { nonce: n1, expiresAt: e1 } = generateSiweNonce(safeAddr, domain);
+  const msg1 = makeMsg(n1, e1);
+  const sigOwner = await safeOwnerWallet.signMessage(msg1);
+  const okRes = await verifyVaultOwnershipSiwe({
+    message: msg1,
+    signature: sigOwner,
+    expectedAddress: safeAddr,
+    expectedDomain: 'localhost:3000',
+    provider: mockSafeProvider
+  });
+  assert.equal(okRes.valid, true);
+  assert.equal(okRes.role, 'safe_owner');
+  assert.equal(okRes.address, ethers.getAddress(safeAddr));
+  assert.equal(okRes.signer, ethers.getAddress(safeOwnerWallet.address));
+
+  // 2. Non-owner attacker signs -> REJECT
+  const { nonce: n2, expiresAt: e2 } = generateSiweNonce(safeAddr, domain);
+  const msg2 = makeMsg(n2, e2);
+  const sigAttacker = await attackerWallet.signMessage(msg2);
+  const badRes = await verifyVaultOwnershipSiwe({
+    message: msg2,
+    signature: sigAttacker,
+    expectedAddress: safeAddr,
+    expectedDomain: 'localhost:3000',
+    provider: mockSafeProvider
+  });
+  assert.equal(badRes.valid, false);
+  assert.ok(badRes.error.includes('not an active on-chain owner'));
+
+  // 3. EIP-1271 smart contract signature returning 0x1626ba7e -> PASS (role: eip1271)
+  const eip1271Provider = {
+    getCode: async () => '0x60806040',
+    call: async ({ data }) => {
+      if (String(data).startsWith('0x1626ba7e')) return '0x1626ba7e' + '0'.repeat(56);
+      return '0x' + '0'.repeat(64);
+    }
+  };
+  const { nonce: n3, expiresAt: e3 } = generateSiweNonce(safeAddr, domain);
+  const msg3 = makeMsg(n3, e3);
+  const contractRes = await verifyVaultOwnershipSiwe({
+    message: msg3,
+    signature: '0x' + 'aa'.repeat(65),
+    expectedAddress: safeAddr,
+    expectedDomain: 'localhost:3000',
+    provider: eip1271Provider
+  });
+  assert.equal(contractRes.valid, true);
+  assert.equal(contractRes.role, 'eip1271');
 });

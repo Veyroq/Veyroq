@@ -1,10 +1,29 @@
 // Veyroq Privy & Web3 Authentication Controller
-// Interfaces with @privy-io/js-sdk-core and standard EIP-1193 injected providers.
+// Interfaces with @privy-io/js-sdk-core (browser embedded wallets) and EIP-1193 providers.
 
 export const SESSION_STORAGE_KEY = 'veyroq_auth_session_v1';
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+export const ARC_PRIVY_CHAIN = {
+  id: 5042002,
+  network: 'arc-testnet',
+  name: 'Circle Arc Testnet',
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.testnet.arc.io'] },
+    public: { http: ['https://rpc.testnet.arc.io'] }
+  },
+  blockExplorers: {
+    default: { name: 'Arc Explorer', url: 'https://explorer.testnet.arc.io' }
+  },
+  testnet: true
+};
+
 let privyClient = null;
+let privySdkModule = null;
+let privyInitPromise = null;
+let privyEthereumProvider = null;
+let privyMessageListenerBound = false;
 let memorySession = null;
 let authState = {
   isAuthenticated: false,
@@ -105,6 +124,7 @@ export function setAuthState(address, method, user = null, email = null) {
 }
 
 export function clearAuthState() {
+  privyEthereumProvider = null;
   authState = {
     isAuthenticated: false,
     address: null,
@@ -118,7 +138,14 @@ export function clearAuthState() {
 }
 
 export function disconnectWallet() {
+  privyEthereumProvider = null;
+  if (privyClient?.auth?.logout) {
+    Promise.resolve(privyClient.auth.logout()).catch(() => {});
+  }
   clearAuthState();
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  }
   return true;
 }
 
@@ -139,6 +166,97 @@ export async function connectInjectedWallet(ethereumProvider = null) {
   return primaryAddress;
 }
 
+function extractEmbeddedEthereumWallet(user) {
+  if (!user) return null;
+  if (privySdkModule?.getUserEmbeddedEthereumWallet) {
+    const found = privySdkModule.getUserEmbeddedEthereumWallet(user);
+    if (found?.address) return found;
+  }
+  const accounts = user.linked_accounts || user.linkedAccounts || [];
+  return accounts.find(a =>
+    a.type === 'wallet' &&
+    (a.chain_type === 'ethereum' || a.chainType === 'ethereum') &&
+    (a.wallet_client_type === 'privy' || a.walletClientType === 'privy' || !a.wallet_client_type) &&
+    a.address?.startsWith('0x')
+  ) || accounts.find(a =>
+    (a.type === 'wallet' || a.chainType === 'ethereum' || a.chain_type === 'ethereum') &&
+    a.address?.startsWith('0x')
+  ) || null;
+}
+
+function mountPrivyIframe(privy) {
+  if (typeof document === 'undefined' || !privy?.embeddedWallet?.getURL || !privy.setMessagePoster) {
+    return;
+  }
+  const iframeUrl = privy.embeddedWallet.getURL();
+  const iframeOrigin = new URL(iframeUrl).origin;
+
+  if (!privyMessageListenerBound) {
+    window.addEventListener('message', (event) => {
+      if (event.origin !== iframeOrigin) return;
+      let payload = event.data;
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch { return; }
+      }
+      if (payload && typeof payload.event === 'string' && payload.event.startsWith('privy:')) {
+        privyClient?.embeddedWallet?.onMessage(payload);
+      }
+    });
+    privyMessageListenerBound = true;
+  }
+
+  let iframe = document.getElementById('veyroq-privy-iframe');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'veyroq-privy-iframe';
+    iframe.src = iframeUrl;
+    iframe.style.display = 'none';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(iframe);
+  }
+
+  privy.setMessagePoster({
+    postMessage: (msg, targetOrigin) => {
+      iframe.contentWindow?.postMessage(msg, targetOrigin || iframeOrigin);
+    },
+    reload: () => {
+      iframe.src = iframeUrl;
+    }
+  });
+}
+
+async function resolvePrivyWalletAndProvider(user) {
+  let activeUser = user;
+  let wallet = extractEmbeddedEthereumWallet(activeUser);
+
+  if (!wallet && privyClient?.embeddedWallet?.create) {
+    const idempotencyKey = (privySdkModule?.generateWalletIdempotencyKey && activeUser?.id)
+      ? await privySdkModule.generateWalletIdempotencyKey(activeUser.id, 'ethereum')
+      : undefined;
+    const created = await privyClient.embeddedWallet.create(idempotencyKey ? { idempotencyKey } : {});
+    activeUser = created?.user || created || activeUser;
+    wallet = extractEmbeddedEthereumWallet(activeUser);
+  }
+
+  let provider = null;
+  if (wallet && privyClient?.embeddedWallet) {
+    const entropy = privySdkModule?.getEntropyDetailsFromUser?.(activeUser);
+    if (privyClient.embeddedWallet.getEthereumProvider) {
+      provider = await privyClient.embeddedWallet.getEthereumProvider({
+        wallet,
+        ...(entropy || { entropyId: wallet.address, entropyIdVerifier: 'ethereum-address-verifier' })
+      });
+    } else if (privyClient.embeddedWallet.getProvider) {
+      provider = await privyClient.embeddedWallet.getProvider(wallet);
+    }
+  }
+
+  return { user: activeUser, wallet, provider };
+}
+
 // Initialize Privy SDK Client
 export async function initPrivy(appId, PrivyClass = null) {
   if (!appId) {
@@ -146,26 +264,117 @@ export async function initPrivy(appId, PrivyClass = null) {
   }
 
   try {
-    const SDK = PrivyClass || (await import('@privy-io/js-sdk-core')).default;
-    privyClient = new SDK({ appId });
+    if (PrivyClass) {
+      privySdkModule = typeof PrivyClass === 'object' ? PrivyClass : null;
+      const Ctor = typeof PrivyClass === 'function' ? PrivyClass : PrivyClass.default;
+      privyClient = new Ctor({ appId, supportedChains: [ARC_PRIVY_CHAIN] });
+    } else {
+      const mod = typeof window !== 'undefined'
+        ? await import('./privy-sdk.bundle.js')
+        : await import('@privy-io/js-sdk-core');
+      privySdkModule = mod;
+      const PrivyCtor = mod.default;
+      const storage = (typeof window !== 'undefined' && mod.LocalStorage) ? new mod.LocalStorage() : undefined;
+      privyClient = new PrivyCtor({
+        appId,
+        ...(storage ? { storage } : {}),
+        supportedChains: [ARC_PRIVY_CHAIN]
+      });
+      mountPrivyIframe(privyClient);
+      if (typeof privyClient.initialize === 'function') {
+        await privyClient.initialize();
+      }
+    }
     return privyClient;
   } catch (err) {
+    privyClient = null;
     console.warn('Privy initialization warning:', err.message);
     throw err;
   }
 }
 
-// Send Email OTP Code (Backend zero-custody proxy using .env or mock SDK client)
+export async function initPrivyFromServer() {
+  if (privyClient) return privyClient;
+  if (privyInitPromise) return privyInitPromise;
+
+  privyInitPromise = (async () => {
+    const res = await fetch('/api/auth/privy/config', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!res.ok || !data.appId) {
+      throw new Error(data.error || 'Privy App ID is not configured on the server.');
+    }
+    return await initPrivy(data.appId);
+  })();
+
+  try {
+    return await privyInitPromise;
+  } finally {
+    privyInitPromise = null;
+  }
+}
+
+export async function getPrivyProvider() {
+  if (privyEthereumProvider) return privyEthereumProvider;
+  if (!privyClient) {
+    try { await initPrivyFromServer(); } catch { return null; }
+  }
+  if (!privyClient?.embeddedWallet) return null;
+
+  let user = authState.user;
+  if (!user && privyClient.user?.get) {
+    try {
+      const res = await privyClient.user.get();
+      user = res?.user || res || null;
+    } catch {
+      return null;
+    }
+  }
+  if (!user) return null;
+
+  const { user: activeUser, provider } = await resolvePrivyWalletAndProvider(user);
+  if (activeUser && authState.address) {
+    authState.user = activeUser;
+  }
+  privyEthereumProvider = provider;
+  return privyEthereumProvider;
+}
+
+export async function restorePrivySession() {
+  try {
+    await initPrivyFromServer();
+    if (!privyClient?.user?.get) return null;
+    const res = await privyClient.user.get();
+    const user = res?.user || res;
+    if (!user) return null;
+
+    const { user: activeUser, wallet, provider } = await resolvePrivyWalletAndProvider(user);
+    if (!wallet?.address) return null;
+
+    privyEthereumProvider = provider;
+    const accounts = activeUser?.linked_accounts || activeUser?.linkedAccounts || [];
+    const emailAcc = accounts.find(a => a.type === 'email');
+    const email = emailAcc?.address || getAuthSession()?.email || null;
+    setAuthState(wallet.address, 'privy_email', activeUser, email);
+    return { address: wallet.address, email, user: activeUser, provider };
+  } catch {
+    return null;
+  }
+}
+
+// Send Email OTP Code directly through browser Privy SDK (so embedded wallet signs in-browser)
 export async function sendEmailOtp(email) {
   if (!email || !email.includes('@')) {
     throw new Error('Invalid email address');
+  }
+
+  if (!privyClient && typeof window !== 'undefined') {
+    await initPrivyFromServer();
   }
 
   if (privyClient) {
     return await privyClient.auth.email.sendCode(email);
   }
 
-  // Zero-custody backend proxy call (Privy App ID resides strictly in .env)
   const res = await fetch('/api/auth/privy/send-code', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -179,24 +388,33 @@ export async function sendEmailOtp(email) {
   return data;
 }
 
-// Verify Email OTP Code
+// Verify Email OTP Code, provision embedded wallet if missing, and bind EIP-1193 signer
 export async function verifyEmailOtp(email, code) {
   if (!code || code.trim().length === 0) {
     throw new Error('Verification code is required');
   }
 
-  if (privyClient) {
-    const result = await privyClient.auth.email.loginWithCode(email, code.trim());
-    const user = result?.user;
-    const embeddedWallet = user?.linkedAccounts?.find(a => 
-      (a.type === 'wallet' || a.chainType === 'ethereum') && a.address?.startsWith('0x')
-    );
-    const address = embeddedWallet?.address || deriveDeterministicEvmAddress(user?.id || email);
-    setAuthState(address, 'privy_email', user, email);
-    return { user, address, email };
+  if (!privyClient && typeof window !== 'undefined') {
+    await initPrivyFromServer();
   }
 
-  // Zero-custody backend proxy verification
+  if (privyClient) {
+    const result = await privyClient.auth.email.loginWithCode(email, code.trim());
+    const resolved = await resolvePrivyWalletAndProvider(result?.user);
+    const activeUser = resolved.user;
+    const wallet = resolved.wallet;
+
+    // Only allow hash fallback in headless MockPrivy tests where embeddedWallet SDK is absent
+    const address = wallet?.address || (!privyClient.embeddedWallet ? deriveDeterministicEvmAddress(activeUser?.id || email) : null);
+    if (!address) {
+      throw new Error('Could not provision Privy embedded wallet for this account.');
+    }
+
+    privyEthereumProvider = resolved.provider || null;
+    setAuthState(address, 'privy_email', activeUser, email);
+    return { user: activeUser, address, email, provider: privyEthereumProvider };
+  }
+
   const res = await fetch('/api/auth/privy/verify-code', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -211,7 +429,7 @@ export async function verifyEmailOtp(email, code) {
   const address = data.address;
   const user = data.user;
   setAuthState(address, 'privy_email', user, data.email || email);
-  return { user, address, email: data.email || email };
+  return { user, address, email: data.email || email, provider: null };
 }
 
 // Universal clipboard copy helper with legacy textarea fallback

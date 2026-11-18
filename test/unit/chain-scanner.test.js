@@ -6,7 +6,11 @@ import {
   formatUnitsUSDC,
   saveTransactionTag,
   getTransactionTag,
-  fetchLiveTransactions
+  getStoredTags,
+  getExplorerAddressUrl,
+  rpcCall,
+  fetchLiveTransactions,
+  fetchUsdcBalance
 } from '../../console/chain-scanner.js';
 
 test('Unit: NETWORKS configuration contains valid Arc and EVM endpoints', () => {
@@ -64,5 +68,149 @@ test('Unit: fetchLiveTransactions gracefully handles invalid address', async () 
     async () => fetchLiveTransactions('not_an_address', 'Arc'),
     { message: 'Invalid EVM address' }
   );
+});
+
+test('Unit: getExplorerAddressUrl formats address links', () => {
+  const url = getExplorerAddressUrl('Arc', '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec');
+  assert.equal(url.includes('/address/0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec'), true);
+});
+
+test('Unit: getStoredTags returns tag map and handles empty key lookups', () => {
+  assert.equal(typeof getStoredTags(), 'object');
+  assert.equal(getTransactionTag(null), null);
+  assert.equal(saveTransactionTag(null, 'test'), undefined);
+});
+
+test('Unit: rpcCall parses valid RPC responses and catches errors', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({
+      json: async () => ({ result: '0x123' })
+    });
+    const res = await rpcCall('http://mock-rpc', 'eth_blockNumber');
+    assert.equal(res, '0x123');
+
+    globalThis.fetch = async () => ({
+      json: async () => ({ error: { message: 'Method not supported' } })
+    });
+    await assert.rejects(
+      async () => rpcCall('http://mock-rpc', 'unknown_method'),
+      { message: 'Method not supported' }
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Unit: fetchLiveTransactions parses transfer logs into transactions', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, opts) => {
+      const body = JSON.parse(opts.body);
+      if (body.method === 'eth_blockNumber') return { json: async () => ({ result: '0x1000' }) };
+      if (body.method === 'eth_getLogs') {
+        return {
+          json: async () => ({
+            result: [{
+              blockNumber: '0x1000',
+              data: '0x0000000000000000000000000000000000000000000000000000000002faf080',
+              topics: [
+                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+                '0x00000000000000000000000071c8b46b08639f70efa4c34db895c989c7fa22ec',
+                '0x0000000000000000000000001234567890123456789012345678901234567890'
+              ],
+              transactionHash: '0xabc123'
+            }]
+          })
+        };
+      }
+      return { json: async () => ({ result: null }) };
+    };
+
+    const txs = await fetchLiveTransactions('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc');
+    assert.equal(txs.length, 2);
+    assert.equal(txs[0].grossAmount, 50);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Unit: fetchUsdcBalance queries ERC-20 balance on configured chains and handles unsupported/invalid inputs', async () => {
+  const badRes = await fetchUsdcBalance('invalid', 'Arc');
+  assert.equal(badRes.supported, false);
+
+  const unconfiguredRes = await fetchUsdcBalance('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Monad');
+  assert.equal(unconfiguredRes.supported, false);
+
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({
+      json: async () => ({ result: '0x0000000000000000000000000000000000000000000000000000000002faf080' }) // 50_000_000 = 50 USDC
+    });
+    const arcBal = await fetchUsdcBalance('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc');
+    assert.equal(arcBal.supported, true);
+    assert.equal(arcBal.balance, 50);
+    assert.equal(arcBal.raw, 50_000_000n);
+    assert.equal(arcBal.symbol, 'USDC');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Unit: fetchLiveTransactions filters eth_getLogs by USDC contract and drops 18-decimal Arc native duplicate logs', async () => {
+  const originalFetch = globalThis.fetch;
+  const capturedLogFilters = [];
+  try {
+    globalThis.fetch = async (url, opts) => {
+      const body = JSON.parse(opts.body);
+      if (body.method === 'eth_blockNumber') return { json: async () => ({ result: '0x4564656' }) };
+      if (body.method === 'eth_getLogs') {
+        capturedLogFilters.push(body.params[0]);
+        const isSentFilter = Boolean(body.params[0].topics[1]);
+        return {
+          json: async () => ({
+            result: isSentFilter ? [
+              {
+                address: '0xfffffffffffffffffffffffffffffffffffffffe', // Arc 18-dec native duplicate
+                blockNumber: '0x4564656',
+                blockTimestamp: '0x6afced9f',
+                data: '0x000000000000000000000000000000000000000000000002b5e3af16b1880000',
+                topics: [
+                  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+                  '0x00000000000000000000000071c8b46b08639f70efa4c34db895c989c7fa22ec',
+                  '0x0000000000000000000000002793309a81d4111b8a5fedb9a16a1dde49d3bfea'
+                ],
+                transactionHash: '0xdup123',
+                logIndex: '0x3'
+              },
+              {
+                address: '0x3600000000000000000000000000000000000000', // Canonical 6-dec USDC
+                blockNumber: '0x4564656',
+                blockTimestamp: '0x6afced9f',
+                data: '0x0000000000000000000000000000000000000000000000000000000002faf080',
+                topics: [
+                  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+                  '0x00000000000000000000000071c8b46b08639f70efa4c34db895c989c7fa22ec',
+                  '0x0000000000000000000000002793309a81d4111b8a5fedb9a16a1dde49d3bfea'
+                ],
+                transactionHash: '0xdup123',
+                logIndex: '0x4'
+              }
+            ] : []
+          })
+        };
+      }
+      return { json: async () => ({ result: null }) };
+    };
+
+    const txs = await fetchLiveTransactions('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc');
+    assert.equal(capturedLogFilters.length, 2);
+    assert.equal(capturedLogFilters[0].address, NETWORKS['Arc'].usdcAddress);
+    assert.equal(capturedLogFilters[1].address, NETWORKS['Arc'].usdcAddress);
+    assert.equal(txs.length, 1);
+    assert.equal(txs[0].grossAmount, 50);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 

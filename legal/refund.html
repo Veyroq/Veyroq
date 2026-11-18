@@ -10,7 +10,7 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Refund & Billing Policy — Veyroq">
+  <meta property="og:title" content="Refund &amp; Billing Policy — Veyroq">
   <meta property="og:image" content="/assets/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="/assets/og-image.png">
@@ -43,40 +43,45 @@
     <div class="legal-tabs">
       <a href="/legal/privacy" class="legal-tab-pill">Privacy Policy</a>
       <a href="/legal/terms" class="legal-tab-pill">Terms of Service</a>
-      <a href="/legal/refund" class="legal-tab-pill active">Refund & Billing</a>
+      <a href="/legal/refund" class="legal-tab-pill active">Refund &amp; Billing</a>
       <a href="/legal/disclaimer" class="legal-tab-pill">Regulatory Disclaimer</a>
     </div>
 
     <article class="legal-card">
       <header class="legal-header">
         <span class="legal-eyebrow">Institutional Billing Document</span>
-        <h1 class="legal-title">Refund & Billing Policy</h1>
+        <h1 class="legal-title">Refund &amp; Billing Policy</h1>
         <div class="legal-meta">
-          <span><strong>Effective Date:</strong> November 1, 2026</span>
-          <span><strong>Entity:</strong> Veyroq Protocol & Veyroq Labs</span>
+          <span><strong>Effective Date:</strong> November 18, 2026</span>
+          <span><strong>Entity:</strong> Veyroq Protocol &amp; Veyroq Labs</span>
         </div>
       </header>
 
       <div class="legal-body">
         <h2>1. Scope of Policy</h2>
         <p>
-          This policy governs all software licenses, enterprise tier agreements, and smart contract protocol fees associated with Veyroq.
+          This policy governs all on-chain tier passes, smart contract proof anchoring fees, and any custom enterprise licensing agreements associated with Veyroq.
         </p>
 
-        <h2>2. On-Chain Protocol Fees (Non-Refundable)</h2>
-        <div class="legal-callout">
-          <strong>Deterministic On-Chain Finality:</strong> All protocol fees, proof commitment transactions, and network gas fees paid in USDC are broadcast directly to public blockchain networks. Blockchain transactions are immutable and irreversible. Once committed to the smart contract, protocol fees cannot be refunded under any circumstances.
-        </div>
-
-        <h2>3. Enterprise SaaS & Dedicated Infrastructure Subscriptions</h2>
+        <h2>2. Non-Custodial 30-Day On-Chain Passes (No Auto-Renewal)</h2>
         <ul>
-          <li><strong>Monthly Subscriptions:</strong> Billed in advance on a recurring 30-day cycle. You may cancel at any time through the billing dashboard; cancellation takes effect at the conclusion of the active period with no further charges.</li>
-          <li><strong>Annual Enterprise Agreements:</strong> May be canceled within seven (7) calendar days of agreement execution for a full refund minus any custom dedicated node provisioning costs incurred.</li>
+          <li><strong>Manual 30-Day Terms:</strong> Subscriptions executed via <code>VeyroqRegistry.sol</code> are fixed 30-day passes (<code>months == 1</code>) signed directly by your wallet. Current Arc Testnet pilot tiers are <strong>$5 USDC</strong> (Single Org), <strong>$50 USDC</strong> (Enterprise Treasury), and <strong>$150 USDC</strong> (Audit Firm Partner).</li>
+          <li><strong>No Auto-Debit:</strong> Veyroq never stores credit cards or pulls recurring USDC debits automatically. Passes expire after 30 days unless you explicitly sign a renewal transaction.</li>
         </ul>
 
-        <h2>4. Billing Disputes</h2>
+        <h2>3. On-Chain Protocol Fees (Strictly Non-Refundable)</h2>
+        <div class="legal-callout">
+          <strong>Deterministic On-Chain Finality:</strong> All tier pass fees, proof commitment transactions, and network gas fees paid in USDC settle directly on public blockchain networks. Blockchain transactions are immutable and irreversible; once confirmed on-chain, protocol fees cannot be refunded under any circumstances.
+        </div>
+
+        <h2>4. Custom Written Enterprise Agreements</h2>
         <p>
-          If you believe a billing discrepancy has occurred regarding enterprise software licensing, notify our billing team within 30 calendar days at <strong>billing@veyroq.xyz</strong>.
+          Separate off-chain invoiced Master Services Agreements (MSA), if executed, are governed by the refund and cancellation terms written into that signed MSA.
+        </p>
+
+        <h2>5. Billing Disputes</h2>
+        <p>
+          If you believe an erroneous off-chain billing charge has occurred, notify our billing team within 30 calendar days at <strong>billing@veyroq.xyz</strong>.
         </p>
       </div>
     </article>

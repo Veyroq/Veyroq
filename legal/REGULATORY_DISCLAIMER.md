@@ -1,7 +1,7 @@
 # Veyroq — Regulatory, Tax & Compliance Disclaimers
 
-**Last Updated:** November 1, 2026  
-**Effective Date:** November 1, 2026  
+**Last Updated:** November 18, 2026  
+**Effective Date:** November 18, 2026  
 **Entity:** Veyroq Protocol & Veyroq Labs (`veyroq.xyz`)  
 
 ---
@@ -12,17 +12,17 @@ Nothing contained on the Veyroq website (`veyroq.xyz`), documentation (`docs/`),
 ---
 
 ### 2. IRS Circular 230 & Tax Authority Disclosures
-Any tax information, reporting schemas, or export templates (such as IRS Form 8949, Form 1099-DA, or standard corporate tax worksheets) generated via Veyroq software are provided solely for convenience and operational reconciliation:
+Any accounting CSV export formats (such as QuickBooks, Xero, or NetSuite double-entry journal CSVs) and cryptographic Audit Certificate JSON files generated via Veyroq software are provided solely for convenience and operational reconciliation:
 * Veyroq outputs are **not** written legal or tax advice.
-* Generated reports cannot be used by any taxpayer for the purpose of avoiding penalties that may be imposed under the Internal Revenue Code or foreign revenue statutes.
+* Generated exports cannot be used by any taxpayer for the purpose of avoiding penalties that may be imposed under the Internal Revenue Code or foreign revenue statutes.
 * Each institution or user must independently verify digital asset valuations, cost-basis calculations (FIFO, LIFO, HIFO), and transaction classifications with their qualified tax accountants or legal counsel.
 
 ---
 
 ### 3. Anti-Money Laundering (AML) & Sanctions Compliance
-* Veyroq is committed to supporting legitimate enterprise privacy while actively rejecting illicit finance.
-* Veyroq’s selective disclosure tools are intentionally engineered to enable authorized institutions and law-abiding businesses to fulfill Travel Rule, FinCEN, FATF, and national AML/CFT compliance mandates.
-* Veyroq reserves the right to implement client-side screening checks against known OFAC-sanctioned addresses to prevent sanctioned actors from utilizing hosted services.
+* Veyroq is committed to supporting legitimate enterprise confidentiality while rejecting illicit finance.
+* Veyroq’s selective disclosure tools are engineered to assist authorized organizations in preparing auditable records alongside Travel Rule, FinCEN, FATF, and national AML/CFT compliance workflows.
+* Users and regulated institutions are solely responsible for complying with applicable OFAC, EU, and UN sanctions rules. Veyroq reserves the right to restrict hosted endpoints for sanctioned addresses where required by law.
 
 ---
 

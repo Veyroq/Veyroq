@@ -24,17 +24,17 @@ Veyroq is a **zero-custody audit compliance tool** for enterprises using Circle'
 Navigate to the Veyroq Compliance Console:
 
 ```
-https://console.veyroq.xyz
+https://app.veyroq.xyz
 ```
 
 ### Authentication
 
-Sign in using **Circle's User-Controlled Wallet** infrastructure:
+Sign in using **Privy Embedded Wallets** or your **EIP-1193 / Safe Multisig Wallet**:
 
-- **Email + OTP:** Enter your corporate email; receive a one-time passcode.
-- **Passkey/Biometrics:** Use device-level WebAuthn (fingerprint, Face ID).
+- **Email + OTP (Privy):** Enter your corporate email; receive a one-time passcode (`auth.privy.io`) to access your non-custodial embedded wallet.
+- **External / Multisig Wallet (SIWE + EIP-1271):** Connect MetaMask, Ledger, or verify treasury ownership via Safe EIP-1271 signatures.
 
-This authentication proves your identity without Veyroq ever having custody of your wallet's private key. Circle uses a **2-of-2 MPC key split** — one shard on Circle's infrastructure, one on your device.
+This authentication verifies treasury ownership without Veyroq ever having custody of your private key.
 
 ---
 

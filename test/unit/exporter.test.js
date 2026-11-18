@@ -84,3 +84,22 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
   assert.equal(cert.leafCommitments[0].inclusionStatus, 'MERKLE_VERIFIED');
 });
 
+test('Unit: CSV exporters neutralize formula injection (CWE-1236) and escape quotes', () => {
+  const maliciousTxs = [{
+    id: 'tx-evil',
+    date: '2026-08-04 14:22:10 UTC',
+    block: 100,
+    type: 'OUTGOING',
+    category: 'General',
+    plainCounterparty: '=cmd|"/C calc"!A0',
+    grossAmount: 10,
+    leafHash: '0xabc'
+  }];
+  const qb = VeyroqExporter.generateQuickBooksCSV(maliciousTxs, '0x71C8...', '=1+1');
+  const xero = VeyroqExporter.generateXeroCSV(maliciousTxs, '0x71C8...', '+SUM(1,2)');
+  assert.equal(qb.includes('"\'=cmd|""/C calc""!A0'), true);
+  assert.equal(qb.includes('"\'=1+1"'), false);
+  assert.equal(xero.includes('"\'=cmd|""/C calc""!A0'), true);
+  assert.equal(xero.includes('"\'+SUM(1,2)"'), true);
+});
+

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/VeyroqRegistry.sol";
@@ -30,6 +30,7 @@ contract DeployVeyroqRegistry is Script {
         address usdcToken = vm.envOr("USDC_TOKEN", address(0));
         address treasury = vm.envAddress("TREASURY");
         uint256 protocolFee = vm.envOr("PROTOCOL_FEE", uint256(5_000_000)); // Default testnet: $5 USDC
+        uint256 singleOrgFee = vm.envOr("SINGLE_ORG_FEE", uint256(5_000_000));   // Default testnet: $5 USDC
         uint256 enterpriseFee = vm.envOr("ENTERPRISE_FEE", uint256(50_000_000)); // Default testnet: $50 USDC
         uint256 partnerFee = vm.envOr("PARTNER_FEE", uint256(150_000_000));     // Default testnet: $150 USDC
 
@@ -39,6 +40,7 @@ contract DeployVeyroqRegistry is Script {
         console.log("  USDC Token:", usdcToken);
         console.log("  Treasury:", treasury);
         console.log("  Protocol Fee:", protocolFee);
+        console.log("  SingleOrg Fee:", singleOrgFee);
         console.log("  Enterprise Fee:", enterpriseFee);
         console.log("  Partner Fee:", partnerFee);
         console.log("========================================");
@@ -53,6 +55,7 @@ contract DeployVeyroqRegistry is Script {
             usdcToken,
             treasury,
             protocolFee,
+            singleOrgFee,
             enterpriseFee,
             partnerFee
         );

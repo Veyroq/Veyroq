@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 /**
  * @title IVeyroqRegistry
@@ -7,7 +7,7 @@ pragma solidity ^0.8.24;
  * Anchors cryptographic Merkle completeness proofs and manages scoped auditor authorizations.
  */
 interface IVeyroqRegistry {
-    enum PlanTier { Free, Enterprise, Partner }
+    enum PlanTier { Free, SingleOrg, Enterprise, Partner }
 
     struct AuditorPermission {
         bool isAuthorized;
@@ -62,7 +62,7 @@ interface IVeyroqRegistry {
         uint256 expiresAt,
         uint256 feePaid
     );
-    event TierFeesUpdated(uint256 newEnterpriseFee, uint256 newPartnerFee);
+    event TierFeesUpdated(uint256 newSingleOrgFee, uint256 newEnterpriseFee, uint256 newPartnerFee);
     event SubscriptionMigrated(
         address indexed oldWallet,
         address indexed newWallet,

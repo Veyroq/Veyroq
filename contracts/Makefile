@@ -7,7 +7,7 @@ CAST  := /home/binlawal/.foundry/bin/cast
 
 .PHONY: all build test clean test-verbose deploy-testnet deploy-simulate verify-testnet
 
-CONTRACT_ADDRESS ?= 0x56204E81959cE4015507d8d20434d28DBC166fE2
+CONTRACT_ADDRESS ?= 0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3
 
 all: build
 
@@ -37,6 +37,7 @@ verify-testnet:
 	@echo "  treasury():      $$($(CAST) call $(CONTRACT_ADDRESS) 'treasury()(address)' --rpc-url arc_testnet)"
 	@echo "  usdcToken():     $$($(CAST) call $(CONTRACT_ADDRESS) 'usdcToken()(address)' --rpc-url arc_testnet)"
 	@echo "  protocolFee():   $$($(CAST) call $(CONTRACT_ADDRESS) 'protocolFee()(uint256)' --rpc-url arc_testnet)"
+	@echo "  singleOrgFee():  $$($(CAST) call $(CONTRACT_ADDRESS) 'singleOrgFee()(uint256)' --rpc-url arc_testnet)"
 	@echo "  enterpriseFee(): $$($(CAST) call $(CONTRACT_ADDRESS) 'enterpriseFee()(uint256)' --rpc-url arc_testnet)"
 	@echo "  partnerFee():    $$($(CAST) call $(CONTRACT_ADDRESS) 'partnerFee()(uint256)' --rpc-url arc_testnet)"
 	@node -e 'fetch("https://explorer.testnet.arc.io/api/v2/smart-contracts/$(CONTRACT_ADDRESS)").then(r=>r.json()).then(d=>console.log("  Explorer Status: is_verified=" + d.is_verified + ", name=" + d.name + ", verified_at=" + d.verified_at))'

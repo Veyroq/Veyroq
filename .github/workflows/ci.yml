@@ -1,0 +1,152 @@
+name: Veyroq CI/CD
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' }}
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    name: Build, Security & Test Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Privy SDK bundle builds cleanly
+        run: npm run build:privy
+
+      - name: Run Node unit & integration tests (>=60% line coverage)
+        run: npm test
+
+      - name: Setup Foundry toolchain
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Solidity contract tests (Foundry)
+        run: npm run test:contracts
+
+      - name: Check committed env files & secret hygiene
+        run: |
+          if git ls-files | grep -E '^\.env($|\.)|^contracts/\.env($|\.)' | grep -vE '\.example$'; then
+            echo "::error::Non-example .env file tracked in git!"
+            exit 1
+          fi
+          if git grep -nE 'BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY' -- ':!docs' ':!test'; then
+            echo "::error::Private key material detected in tracked files!"
+            exit 1
+          fi
+
+      - name: Audit production dependencies (fail on critical)
+        run: npm audit --omit=dev --audit-level=critical
+
+  deploy-staging:
+    name: Deploy Staging (Vercel + API Server)
+    needs: quality-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Trigger staging backend deploy hook (Render / Railway)
+        env:
+          BACKEND_HOOK: ${{ secrets.STAGING_BACKEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$BACKEND_HOOK" ]; then
+            curl -fsS -X POST "$BACKEND_HOOK" >/dev/null
+            echo "Triggered staging backend deployment."
+          else
+            echo "STAGING_BACKEND_DEPLOY_HOOK not set; skipping backend webhook."
+          fi
+
+      - name: Trigger staging frontend deploy hook (Vercel)
+        env:
+          FRONTEND_HOOK: ${{ secrets.STAGING_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$FRONTEND_HOOK" ]; then
+            curl -fsS -X POST "$FRONTEND_HOOK" >/dev/null
+            echo "Triggered staging frontend deployment."
+          else
+            echo "STAGING_FRONTEND_DEPLOY_HOOK not set; skipping frontend webhook."
+          fi
+
+      - name: Verify staging /health endpoint
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+        run: |
+          if [ -n "$STAGING_API_URL" ]; then
+            for attempt in $(seq 1 18); do
+              if curl -fsS "${STAGING_API_URL%/}/health"; then
+                echo ""
+                exit 0
+              fi
+              sleep 10
+            done
+            echo "::error::Staging /health failed after 180s."
+            exit 1
+          else
+            echo "STAGING_API_URL variable not set; skipping post-deploy /health probe."
+          fi
+
+  deploy-production:
+    name: Deploy Production (Gated Promotion)
+    needs: quality-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger production backend deploy hook (Render / Railway)
+        env:
+          BACKEND_HOOK: ${{ secrets.PROD_BACKEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$BACKEND_HOOK" ]; then
+            curl -fsS -X POST "$BACKEND_HOOK" >/dev/null
+            echo "Triggered production backend deployment."
+          else
+            echo "PROD_BACKEND_DEPLOY_HOOK not set; skipping backend webhook."
+          fi
+
+      - name: Trigger production frontend deploy hook (Vercel)
+        env:
+          FRONTEND_HOOK: ${{ secrets.PROD_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$FRONTEND_HOOK" ]; then
+            curl -fsS -X POST "$FRONTEND_HOOK" >/dev/null
+            echo "Triggered production frontend deployment."
+          else
+            echo "PROD_FRONTEND_DEPLOY_HOOK not set; skipping frontend webhook."
+          fi
+
+      - name: Verify production /health endpoint
+        env:
+          PROD_API_URL: ${{ vars.PROD_API_URL }}
+        run: |
+          if [ -n "$PROD_API_URL" ]; then
+            for attempt in $(seq 1 18); do
+              if curl -fsS "${PROD_API_URL%/}/health"; then
+                echo ""
+                exit 0
+              fi
+              sleep 10
+            done
+            echo "::error::Production /health failed after 180s. Trigger rollback per docs/RUNBOOK.md!"
+            exit 1
+          else
+            echo "PROD_API_URL variable not set; skipping post-deploy /health probe."
+          fi

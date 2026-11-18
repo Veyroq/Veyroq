@@ -1,82 +1,57 @@
-# ⚡ Veyroq (`veyroq.xyz`)
+# Veyroq — Zero-Custody Institutional Treasury Audit Protocol
 
-> **Institutional Selective Disclosure, View Key Decryption & Audit Infrastructure for Circle's Arc Privacy Sector (APS)**
+Veyroq provides client-side View Key decryption, cryptographic transaction verification, EIP-1271 / Safe multisig SIWE verification, and GAAP-ready tax exports on **Circle Arc Testnet**.
 
-[![Foundry](https://img.shields.io/badge/Built%20with-Foundry-orange)](https://github.com/foundry-rs/foundry)
-[![Arc](https://img.shields.io/badge/Blockchain-Circle%20Arc-blue)](https://arc.io)
-[![USDC](https://img.shields.io/badge/Native%20Gas-USDC-2775CA)](https://circle.com/usdc)
-[![Tests](https://img.shields.io/badge/Tests-7%20Passing-brightgreen)](file:///home/binlawal/untapped%20market/contracts)
+## Production Architecture
 
----
+Veyroq runs cleanly in both local development (`node server.js` monolith) and split production hosting:
 
-## 1. What is Veyroq?
+- **Frontend Edge (Vercel):** Serves static web surfaces (`landing/`, `console/`, `docs/`, `legal/`, `assets/`) globally via CDN (`vercel.json`).
+- **API & Auth Backend (Railway or Render):** Runs `server.js` persistently for `/api/auth/*`, `/health`, rate limiting, SIWE nonce validation, and structured Pino JSON logging (`railway.toml`, `render.yaml`).
+- **First-Party Vercel Proxy (`api/index.js`):** When `VEYROQ_BACKEND_URL` is configured on Vercel, requests to `/api/*` and `/health*` proxy directly to Railway/Render so auth cookies remain first-party `SameSite=Lax`.
+- **Smart Contracts (`contracts/`):** `VeyroqRegistry.sol` verified on Arc Testnet (`0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3`).
 
-**Veyroq** is the institutional auditability, selective disclosure, and compliance bridge purpose-built for **Circle’s Arc blockchain** and the **Arc Privacy Sector (APS)**.
+## Quickstart (Local Development)
 
-While Arc allows enterprises to conduct private transactions (payroll, supplier settlement, treasury rebalancing) inside secure hardware enclaves using native USDC gas, companies are legally required to produce auditable, GAAP/IFRS-compliant tax reports for regulators (IRS, HMRC) and auditors (PwC, EY). 
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Install Node dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the server (serves landing page, console, docs, legal, and APIs on `http://localhost:3000`):
+   ```bash
+   npm run dev
+   ```
+4. Open:
+   - Landing page: `http://localhost:3000/`
+   - Institutional Console: `http://localhost:3000/console`
+   - Documentation: `http://localhost:3000/docs`
+   - Healthcheck: `http://localhost:3000/health`
 
-Veyroq provides the client-side cryptographic engine and on-chain registry that enables institutions to use **Arc View Keys** to selectively decrypt transaction records, mathematically prove completeness, and export 1-click tax files with zero data leakage to the public.
+## Testing & Verification
 
----
+- Node unit + integration suite (enforces >=60% line coverage):
+  ```bash
+  npm test
+  ```
+- Solidity smart contract tests (Foundry):
+  ```bash
+  npm run test:contracts
+  ```
+- Full test suite (Node + Foundry):
+  ```bash
+  npm run test:all
+  ```
+- Rebuild Privy SDK browser bundle:
+  ```bash
+  npm run build:privy
+  ```
 
-## 2. Modular Architecture
+## Operations & Team Engineering Docs
 
-```
-untapped market/ (Veyroq Workspace)
-├── VEYROQ_MASTER_SPEC.md        # Master architecture blueprint & specification
-├── Makefile                     # Root build, test, and preview automation
-│
-├── contracts/                   # Foundry Smart Contract Suite
-│   ├── foundry.toml             # Foundry configuration for Arc Testnet (Chain ID: 5042002)
-│   ├── Makefile                 # Foundry build & test commands
-│   ├── src/
-│   │   ├── VeyroqRegistry.sol   # On-chain auditor registry & proof commitment
-│   │   └── interfaces/
-│   │       └── IVeyroqRegistry.sol
-│   └── test/
-│       ├── VeyroqRegistry.t.sol # Invariant & unit test suite (7/7 PASSING)
-│       └── mocks/
-│           └── MockUSDC.sol
-│
-├── landing/                     # Institutional Landing Page (veyroq.xyz)
-├── docs/                        # Interactive Protocol Documentation
-├── console/                     # Veyroq Auditor & Compliance Cockpit (Zero-Custody)
-├── legal/                       # Institutional Legal Suite (Privacy, Terms, Refunds, Disclaimers)
-└── chat/                        # Historical conversation archives
-```
-
----
-
-## 3. Quickstart & Verification
-
-### Build & Run Tests with Foundry
-```bash
-# Build contracts
-make build
-
-# Run full test suite
-make test
-
-# Run tests with verbose traces
-make test-verbose
-```
-
-### Local Preview Services
-```bash
-# Preview Landing Page (http://localhost:3000)
-make serve-landing
-
-# Preview Auditor Cockpit (http://localhost:3001)
-make serve-console
-
-# Preview Protocol Docs (http://localhost:3002)
-make serve-docs
-```
-
----
-
-## 4. Legal & Compliance Disclaimers
-* [Privacy Policy (Zero-Custody)](file:///home/binlawal/untapped%20market/legal/PRIVACY_POLICY.md)
-* [Terms of Service](file:///home/binlawal/untapped%20market/legal/TERMS_OF_SERVICE.md)
-* [Refund & Billing Policy](file:///home/binlawal/untapped%20market/legal/REFUND_POLICY.md)
-* [Regulatory Safe Harbor Disclaimer](file:///home/binlawal/untapped%20market/legal/REGULATORY_DISCLAIMER.md)
+- [Operations & Rollback Runbook](docs/RUNBOOK.md) — Split-hosting setup, 7–10 developer PR/CI/CD workflow, staging promotion, and <2-minute rollbacks.
+- [Incident Playbook & Post-Mortem Template](docs/PLAYBOOK.md) — Triage guides (Arc RPC, Privy OTP, Safe SIWE, cookies) and blameless 48-hour post-mortem template.
+- [Environment Templates](.env.example) & [Staging Environment Template](.env.staging.example).
