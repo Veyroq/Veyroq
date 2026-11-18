@@ -57,5 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('a[href="/docs"]').forEach(link => {
       link.setAttribute('href', 'https://docs.veyroq.xyz');
     });
+    document.querySelectorAll('a[href^="/legal/"]').forEach(link => {
+      link.setAttribute('href', `https://docs.veyroq.xyz${link.getAttribute('href')}`);
+    });
   }
 });

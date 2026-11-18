@@ -6,6 +6,80 @@
       "includeFiles": "{landing,console,docs,legal,assets}/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/console",
+      "has": [{ "type": "host", "value": "^app\\.veyroq\\.xyz$" }],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/console/",
+      "has": [{ "type": "host", "value": "^app\\.veyroq\\.xyz$" }],
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/docs",
+      "has": [{ "type": "host", "value": "^app\\.veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/",
+      "permanent": false
+    },
+    {
+      "source": "/docs/:path*",
+      "has": [{ "type": "host", "value": "^app\\.veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/docs/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/legal/:slug(terms|privacy|disclaimer|refund)",
+      "has": [{ "type": "host", "value": "^app\\.veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/legal/:slug",
+      "permanent": false
+    },
+    {
+      "source": "/console",
+      "has": [{ "type": "host", "value": "^(www\\.)?veyroq\\.xyz$" }],
+      "destination": "https://app.veyroq.xyz/",
+      "permanent": false
+    },
+    {
+      "source": "/console/",
+      "has": [{ "type": "host", "value": "^(www\\.)?veyroq\\.xyz$" }],
+      "destination": "https://app.veyroq.xyz/",
+      "permanent": false
+    },
+    {
+      "source": "/docs",
+      "has": [{ "type": "host", "value": "^(www\\.)?veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/",
+      "permanent": false
+    },
+    {
+      "source": "/docs/:path*",
+      "has": [{ "type": "host", "value": "^(www\\.)?veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/docs/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/legal/:slug(terms|privacy|disclaimer|refund)",
+      "has": [{ "type": "host", "value": "^(www\\.)?veyroq\\.xyz$" }],
+      "destination": "https://docs.veyroq.xyz/legal/:slug",
+      "permanent": false
+    },
+    {
+      "source": "/console",
+      "has": [{ "type": "host", "value": "^docs\\.veyroq\\.xyz$" }],
+      "destination": "https://app.veyroq.xyz/",
+      "permanent": false
+    },
+    {
+      "source": "/console/",
+      "has": [{ "type": "host", "value": "^docs\\.veyroq\\.xyz$" }],
+      "destination": "https://app.veyroq.xyz/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -51,6 +125,10 @@
     },
     {
       "source": "/docs/",
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/docs/:page(overview|architecture|zero-custody|quickstart|view-keys|merkle-proofs|onchain-verification|contract-spec|foundry-tests|gaap-export|quickbooks)",
       "destination": "/docs/index.html"
     },
     {

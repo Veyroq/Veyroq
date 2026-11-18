@@ -1486,6 +1486,18 @@ if (typeof document !== 'undefined') {
       }
     });
 
+    if (document.location.hostname.endsWith('veyroq.xyz')) {
+      document.querySelectorAll('a[href="/"]').forEach(link => {
+        link.setAttribute('href', 'https://veyroq.xyz');
+      });
+      document.querySelectorAll('a[href="/docs"]').forEach(link => {
+        link.setAttribute('href', 'https://docs.veyroq.xyz');
+      });
+      document.querySelectorAll('a[href^="/legal/"]').forEach(link => {
+        link.setAttribute('href', `https://docs.veyroq.xyz${link.getAttribute('href')}`);
+      });
+    }
+
     // Auto-prompt plan modal on launch if not subscribed
     const auth = getAuthState();
     if (auth.isAuthenticated && auth.address) {

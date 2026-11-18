@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Update URL with pushState
     if (pushState) {
-      const newUrl = pageId === 'overview' ? '/docs' : `/docs/${pageId}`;
+      const onDocsHost = window.location.hostname.startsWith('docs.');
+      const newUrl = pageId === 'overview' ? (onDocsHost ? '/' : '/docs') : `/docs/${pageId}`;
       window.history.pushState({ pageId }, '', newUrl);
     }
 
@@ -471,6 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('a[href="/"]').forEach(link => {
       link.setAttribute('href', 'https://veyroq.xyz');
+    });
+    document.querySelectorAll('a[href="/docs"]').forEach(link => {
+      link.setAttribute('href', 'https://docs.veyroq.xyz');
+    });
+    document.querySelectorAll('a[href^="/legal/"]').forEach(link => {
+      link.setAttribute('href', `https://docs.veyroq.xyz${link.getAttribute('href')}`);
     });
   }
 
