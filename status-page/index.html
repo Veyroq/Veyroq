@@ -3,25 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Veyroq System Status — Independent Health &amp; Reliability Monitor</title>
-  <meta name="description" content="Independent standalone status page for Veyroq Protocol API, Circle Arc RPC, and Audit Console availability.">
+  <title>Veyroq System Status</title>
+  <meta name="description" content="Real-time operational status and service availability for Veyroq Protocol, Audit Console, and Circle Arc connectivity.">
+  <meta name="theme-color" content="#590907">
+
+  <!-- Brand Favicons -->
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
+  <link rel="shortcut icon" href="./favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+
+  <!-- Open Graph & X Card -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Veyroq">
+  <meta property="og:title" content="Veyroq System Status">
+  <meta property="og:description" content="Real-time operational status and service availability for Veyroq Protocol.">
+  <meta property="og:image" content="./assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main class="container">
     <header class="topbar">
       <div class="brand">
-        <svg width="34" height="28" viewBox="0 0 36 30" fill="none" aria-hidden="true">
-          <path d="M3 4L18 26L33 4" stroke="#590907" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M11 4L18 15L25 4" stroke="#A5A79B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <img src="./assets/veyroq-mark.svg" alt="Veyroq" class="brand-logo" width="38" height="31">
         <div>
           <h1>Veyroq System Status</h1>
-          <p class="subtitle">Standalone Reliability Monitor (Hosted Separately From App Infra)</p>
+          <p class="subtitle">Real-time service and network availability</p>
         </div>
       </div>
       <div class="actions">
-        <a class="btn btn-ghost" href="https://veyroq.xyz" target="_blank" rel="noopener noreferrer">veyroq.xyz</a>
+        <a class="btn btn-ghost" href="https://veyroq.xyz" target="_blank" rel="noopener noreferrer">Home</a>
+        <a class="btn btn-ghost" href="https://app.veyroq.xyz" target="_blank" rel="noopener noreferrer">Console</a>
         <button class="btn" id="btn-refresh" type="button">Refresh Checks</button>
       </div>
     </header>
@@ -29,7 +43,7 @@
     <section class="banner" id="overall-banner" aria-live="polite">
       <div>
         <p class="banner-title" id="overall-title">Checking Veyroq services...</p>
-        <div class="banner-meta" id="overall-meta">Target API: loading...</div>
+        <div class="banner-meta" id="overall-meta">Checking endpoints...</div>
       </div>
       <span class="pill pending" id="overall-pill">PROBING</span>
     </section>
@@ -49,16 +63,15 @@
     </section>
 
     <section class="card">
-      <h2>Per-Endpoint Error Budgets &amp; Burn-Rate Policy</h2>
-      <div style="overflow-x:auto;">
+      <h2>Service Level Objectives (30-Day Targets)</h2>
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Endpoint</th>
+              <th>Service</th>
               <th>Criticality</th>
-              <th>30-Day SLO</th>
-              <th>Monthly Error Budget</th>
-              <th>Burn-Rate / Freeze Rule</th>
+              <th>Target Uptime</th>
+              <th>Monthly Allowance</th>
             </tr>
           </thead>
           <tbody id="budgets-body"></tbody>
@@ -73,13 +86,8 @@
       </div>
     </section>
 
-    <section class="card">
-      <h2>Incident Communication Workflow Templates</h2>
-      <div id="templates-list"></div>
-    </section>
-
     <footer>
-      Deploy this directory independently on Cloudflare Pages, Netlify, or GitHub Pages (<code>status.veyroq.xyz</code>). Overrides: <code>?api=http://localhost:3000</code>.
+      © 2026 Veyroq Protocol · <a href="https://docs.veyroq.xyz" target="_blank" rel="noopener noreferrer">Documentation</a> · <a href="https://docs.veyroq.xyz/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
     </footer>
   </main>
 

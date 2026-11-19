@@ -45,6 +45,26 @@ body {
   gap: 12px;
 }
 
+.brand-logo {
+  display: block;
+  width: 38px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+footer a {
+  color: var(--burgundy);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
 .brand h1 {
   margin: 0;
   font-size: 1.35rem;

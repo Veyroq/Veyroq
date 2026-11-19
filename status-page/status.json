@@ -5,76 +5,55 @@
     {
       "id": "api-core",
       "name": "API & Auth Server",
-      "host": "api.veyroq.xyz (Railway / Render)",
+      "host": "api.veyroq.xyz",
       "probePath": "/health",
       "kind": "json"
     },
     {
       "id": "arc-rpc",
-      "name": "Circle Arc Testnet RPC & Registry",
-      "host": "rpc.testnet.arc.io (Chain 5042002)",
+      "name": "Circle Arc Testnet & Registry",
+      "host": "Arc Testnet (Chain 5042002)",
       "probePath": "/health?deep=1",
       "kind": "deep"
     },
     {
       "id": "app-console",
       "name": "Institutional Audit Console",
-      "host": "app.veyroq.xyz (Vercel Edge)",
+      "host": "app.veyroq.xyz",
       "probeUrl": "https://app.veyroq.xyz",
       "kind": "web"
     },
     {
       "id": "landing-docs",
-      "name": "Marketing Landing & Docs",
-      "host": "veyroq.xyz / docs.veyroq.xyz (Vercel Edge)",
+      "name": "Landing & Documentation",
+      "host": "veyroq.xyz · docs.veyroq.xyz",
       "probeUrl": "https://veyroq.xyz",
       "kind": "web"
     }
   ],
   "errorBudgets": [
     {
-      "endpoint": "POST /api/auth/siwe/verify",
-      "criticality": "Tier 1 (Treasury Verification)",
+      "service": "Authentication & Session Services",
+      "criticality": "Tier 1 (Critical)",
       "sloTarget": "99.90%",
       "rollingWindow": "30 days",
-      "monthlyBudget": "0.10% (43.2m / 100 per 100k reqs)",
-      "burnRatePolicy": "Alert if >50% consumed in 48h; freeze non-critical deploys if breached."
+      "monthlyBudget": "43.2 min / month"
     },
     {
-      "endpoint": "POST /api/auth/privy/*",
-      "criticality": "Tier 1 (Session Login & OTP)",
+      "service": "Treasury Ownership Verification",
+      "criticality": "Tier 1 (Critical)",
       "sloTarget": "99.90%",
       "rollingWindow": "30 days",
-      "monthlyBudget": "0.10% (43.2m / 100 per 100k reqs)",
-      "burnRatePolicy": "Alert if 5xx/upstream >0.5% over 15m; page on-call engineer."
+      "monthlyBudget": "43.2 min / month"
     },
     {
-      "endpoint": "GET /health?deep=1",
-      "criticality": "Tier 2 (Arc RPC Readiness)",
+      "service": "Circle Arc Network Connectivity",
+      "criticality": "Tier 2 (Core Chain)",
       "sloTarget": "99.50%",
       "rollingWindow": "30 days",
-      "monthlyBudget": "0.50% (3.6h / 500 per 100k reqs)",
-      "burnRatePolicy": "Swap ARC_RPC_URL to backup RPC provider without code deploy on sustained 503."
+      "monthlyBudget": "3.6 hours / month"
     }
   ],
   "maintenance": [],
-  "incidents": [],
-  "communicationTemplates": [
-    {
-      "stage": "1. Investigating (within 15m)",
-      "template": "[Investigating] We are investigating elevated errors/latency on <Surface>. User funds and on-chain records remain unaffected. Next update in 30 minutes."
-    },
-    {
-      "stage": "2. Identified & Mitigating",
-      "template": "[Identified] Root cause isolated to <Component/Upstream>. Applying rollback/mitigation now per docs/RUNBOOK.md. Next update in 30 minutes."
-    },
-    {
-      "stage": "3. Monitoring Recovery",
-      "template": "[Monitoring] Fix deployed and /health?deep=1 is returning 200 OK. Monitoring error burn rate before resolving."
-    },
-    {
-      "stage": "4. Resolved + 48h Post-Mortem",
-      "template": "[Resolved] Service fully restored at <HH:MM UTC>. Total impact: <Duration>. Blameless post-mortem will publish within 48 hours."
-    }
-  ]
+  "incidents": []
 }

@@ -45,7 +45,6 @@ async function timedFetch(url, options = {}, timeoutMs = 5000) {
 
 async function probeSurface(surface, apiBase) {
   if (surface.kind === 'web' && surface.probeUrl) {
-    // Opaque no-cors check detects DNS/TLS/reachability from another origin without requiring CORS on marketing HTML.
     const { error, latencyMs } = await timedFetch(surface.probeUrl, { mode: 'no-cors' });
     if (error) return { ...surface, state: 'down', badge: `UNREACHABLE (${latencyMs}ms)` };
     return { ...surface, state: 'ok', badge: `OPERATIONAL (${latencyMs}ms)` };
@@ -54,7 +53,7 @@ async function probeSurface(surface, apiBase) {
   const target = `${apiBase}${surface.probePath || '/health'}`;
   const { res, latencyMs, error } = await timedFetch(target, { mode: 'cors' });
   if (error || !res) {
-    return { ...surface, state: 'down', badge: 'UNREACHABLE / CORS BLOCKED' };
+    return { ...surface, state: 'down', badge: 'UNREACHABLE' };
   }
 
   try {
@@ -111,14 +110,11 @@ function renderBudgets(budgets) {
   body.replaceChildren();
   for (const b of budgets) {
     const tr = el('tr');
-    const tdEndpoint = el('td');
-    tdEndpoint.append(el('code', '', b.endpoint));
     tr.append(
-      tdEndpoint,
+      el('td', 'service-name', b.service),
       el('td', '', b.criticality),
       el('td', '', `${b.sloTarget} (${b.rollingWindow})`),
-      el('td', '', b.monthlyBudget),
-      el('td', '', b.burnRatePolicy)
+      el('td', '', b.monthlyBudget)
     );
     body.append(tr);
   }
@@ -141,16 +137,6 @@ function renderIncidents(incidents) {
   }
 }
 
-function renderTemplates(templates) {
-  const root = document.getElementById('templates-list');
-  root.replaceChildren();
-  for (const t of templates) {
-    const item = el('div', 'template-item');
-    item.append(el('div', 'template-stage', t.stage), el('div', 'empty-note', t.template));
-    root.append(item);
-  }
-}
-
 async function runDashboard() {
   const res = await fetch('./status.json', { cache: 'no-store' });
   const cfg = await res.json();
@@ -159,7 +145,6 @@ async function runDashboard() {
   renderMaintenance(cfg.maintenance || []);
   renderBudgets(cfg.errorBudgets || []);
   renderIncidents(cfg.incidents || []);
-  renderTemplates(cfg.communicationTemplates || []);
 
   const results = await Promise.all((cfg.surfaces || []).map(s => probeSurface(s, apiBase)));
   renderServices(results);
@@ -168,7 +153,7 @@ async function runDashboard() {
   const banner = document.getElementById('overall-banner');
   banner.className = `banner ${summary.level}`;
   document.getElementById('overall-title').textContent = summary.title;
-  document.getElementById('overall-meta').textContent = `Target API: ${apiBase} · Checked ${new Date().toISOString()}`;
+  document.getElementById('overall-meta').textContent = `Last checked: ${new Date().toUTCString()}`;
   const pill = document.getElementById('overall-pill');
   pill.className = `pill ${summary.level === 'outage' ? 'down' : summary.level}`;
   pill.textContent = summary.label;
@@ -177,7 +162,7 @@ async function runDashboard() {
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     runDashboard().catch(() => {
-      document.getElementById('overall-title').textContent = 'Unable to load status.json';
+      document.getElementById('overall-title').textContent = 'Unable to load status feed';
     });
     document.getElementById('btn-refresh')?.addEventListener('click', () => {
       runDashboard().catch(() => {});
