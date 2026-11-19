@@ -132,7 +132,7 @@
           </a>
           <a href="/docs/quickbooks" class="menu-item" data-page="quickbooks">
             <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-            <span>QuickBooks & Xero Sync</span>
+            <span>QuickBooks & Xero Exports</span>
           </a>
         </div>
       </nav>
@@ -401,7 +401,7 @@ bool valid = registry.verifyTransactionInclusion(
                 <tr>
                   <td><code>commitAuditProof(address org, bytes32 root, uint256 start, uint256 end, uint256 txCount, bytes32 meta)</code></td>
                   <td>Authorized Auditor or Org</td>
-                  <td>Anchors immutable Merkle root proof, transfers 25 USDC protocol fee to treasury.</td>
+                  <td>Anchors immutable Merkle root proof and settles the configured USDC protocol fee (5 USDC on Arc Testnet) to treasury.</td>
                 </tr>
                 <tr>
                   <td><code>verifyTransactionInclusion(...)</code></td>
@@ -444,7 +444,7 @@ bool valid = registry.verifyTransactionInclusion(
                 <tr>
                   <td><strong>Circle Arc (Testnet)</strong></td>
                   <td>Native USDC Gas &amp; Confidential Rail (<code>5042002</code>)</td>
-                  <td><a href="https://explorer.testnet.arc.io/address/0x56204E81959cE4015507d8d20434d28DBC166fE2" target="_blank" rel="noopener noreferrer"><code>0x56204E81...6fE2</code> ↗</a></td>
+                  <td><a href="https://explorer.testnet.arc.io/address/0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3" target="_blank" rel="noopener noreferrer"><code>0x8A1D55E8...B37B3</code> ↗</a></td>
                 </tr>
               </tbody>
             </table>
@@ -459,15 +459,16 @@ bool valid = registry.verifyTransactionInclusion(
           </p>
 
           <h2 id="test-execution">Test Suite Execution</h2>
-          <pre><code>$ cd contracts && forge test -vvv
-[PASS] test_AuthorizeAuditor() (gas: 111547)
-[PASS] test_CommitAuditProof_ByAuthorizedAuditor() (gas: 358579)
-[PASS] test_CommitAuditProof_ByOrganization() (gas: 307172)
-[PASS] test_MerkleInclusionVerification() (gas: 256818)
-[PASS] test_RevertIf_ExpiredAuditor() (gas: 120114)
-[PASS] test_RevertIf_UnauthorizedSubmitter() (gas: 47631)
-[PASS] test_RevokeAuditor() (gas: 150141)
-Suite result: ok. 7 passed; 0 failed; 0 skipped</code></pre>
+          <pre><code>$ cd contracts && forge test
+Ran 42 tests for test/VeyroqRegistry.t.sol:VeyroqRegistryTest
+[PASS] testFuzz_MerkleInclusion(bytes32,bytes32) (runs: 256)
+[PASS] testFuzz_Subscription30DayLockAndRenewal(uint8,uint32) (runs: 256)
+[PASS] test_SelfCustodialUser_SubscribesAndCommitsDirectly()
+[PASS] test_CommitAuditProof_ByAuthorizedAuditor()
+[PASS] test_CommitAuditProof_ByOrganization()
+[PASS] test_MerkleInclusionVerification()
+[PASS] test_AuthorizeAuditor() / test_RevokeAuditor()
+Suite result: ok. 42 passed; 0 failed; 0 skipped (42 total tests)</code></pre>
         </div>
 
         <!-- 10. GAAP EXPORT -->
@@ -519,17 +520,17 @@ Suite result: ok. 7 passed; 0 failed; 0 skipped</code></pre>
         </div>
 
         <!-- 11. QUICKBOOKS & XERO -->
-        <div class="doc-page" id="page-quickbooks" data-category="Tax & Compliance" data-title="QuickBooks & Xero Sync">
-          <h1>QuickBooks & Xero Sync</h1>
+        <div class="doc-page" id="page-quickbooks" data-category="Tax & Compliance" data-title="QuickBooks & Xero Exports">
+          <h1>QuickBooks &amp; Xero Exports</h1>
           <p class="lead-text">
-            The Veyroq Exporter engine dynamically formats verified ledger records into native CSV templates recognized by enterprise ERPs.
+            The Veyroq Exporter engine dynamically formats verified ledger records into CSV templates recognized by enterprise accounting tools.
           </p>
 
           <h2 id="supported-formats">Supported Accounting Formats</h2>
           <ul class="styled-list">
-            <li><strong>QuickBooks Online:</strong> Generates General Journal format with automated Debit/Credit balancing and transaction reference IDs.</li>
-            <li><strong>Xero Accounting:</strong> Formatted with Xero Manual Journal headers (<code>*Date</code>, <code>*AccountCode</code>, <code>*TaxType</code>, <code>Reference</code>).</li>
-            <li><strong>Cryptographic Audit Certificate:</strong> Exports a self-contained JSON file containing the root hash, block range, and transaction signatures suitable for digital submission to the SEC or IRS.</li>
+            <li><strong>QuickBooks Online:</strong> Generates General Journal CSV format with balanced Debit/Credit rows and transaction reference IDs.</li>
+            <li><strong>Xero Accounting:</strong> Formatted CSV with Xero Manual Journal headers (<code>*Date</code>, <code>*AccountCode</code>, <code>*TaxType</code>, <code>Reference</code>).</li>
+            <li><strong>Cryptographic Audit Certificate:</strong> Exports a self-contained JSON file containing the Merkle root hash, block range, and verification proof for CPA and institutional audit review.</li>
           </ul>
         </div>
 

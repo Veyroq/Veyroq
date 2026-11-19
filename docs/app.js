@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { id: 'contract-spec', title: 'VeyroqRegistry.sol Spec', category: 'Smart Contracts' },
     { id: 'foundry-tests', title: 'Foundry Test Suite', category: 'Smart Contracts' },
     { id: 'gaap-export', title: 'GAAP / IFRS Worksheets', category: 'Tax & Compliance' },
-    { id: 'quickbooks', title: 'QuickBooks & Xero Sync', category: 'Tax & Compliance' }
+    { id: 'quickbooks', title: 'QuickBooks & Xero Exports', category: 'Tax & Compliance' }
   ];
 
   let currentPageId = 'overview';

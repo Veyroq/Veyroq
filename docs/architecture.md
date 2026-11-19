@@ -53,21 +53,20 @@ Veyroq **never** stores, transmits, or has access to View Keys. The entire decry
 ┌──────────────────────────────────────────────┐
 │  USER'S BROWSER (Zero-Custody Environment)   │
 │                                              │
-│  1. User enters Scoped View Key              │
-│  2. Browser queries Arc RPC for encrypted    │
-│     transaction ciphertexts                  │
-│  3. ECIES decryption runs locally in WASM    │
-│  4. Plaintext records stay in browser memory │
-│  5. View Key is wiped after session ends     │
+│  1. User enters Scoped View Key / connects   │
+│  2. Browser queries Arc RPC for logs & tx    │
+│  3. Web Crypto SHA-256 & hashing run locally │
+│  4. Plaintext records never hit backend DB   │
+│  5. Session & custom tags remain client-side │
 └──────────────────────────────────────────────┘
 ```
 
 ### Security Guarantees
 
-- **Network isolation:** View Key is never included in any HTTP request.
-- **Memory-only:** Decrypted records exist only in JavaScript heap memory.
-- **No persistence:** `localStorage`, `sessionStorage`, and `IndexedDB` are never written to.
-- **CSP enforced:** Content Security Policy blocks all external script injection.
+- **Network isolation:** View Keys and decrypted financial tables are never persisted on Veyroq backend servers.
+- **Browser-local state:** Transaction classification tags and session state stay on your device (`localStorage`), never in a central vendor database.
+- **No key custody:** Relayer execution endpoints are retired (`410 Gone`); users sign transactions directly from their own wallets.
+- **CSP enforced:** Strict Content Security Policy restricts external script execution.
 
 ---
 
