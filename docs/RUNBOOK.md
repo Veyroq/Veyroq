@@ -28,7 +28,7 @@
 | `VEYROQ_REGISTRY_ADDRESS` | Testnet contract | Staging contract | Verified prod contract |
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | `https://staging.veyroq.xyz,https://app-staging.veyroq.xyz` | `https://veyroq.xyz,https://app.veyroq.xyz` |
 | `VEYROQ_CROSS_SITE_COOKIES` | `false` | `false` (true only if bypassing Vercel proxy) | `false` |
-| `VEYROQ_BACKEND_URL` *(Vercel only)* | *(unset)* | `https://api-staging.veyroq.xyz` | `https://api.veyroq.xyz` |
+| `VEYROQ_BACKEND_URL` *(Vercel only)* | *(unset)* | `https://veyroq-staging.up.railway.app` *(Preview scope)* | `https://api.veyroq.xyz` *(Production scope)* |
 
 ---
 
@@ -43,8 +43,9 @@ Configure these rules under **GitHub -> Settings -> Branches / Environments**:
    - Disable force pushes and branch deletions.
 2. Create GitHub Environments **`staging`** and **`production`**:
    - On `production`, optionally enable **Required reviewers** (release captain/lead) before `deploy-production` runs.
-3. Disable automatic branch-push deploys directly on Render/Railway (`autoDeploy: false` in `render.yaml`) so **failing tests always block deployment**. Instead, configure CI deploy hooks:
-   - Secrets: `STAGING_BACKEND_DEPLOY_HOOK`, `STAGING_FRONTEND_DEPLOY_HOOK`, `PROD_BACKEND_DEPLOY_HOOK`, `PROD_FRONTEND_DEPLOY_HOOK`.
+3. Disable automatic branch-push deploys directly on Render/Railway (`autoDeploy: false` in `render.yaml`) so **failing tests always block deployment**. Instead, configure CI deploy triggers under **Settings -> Secrets and variables -> Actions**:
+   - Secrets (Railway CLI tokens): `RAILWAY_STAGING_TOKEN`, `RAILWAY_PROD_TOKEN` *(or Render URL hooks `STAGING_BACKEND_DEPLOY_HOOK`, `PROD_BACKEND_DEPLOY_HOOK`)*.
+   - Secrets (Vercel hooks): `STAGING_FRONTEND_DEPLOY_HOOK`, `PROD_FRONTEND_DEPLOY_HOOK`.
    - Variables: `STAGING_API_URL`, `PROD_API_URL`.
 
 ### Daily Developer Flow
