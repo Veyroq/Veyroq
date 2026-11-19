@@ -64,15 +64,27 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - name: Trigger staging backend deploy hook (Render / Railway)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy staging backend (Railway / Webhook)
         env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
           BACKEND_HOOK: ${{ secrets.STAGING_BACKEND_DEPLOY_HOOK }}
         run: |
-          if [ -n "$BACKEND_HOOK" ]; then
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            npx --yes @railway/cli@5.75.0 up --service Veyroq --environment staging --ci --yes
+            echo "Deployed staging backend via Railway CLI."
+          elif [ -n "$BACKEND_HOOK" ]; then
             curl -fsS -X POST "$BACKEND_HOOK" >/dev/null
             echo "Triggered staging backend deployment."
           else
-            echo "STAGING_BACKEND_DEPLOY_HOOK not set; skipping backend webhook."
+            echo "RAILWAY_STAGING_TOKEN / STAGING_BACKEND_DEPLOY_HOOK not set; skipping backend deploy."
           fi
 
       - name: Trigger staging frontend deploy hook (Vercel)
@@ -111,15 +123,27 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Trigger production backend deploy hook (Render / Railway)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy production backend (Railway / Webhook)
         env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_PROD_TOKEN }}
           BACKEND_HOOK: ${{ secrets.PROD_BACKEND_DEPLOY_HOOK }}
         run: |
-          if [ -n "$BACKEND_HOOK" ]; then
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            npx --yes @railway/cli@5.75.0 up --service Veyroq --environment production --ci --yes
+            echo "Deployed production backend via Railway CLI."
+          elif [ -n "$BACKEND_HOOK" ]; then
             curl -fsS -X POST "$BACKEND_HOOK" >/dev/null
             echo "Triggered production backend deployment."
           else
-            echo "PROD_BACKEND_DEPLOY_HOOK not set; skipping backend webhook."
+            echo "RAILWAY_PROD_TOKEN / PROD_BACKEND_DEPLOY_HOOK not set; skipping backend deploy."
           fi
 
       - name: Trigger production frontend deploy hook (Vercel)
