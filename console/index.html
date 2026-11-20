@@ -46,6 +46,7 @@
       </div>
 
       <div class="nav-right">
+        <button class="btn btn-secondary btn-sm" id="btn-open-verifier-modal" type="button">Verify Proof</button>
         <button class="btn btn-primary btn-sm" id="btn-wallet-connect">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span id="wallet-btn-text">Connect Wallet</span>
@@ -341,11 +342,30 @@
 
       <!-- On-Chain Proof Anchoring to Arc Testnet -->
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--sage-hairline);">
+        <div id="commit-fee-note" class="commit-fee-note">Checking on-chain commit fee...</div>
         <button class="btn btn-primary btn-sm" id="btn-anchor-proof-modal" disabled style="width:100%; padding:10px; justify-content:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span id="anchor-btn-text">Commit Audit Proof</span>
         </button>
         <div id="anchor-proof-feedback" style="font-size:11px; margin-top:6px; text-align:center; min-height:16px;"></div>
+
+        <div id="commit-receipt-box" class="commit-receipt-box" style="display:none;">
+          <div class="receipt-top-row">
+            <span class="receipt-status-pill">Anchored On-Chain (Arc Testnet)</span>
+            <span class="receipt-proof-id font-mono">Proof ID: #<span id="receipt-proof-id">—</span></span>
+          </div>
+          <div class="receipt-hash-row">
+            <code id="receipt-root-hash" class="receipt-hash-box font-mono">—</code>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-receipt-root">Copy Root</button>
+          </div>
+          <div class="receipt-links-row">
+            <a id="receipt-tx-link" href="https://explorer.testnet.arc.io" target="_blank" rel="noopener noreferrer" class="doc-link" style="padding:0; font-size:11px;">Explorer Tx ↗</a>
+          </div>
+          <div class="receipt-actions-row">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-receipt-download-cert">Download Certificate JSON</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-receipt-verify-now">Verify On-Chain Now →</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -767,7 +787,72 @@
     </div>
   </div>
 
+  <!-- 9. ON-CHAIN MERKLE PROOF VERIFIER MODAL -->
+  <div class="modal-overlay" id="verifier-modal" style="display: none;">
+    <div class="modal-card" style="width: 580px; max-width: 95vw;">
+      <button class="btn-close" id="btn-close-verifier-modal" aria-label="Close modal">&times;</button>
+
+      <div class="modal-header-brand" style="margin-bottom: 10px;">
+        <img src="/assets/veyroq-mark.svg" alt="Veyroq" style="width:24px; height:24px;">
+        <span class="modal-title">On-Chain Proof Verifier</span>
+        <span class="session-badge" style="margin-left: 8px;">VeyroqRegistry</span>
+      </div>
+
+      <p class="modal-desc" style="font-size: 12.5px; margin-bottom: 12px;">
+        Independently verify an exported Audit Certificate JSON or inspect anchored audit commitments on Arc Testnet without connecting a wallet.
+      </p>
+
+      <div class="view-segmented-toggle" style="margin-bottom: 12px;">
+        <button type="button" class="segment-btn active" id="tab-verifier-cert">Verify Audit Certificate</button>
+        <button type="button" class="segment-btn" id="tab-verifier-history">On-Chain Org History</button>
+      </div>
+
+      <!-- Mode 1: Certificate Verifier -->
+      <div id="verifier-pane-cert">
+        <div class="verifier-toolbar">
+          <label class="btn btn-secondary btn-sm" for="verifier-file-input" style="cursor:pointer; margin:0;">Upload Certificate JSON</label>
+          <input type="file" id="verifier-file-input" accept=".json,application/json" style="display:none;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-verifier-load-session">Load Current Session</button>
+        </div>
+
+        <div class="field-group" style="margin-bottom: 10px;">
+          <label class="field-label" for="verifier-json-input">Audit Certificate JSON</label>
+          <textarea id="verifier-json-input" class="field-control font-mono verifier-textarea" rows="5" spellcheck="false" placeholder="Paste Veyroq Audit Certificate JSON or upload a .json file above..."></textarea>
+        </div>
+
+        <div class="verifier-inputs-grid">
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label" for="verifier-org-input">Organization Address</label>
+            <input type="text" id="verifier-org-input" class="field-control font-mono" placeholder="0x..." spellcheck="false">
+          </div>
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label" for="verifier-proof-id-input">On-Chain Proof ID</label>
+            <input type="number" min="0" step="1" id="verifier-proof-id-input" class="field-control font-mono" placeholder="0">
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="btn-run-onchain-verify" style="margin-top: 12px; justify-content: center; padding: 10px;">
+          Verify Against VeyroqRegistry on Arc
+        </button>
+
+        <div id="verifier-result-box" class="verifier-result-box" style="display:none;"></div>
+      </div>
+
+      <!-- Mode 2: On-Chain Org History -->
+      <div id="verifier-pane-history" style="display:none;">
+        <div class="verifier-history-bar">
+          <input type="text" id="history-org-input" class="field-control font-mono" placeholder="Organization 0x... address" spellcheck="false" style="flex:1;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-load-org-history">Load Commitments</button>
+        </div>
+        <div id="history-results-list" class="history-results-list">
+          <div class="history-empty">Enter an organization address to query anchored roots from <code>VeyroqRegistry</code>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
+  <script type="module" src="/console/merkle.js"></script>
   <script type="module" src="/console/exporter.js"></script>
   <script type="module" src="/console/chain-scanner.js"></script>
   <script type="module" src="/console/privy-auth.js"></script>
@@ -804,6 +889,19 @@
       if (modal) modal.style.display = 'none';
     }
 
+    function openVerifierModal() {
+      const modal = document.getElementById('verifier-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeVerifierModal() {
+      const modal = document.getElementById('verifier-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    window.openVerifierModal = openVerifierModal;
+    window.closeVerifierModal = closeVerifierModal;
+
     function initInlineModals() {
       document.getElementById('btn-open-comp-top')?.addEventListener('click', openComplianceModal);
       document.getElementById('btn-open-compliance-footer')?.addEventListener('click', openComplianceModal);
@@ -816,6 +914,12 @@
       document.getElementById('btn-close-auditor-modal')?.addEventListener('click', closeAuditorModal);
       document.getElementById('auditor-modal')?.addEventListener('click', e => {
         if (e.target === document.getElementById('auditor-modal')) closeAuditorModal();
+      });
+
+      document.getElementById('btn-open-verifier-modal')?.addEventListener('click', openVerifierModal);
+      document.getElementById('btn-close-verifier-modal')?.addEventListener('click', closeVerifierModal);
+      document.getElementById('verifier-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('verifier-modal')) closeVerifierModal();
       });
 
       document.getElementById('btn-strip-quick-export')?.addEventListener('click', () => {
