@@ -471,7 +471,9 @@ const MIME_TYPES = {
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
-  '.md': 'text/markdown; charset=utf-8'
+  '.md': 'text/markdown; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8'
 };
 
 function sanitizeOrigin(req) {
@@ -820,6 +822,14 @@ const server = http.createServer(async (req, res) => {
 
   if (reqPath === '/favicon.ico') {
     filePath = path.join(__dirname, 'assets', 'favicon.ico');
+  } else if (reqPath === '/robots.txt') {
+    filePath = path.join(__dirname, 'robots.txt');
+  } else if (reqPath === '/sitemap.xml') {
+    filePath = isAppSubdomain
+      ? path.join(__dirname, 'console', 'sitemap.xml')
+      : isDocsSubdomain
+        ? path.join(__dirname, 'docs', 'sitemap.xml')
+        : path.join(__dirname, 'sitemap.xml');
   } else if (isAppSubdomain && (reqPath === '/' || reqPath === '')) {
     filePath = path.join(__dirname, 'console', 'index.html');
   } else if (isDocsSubdomain && (reqPath === '/' || reqPath === '')) {

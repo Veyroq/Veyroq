@@ -98,6 +98,16 @@
       "destination": "/assets/favicon.ico"
     },
     {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "^app\\..*" }],
+      "destination": "/console/sitemap.xml"
+    },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "^docs\\..*" }],
+      "destination": "/docs/sitemap.xml"
+    },
+    {
       "source": "/",
       "has": [{ "type": "host", "value": "^app\\..*" }],
       "destination": "/console/index.html"
