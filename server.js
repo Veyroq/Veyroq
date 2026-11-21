@@ -844,7 +844,7 @@ const server = http.createServer(async (req, res) => {
     filePath = path.join(__dirname, dir, 'app.js');
   } else if (reqPath === '/docs' || reqPath === '/docs/') {
     filePath = path.join(__dirname, 'docs', 'index.html');
-  } else if ((reqPath.startsWith('/docs/') || (isDocsSubdomain && !reqPath.startsWith('/assets/') && !reqPath.startsWith('/docs/'))) && !reqPath.endsWith('.css') && !reqPath.endsWith('.js') && !reqPath.endsWith('.svg') && !reqPath.endsWith('.png') && !reqPath.endsWith('.webp') && !reqPath.endsWith('.ico')) {
+  } else if ((reqPath.startsWith('/docs/') || (isDocsSubdomain && !reqPath.startsWith('/assets/') && !reqPath.startsWith('/docs/'))) && !reqPath.endsWith('.css') && !reqPath.endsWith('.js') && !reqPath.endsWith('.svg') && !reqPath.endsWith('.png') && !reqPath.endsWith('.webp') && !reqPath.endsWith('.ico') && !reqPath.endsWith('.xml')) {
     filePath = path.join(__dirname, 'docs', 'index.html');
   } else {
     const safeCandidate = resolveSafePublicFile(reqPath, __dirname);
