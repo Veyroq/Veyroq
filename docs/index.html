@@ -287,7 +287,7 @@
 
           <h2 id="step-3-run-decryption">3. Run Local Decryption &amp; Proof Verification</h2>
           <p>
-            Click <strong>"Decrypt &amp; Verify Ledger"</strong>. The engine queries encrypted logs from your selected network RPC, decrypts all transactions in local browser memory, computes SHA-256 leaves, and matches the root against <code>VeyroqRegistry.sol</code>.
+            Click <strong>"Fetch Real On-Chain History"</strong>. The engine queries transfer logs from your selected network RPC, classifies all transactions in local browser memory, computes Keccak-256 Merkle leaves and inclusion proofs, and matches the root against <code>VeyroqRegistry.sol</code>.
           </p>
 
           <h2 id="step-4-export-gaap">4. Export 1-Click GAAP Ledger</h2>
@@ -401,7 +401,7 @@ bool valid = registry.verifyTransactionInclusion(
                 <tr>
                   <td><code>commitAuditProof(address org, bytes32 root, uint256 start, uint256 end, uint256 txCount, bytes32 meta)</code></td>
                   <td>Authorized Auditor or Org</td>
-                  <td>Anchors immutable Merkle root proof and settles the configured USDC protocol fee (5 USDC on Arc Testnet) to treasury.</td>
+                  <td>Anchors immutable Merkle root proof and settles the configured USDC protocol fee (dynamically read from <code>protocolFee()</code>; 0 USDC — included with active subscriptions on Arc Testnet) to treasury.</td>
                 </tr>
                 <tr>
                   <td><code>verifyTransactionInclusion(...)</code></td>

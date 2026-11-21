@@ -20,15 +20,40 @@ import {
 import {
   REGISTRY_ADDRESS,
   USDC_ADDRESS,
+  ARC_CHAIN_ID_DEC,
   ARC_CHAIN_ID_HEX,
   ARC_EXPLORER_TX,
   TIER_FEES,
   PROTOCOL_FEE,
   fetchOnChainSubscription,
+  fetchProtocolFee,
+  fetchCommitmentCount,
+  fetchAuditCommitments,
+  resolveLatestProofId,
+  verifyBatchInclusionOnChain,
   executeSubscribeOnChain,
   executeCommitProofOnChain,
   executeAuthorizeAuditorOnChain
 } from './contract-client.js';
+import {
+  keccak256Utf8,
+  computeTransactionLeaf,
+  buildMerkleTree,
+  computeMerkleRoot,
+  getMerkleProof,
+  verifyMerkleProofLocal,
+  verifyCertificatePayload
+} from './merkle.js';
+
+export {
+  keccak256Utf8,
+  computeTransactionLeaf,
+  buildMerkleTree,
+  computeMerkleRoot,
+  getMerkleProof,
+  verifyMerkleProofLocal,
+  verifyCertificatePayload
+};
 
 export const DEMO_TRANSACTIONS = [
   {
@@ -117,30 +142,11 @@ export const WALLET_PRESETS = {
   'btn-connect-sca': { address: '0x5A3A3b2A69De6Dbf7f01ED13B2108B2c43e7', label: 'Smart Account' }
 };
 
-// SHA-256 helper using Web Cryptography API
+// SHA-256 helper using Web Cryptography API (used for policy scope hashes)
 export async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   return '0x' + Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Compute pairwise Merkle Root of an array of transaction leaf hashes
-export async function computeMerkleRoot(leaves) {
-  if (!leaves || leaves.length === 0) return '0x00';
-  let level = [...leaves];
-  while (level.length > 1) {
-    const next = [];
-    for (let i = 0; i < level.length; i += 2) {
-      if (i + 1 < level.length) {
-        const pair = level[i] < level[i + 1] ? level[i] + level[i + 1].slice(2) : level[i + 1] + level[i].slice(2);
-        next.push(await sha256(pair));
-      } else {
-        next.push(level[i]);
-      }
-    }
-    level = next;
-  }
-  return level[0];
 }
 
 // Prepare export transactions based on active disclosure scope
@@ -177,6 +183,8 @@ if (typeof document !== 'undefined') {
 
   let loadedTransactions = [];
   let calculatedMerkleRoot = "";
+  let lastCommitment = null;
+  let currentProtocolFee = PROTOCOL_FEE;
   let activeScope = 'full';
   let connectedAddress = null;
   let connectedMethod = null;
@@ -626,6 +634,8 @@ if (typeof document !== 'undefined') {
     }
     updateTierButtons('none');
     loadedTransactions = [];
+    lastCommitment = null;
+    if ($('commit-receipt-box')) $('commit-receipt-box').style.display = 'none';
     renderTable();
     calculateCompleteness();
     updateVaultTierUI();
@@ -987,11 +997,20 @@ if (typeof document !== 'undefined') {
 
     const leaves = [];
     for (const item of loadedTransactions) {
-      const hash = await sha256(`${item.id}:${item.block}:${item.grossAmount}:${item.plainCounterparty}`);
+      const hash = computeTransactionLeaf(item);
       item.leafHash = hash;
       leaves.push(hash);
     }
-    calculatedMerkleRoot = await computeMerkleRoot(leaves);
+    const tree = buildMerkleTree(leaves);
+    loadedTransactions.forEach((item, idx) => {
+      item.merkleProof = tree.proofs[idx] || [];
+    });
+    calculatedMerkleRoot = tree.root;
+
+    if (lastCommitment && lastCommitment.rootHash !== calculatedMerkleRoot) {
+      lastCommitment = null;
+      if ($('commit-receipt-box')) $('commit-receipt-box').style.display = 'none';
+    }
 
     const total = loadedTransactions.reduce((sum, tx) => sum + tx.grossAmount, 0);
     const formattedTotal = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`;
@@ -1302,12 +1321,43 @@ if (typeof document !== 'undefined') {
       btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Refresh On-Chain History</span>`;
     });
 
+    function buildCurrentSessionCertificate() {
+      if (loadedTransactions.length === 0 || !window.VeyroqExporter?.buildAuditCertificate) return null;
+      const period = $('period-select')?.value || '2026-Q3';
+      const org = $('org-address')?.value?.trim() || connectedAddress || 'Unassigned';
+      const data = prepareExportTransactions(loadedTransactions, activeScope);
+      return window.VeyroqExporter.buildAuditCertificate(data, calculatedMerkleRoot, org, period, getNetFullName(), {
+        disclosureScope: activeScope,
+        commitment: lastCommitment,
+        registryAddress: REGISTRY_ADDRESS,
+        chainId: ARC_CHAIN_ID_DEC
+      });
+    }
+
     // Exports
     const exportMap = {
       'btn-export-csv': (data, org, p) => window.VeyroqExporter?.exportQuickBooks(data, org, p),
       'btn-export-xero': (data, org, p) => window.VeyroqExporter?.exportXero(data, org, p),
-      'btn-export-cert': (data, org, p) => window.VeyroqExporter?.exportAuditCertificate(data, calculatedMerkleRoot, org, p, getNetFullName())
+      'btn-export-cert': (data, org, p) => window.VeyroqExporter?.exportAuditCertificate(data, calculatedMerkleRoot, org, p, getNetFullName(), {
+        disclosureScope: activeScope,
+        commitment: lastCommitment,
+        registryAddress: REGISTRY_ADDRESS,
+        chainId: ARC_CHAIN_ID_DEC
+      })
     };
+
+    async function refreshProtocolFeeUI() {
+      const note = $('commit-fee-note');
+      if (!note) return;
+      try {
+        currentProtocolFee = await fetchProtocolFee();
+        note.textContent = currentProtocolFee === 0n
+          ? 'Commit fee: Included with active subscription (Arc gas only)'
+          : `On-chain protocol fee: $${(Number(currentProtocolFee) / 1e6).toFixed(2)} USDC + Arc gas`;
+      } catch {
+        note.textContent = 'Commit fee synced with VeyroqRegistry';
+      }
+    }
 
     Object.entries(exportMap).forEach(([id, fn]) => {
       $(id)?.addEventListener('click', () => {
@@ -1373,6 +1423,234 @@ if (typeof document !== 'undefined') {
       list.prepend(item);
     }
 
+    function renderCommitReceiptBox(commitment) {
+      const box = $('commit-receipt-box');
+      if (!box || !commitment) return;
+      if ($('receipt-proof-id')) {
+        $('receipt-proof-id').textContent = (commitment.proofId !== null && commitment.proofId !== undefined)
+          ? String(commitment.proofId)
+          : 'Pending';
+      }
+      if ($('receipt-root-hash')) $('receipt-root-hash').textContent = commitment.rootHash || calculatedMerkleRoot;
+      const validHash = safeTxHash(commitment.txHash);
+      if ($('receipt-tx-link') && validHash) {
+        $('receipt-tx-link').href = ARC_EXPLORER_TX + validHash;
+        $('receipt-tx-link').textContent = `Tx ${validHash.slice(0, 10)}...${validHash.slice(-6)} ↗`;
+      }
+      box.style.display = 'flex';
+    }
+
+    function setVerifierTab(mode) {
+      const isCert = mode === 'cert';
+      $('tab-verifier-cert')?.classList.toggle('active', isCert);
+      $('tab-verifier-history')?.classList.toggle('active', !isCert);
+      if ($('verifier-pane-cert')) $('verifier-pane-cert').style.display = isCert ? 'block' : 'none';
+      if ($('verifier-pane-history')) $('verifier-pane-history').style.display = isCert ? 'none' : 'block';
+    }
+
+    function applyParsedCertificateInputs(cert) {
+      if (!cert || typeof cert !== 'object') return;
+      if (cert.organization?.address && /^0x[0-9a-fA-F]{40}$/.test(cert.organization.address) && $('verifier-org-input')) {
+        $('verifier-org-input').value = cert.organization.address;
+      }
+      if (cert.onChainCommitment?.proofId !== undefined && cert.onChainCommitment?.proofId !== null && $('verifier-proof-id-input')) {
+        $('verifier-proof-id-input').value = String(cert.onChainCommitment.proofId);
+      }
+    }
+
+    function renderVerifierResult(res, onChainError = null) {
+      const box = $('verifier-result-box');
+      if (!box) return;
+      box.style.display = 'block';
+      if (res.error && res.totalCount === 0) {
+        box.innerHTML = `<div class="verify-summary-header"><span class="verify-pill fail">INVALID CERTIFICATE</span></div><div class="verify-check-detail">${escapeHtml(res.error)}</div>`;
+        return;
+      }
+
+      const verifiedOnArc = res.valid && res.rootMatchesOnChain === true && res.onChainInclusionValid === true && !onChainError;
+      const statusBadge = !res.valid
+        ? '<span class="verify-pill fail">VERIFICATION FAILED / TAMPERED</span>'
+        : (verifiedOnArc
+          ? '<span class="verify-pill pass">VERIFIED ON ARC</span>'
+          : (onChainError
+            ? '<span class="verify-pill pass">LOCAL PROOF VALID (ARC RPC ERROR)</span>'
+            : '<span class="verify-pill pass">LOCAL MERKLE PROOF VALID</span>'));
+      const rootLine = res.rootMatchesOnChain === null
+        ? 'Local Merkle check only (enter Org + Proof ID to compare against Arc)'
+        : (res.rootMatchesOnChain ? 'Matches VeyroqRegistry root on Arc Testnet' : `Mismatch against Arc root (${escapeHtml(String(res.onChainRoot || 'missing'))})`);
+      const fieldLine = res.scope === 'redacted'
+        ? 'Redacted disclosure scope (counterparties masked cleanly)'
+        : (res.fieldsIntact ? 'All decrypted amounts & counterparties match leaf hashes' : `Tampered fields detected at row(s): ${res.tamperedFieldIndices.map(i => i + 1).join(', ')}`);
+      const contractLine = onChainError
+        ? `On-chain RPC error: ${escapeHtml(onChainError)}`
+        : (res.onChainInclusionValid === null
+          ? 'Skipped (provide Org + Proof ID to query verifyBatchInclusion)'
+          : (res.onChainInclusionValid ? 'Smart contract verifyBatchInclusion() returned true for all rows' : `Contract rejected row(s): ${res.failedOnChainIndices.map(i => i + 1).join(', ')}`));
+
+      const rowsHtml = res.rows.map(r => {
+        const rowOk = r.proofValid && (res.scope !== 'full' || r.fieldMatch) && (r.onChainIncluded !== false);
+        const pill = rowOk ? '<span class="row-status-ok">PASS</span>' : '<span class="row-status-fail">FAIL</span>';
+        return `<div class="verify-tx-row"><div><strong>${escapeHtml(r.transactionId || `Row ${r.index + 1}`)}</strong> · <span>$${Number(r.amountUSDC || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC</span></div><div>${pill}</div></div>`;
+      }).join('');
+
+      box.innerHTML = `
+        <div class="verify-summary-header">${statusBadge}<span class="font-mono" style="font-size:11px; color:var(--ink-secondary);">${res.verifiedCount}/${res.totalCount} items verified</span></div>
+        <div class="verify-checks-list">
+          <div class="verify-check-item"><strong>On-Chain Root:</strong> ${rootLine}</div>
+          <div class="verify-check-item"><strong>Field Integrity:</strong> ${escapeHtml(fieldLine)}</div>
+          <div class="verify-check-item"><strong>Arc Contract Call:</strong> ${contractLine}</div>
+        </div>
+        <div class="verify-tx-list">${rowsHtml}</div>
+      `;
+    }
+
+    async function runOnChainCertificateVerification() {
+      const raw = $('verifier-json-input')?.value?.trim();
+      if (!raw) {
+        renderVerifierResult({ error: 'Paste or upload an Audit Certificate JSON first.', totalCount: 0 });
+        return;
+      }
+      let cert;
+      try {
+        cert = JSON.parse(raw);
+      } catch {
+        renderVerifierResult({ error: 'Invalid JSON format in Audit Certificate field.', totalCount: 0 });
+        return;
+      }
+      applyParsedCertificateInputs(cert);
+
+      const org = $('verifier-org-input')?.value?.trim() || '';
+      const proofIdStr = $('verifier-proof-id-input')?.value?.trim() || '';
+      let onChainRoot = null;
+      let onChainBatchResults = null;
+      let onChainError = null;
+
+      if (/^0x[0-9a-fA-F]{40}$/.test(org) && proofIdStr !== '') {
+        const proofId = Number(proofIdStr);
+        if (Number.isInteger(proofId) && proofId >= 0) {
+          const btn = $('btn-run-onchain-verify');
+          if (btn) { btn.disabled = true; btn.textContent = 'Querying VeyroqRegistry on Arc...'; }
+          try {
+            const list = await fetchAuditCommitments(org, proofId, 1);
+            if (!list.length) {
+              onChainRoot = 'Not found on-chain';
+            } else {
+              onChainRoot = list[0].auditRootHash;
+              const items = Array.isArray(cert.leafCommitments) ? cert.leafCommitments : [];
+              const leafHashes = items.map(it => it?.leafHash || ('0x' + '0'.repeat(64)));
+              const merkleProofs = items.map(it => (Array.isArray(it?.merkleProof) ? it.merkleProof : []));
+              onChainBatchResults = await verifyBatchInclusionOnChain(org, proofId, leafHashes, merkleProofs);
+            }
+          } catch (err) {
+            onChainError = err.message || 'RPC verification error';
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Verify Against VeyroqRegistry on Arc'; }
+          }
+        }
+      }
+
+      const summary = verifyCertificatePayload(cert, { onChainRoot, onChainBatchResults });
+      renderVerifierResult(summary, onChainError);
+    }
+
+    async function loadOrgCommitmentsHistory(targetOrg) {
+      const listEl = $('history-results-list');
+      if (!listEl) return;
+      const org = (targetOrg || $('history-org-input')?.value || '').trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(org)) {
+        listEl.innerHTML = '<div class="history-empty">Enter a valid 42-character EVM organization address (0x...).</div>';
+        return;
+      }
+      listEl.innerHTML = '<div class="history-empty">Querying VeyroqRegistry on Arc Testnet...</div>';
+      try {
+        const total = await fetchCommitmentCount(org);
+        if (total === 0) {
+          listEl.innerHTML = '<div class="history-empty">No audit commitments found on-chain for this organization yet.</div>';
+          return;
+        }
+        const limit = Math.min(25, total);
+        const offset = Math.max(0, total - limit);
+        const commitments = await fetchAuditCommitments(org, offset, limit);
+        listEl.innerHTML = '';
+        commitments.slice().reverse().forEach(c => {
+          const card = document.createElement('div');
+          card.className = 'history-commitment-item';
+          const dt = c.timestamp ? new Date(c.timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' UTC' : '—';
+          card.innerHTML = `
+            <div class="history-item-top">
+              <strong>Proof #${c.proofId}</strong>
+              <span style="font-size:11px; color:var(--ink-secondary);">${c.transactionCount} tx · ${escapeHtml(dt)}</span>
+            </div>
+            <div class="receipt-hash-box font-mono">${escapeHtml(c.auditRootHash)}</div>
+            <div class="history-item-meta">
+              <span class="font-mono" style="font-size:11px;">Submitter: ${escapeHtml(c.submitter.slice(0, 6))}...${escapeHtml(c.submitter.slice(-4))}</span>
+              <button type="button" class="btn btn-secondary btn-sm">Use in Verifier</button>
+            </div>
+          `;
+          card.querySelector('button')?.addEventListener('click', () => {
+            if ($('verifier-org-input')) $('verifier-org-input').value = org;
+            if ($('verifier-proof-id-input')) $('verifier-proof-id-input').value = String(c.proofId);
+            setVerifierTab('cert');
+          });
+          listEl.appendChild(card);
+        });
+      } catch (err) {
+        listEl.innerHTML = `<div class="history-empty" style="color:#B91C1C;">Failed to query commitments: ${escapeHtml(err.message || err)}</div>`;
+      }
+    }
+
+    $('btn-open-comp-top')?.addEventListener('click', refreshProtocolFeeUI);
+    $('btn-open-verifier-modal')?.addEventListener('click', () => {
+      const activeOrg = $('org-address')?.value?.trim() || connectedAddress || '';
+      if (activeOrg && $('verifier-org-input') && !$('verifier-org-input').value) $('verifier-org-input').value = activeOrg;
+      if (activeOrg && $('history-org-input') && !$('history-org-input').value) $('history-org-input').value = activeOrg;
+    });
+    $('tab-verifier-cert')?.addEventListener('click', () => setVerifierTab('cert'));
+    $('tab-verifier-history')?.addEventListener('click', () => setVerifierTab('history'));
+    $('btn-verifier-load-session')?.addEventListener('click', () => {
+      const cert = buildCurrentSessionCertificate();
+      if (!cert) {
+        alert('Load and classify transactions first to export a session certificate.');
+        return;
+      }
+      if ($('verifier-json-input')) $('verifier-json-input').value = JSON.stringify(cert, null, 2);
+      applyParsedCertificateInputs(cert);
+    });
+    $('verifier-file-input')?.addEventListener('change', async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      if ($('verifier-json-input')) $('verifier-json-input').value = text;
+      try { applyParsedCertificateInputs(JSON.parse(text)); } catch {}
+    });
+    $('verifier-json-input')?.addEventListener('input', () => {
+      try { applyParsedCertificateInputs(JSON.parse($('verifier-json-input').value)); } catch {}
+    });
+    $('btn-run-onchain-verify')?.addEventListener('click', runOnChainCertificateVerification);
+    $('btn-load-org-history')?.addEventListener('click', () => loadOrgCommitmentsHistory());
+    $('btn-copy-receipt-root')?.addEventListener('click', () => {
+      const root = lastCommitment?.rootHash || calculatedMerkleRoot;
+      if (!root) return;
+      copyToClipboard(root);
+      const btn = $('btn-copy-receipt-root');
+      if (btn) {
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = 'Copy Root'; }, 1600);
+      }
+    });
+    $('btn-receipt-download-cert')?.addEventListener('click', () => $('btn-export-cert')?.click());
+    $('btn-receipt-verify-now')?.addEventListener('click', async () => {
+      const cert = buildCurrentSessionCertificate();
+      if ($('compliance-modal')) $('compliance-modal').style.display = 'none';
+      if (window.openVerifierModal) window.openVerifierModal();
+      setVerifierTab('cert');
+      if (cert && $('verifier-json-input')) {
+        $('verifier-json-input').value = JSON.stringify(cert, null, 2);
+        applyParsedCertificateInputs(cert);
+      }
+      await runOnChainCertificateVerification();
+    });
+
     // Commit Audit Proof On-Chain Action (User signs directly via Privy or Web3 Wallet)
     $('btn-anchor-proof-modal')?.addEventListener('click', async () => {
       if (currentTierCode === 0) {
@@ -1398,7 +1676,11 @@ if (typeof document !== 'undefined') {
       let signer;
       try {
         signer = await resolveActiveSigner();
-        await ensureArcUsdcBalance(signer.address || orgAddress, PROTOCOL_FEE, 'Audit Proof Commitment');
+        const fee = await fetchProtocolFee();
+        currentProtocolFee = fee;
+        if (fee > 0n) {
+          await ensureArcUsdcBalance(signer.address || orgAddress, fee, 'Audit Proof Commitment');
+        }
       } catch (err) {
         if (feedback) feedback.innerHTML = `<span style="color:#C93B2B;">${escapeHtml(err.message || err)}</span>`;
         return;
@@ -1410,7 +1692,23 @@ if (typeof document !== 'undefined') {
         if (feedback) feedback.innerHTML = `<span style="color:var(--burgundy);">Signing audit proof via ${escapeHtml(signer.label)}...</span>`;
 
         const txHash = await executeCommitProofOnChain(signer.provider, orgAddress, calculatedMerkleRoot, periodStart, periodEnd, count);
+        let resolved = await resolveLatestProofId(orgAddress, calculatedMerkleRoot);
+        if (!resolved) {
+          await new Promise(r => setTimeout(r, 1500));
+          resolved = await resolveLatestProofId(orgAddress, calculatedMerkleRoot);
+        }
+        lastCommitment = {
+          proofId: resolved?.proofId ?? null,
+          txHash,
+          rootHash: calculatedMerkleRoot,
+          orgAddress,
+          periodStart,
+          periodEnd,
+          txCount: count,
+          anchoredAt: new Date().toISOString()
+        };
         renderProofCommitted(feedback, txHash);
+        renderCommitReceiptBox(lastCommitment);
         refreshAccountUsdcBalance('Arc', signer.address);
       } catch (err) {
         console.error('Anchor proof failed:', err);
@@ -1498,11 +1796,16 @@ if (typeof document !== 'undefined') {
       });
     }
 
-    // Auto-prompt plan modal on launch if not subscribed
+    const params = new URLSearchParams(window.location.search || '');
+    const deepVerify = params.get('verify') === '1';
+    const deepOrg = params.get('org') || '';
+    const deepProofId = params.get('proofId') || '';
+
+    // Auto-prompt plan modal on launch if not subscribed (suppressed when opening Verifier link directly)
     const auth = getAuthState();
     if (auth.isAuthenticated && auth.address) {
       syncOnChainSubscription(auth.address);
-    } else {
+    } else if (!deepVerify && !deepOrg) {
       setTimeout(() => {
         if (currentTierCode === 0 && $('plan-modal')) {
           $('plan-modal').style.display = 'flex';
@@ -1510,6 +1813,18 @@ if (typeof document !== 'undefined') {
       }, 400);
     }
 
+    if (deepVerify || /^0x[0-9a-fA-F]{40}$/.test(deepOrg)) {
+      if (window.openVerifierModal) window.openVerifierModal();
+      if ($('verifier-org-input') && deepOrg) $('verifier-org-input').value = deepOrg;
+      if ($('history-org-input') && deepOrg) $('history-org-input').value = deepOrg;
+      if ($('verifier-proof-id-input') && deepProofId) $('verifier-proof-id-input').value = deepProofId;
+      if (/^0x[0-9a-fA-F]{40}$/.test(deepOrg) && !deepProofId) {
+        setVerifierTab('history');
+        loadOrgCommitmentsHistory(deepOrg);
+      }
+    }
+
+    refreshProtocolFeeUI();
     renderTable();
     calculateCompleteness();
   }

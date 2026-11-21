@@ -55,7 +55,7 @@ Veyroq **never** stores, transmits, or has access to View Keys. The entire decry
 │                                              │
 │  1. User enters Scoped View Key / connects   │
 │  2. Browser queries Arc RPC for logs & tx    │
-│  3. Web Crypto SHA-256 & hashing run locally │
+│  3. Local Keccak-256 & Merkle proof tree run   │
 │  4. Plaintext records never hit backend DB   │
 │  5. Session & custom tags remain client-side │
 └──────────────────────────────────────────────┘
@@ -77,19 +77,19 @@ After decryption, Veyroq constructs a **Merkle Tree** from all decrypted transac
 ### Construction Algorithm
 
 ```
-Leaf = SHA-256(tx_id || block_number || amount || counterparty)
+Leaf = Keccak-256(tx_id || block_number || amount || counterparty)
 
 Level 0: [Leaf₁, Leaf₂, Leaf₃, ..., Leafₙ]
-Level 1: [SHA-256(Leaf₁ + Leaf₂), SHA-256(Leaf₃ + Leaf₄), ...]
-Level 2: [SHA-256(Node₁ + Node₂), ...]
+Level 1: [Keccak-256(sort(Leaf₁, Leaf₂)), Keccak-256(sort(Leaf₃, Leaf₄)), ...]
+Level 2: [Keccak-256(sort(Node₁, Node₂)), ...]
 ...
 Root:    [Merkle Root Hash]
 ```
 
 ### Verification Steps
 
-1. **Compute all leaf hashes** from decrypted transaction data.
-2. **Build the Merkle Tree** bottom-up using sorted-pair SHA-256 hashing.
+1. **Compute all leaf hashes** from decrypted transaction data (`console/merkle.js` Keccak-256).
+2. **Build the Merkle Tree** bottom-up using OpenZeppelin-compatible sorted-pair `keccak256` hashing.
 3. **Compare computed Merkle Root** against the on-chain commitment stored in Arc block headers.
 4. **If roots match:** Mathematical guarantee that **zero transactions were omitted, fabricated, or altered.**
 
@@ -148,7 +148,7 @@ This is valuable for:
 
 | Library | Purpose | Trust Level |
 |---|---|---|
-| Web Crypto API (`crypto.subtle`) | SHA-256 hashing, ECDSA verification | Browser-native, hardware-accelerated |
+| Browser `console/merkle.js` + Web Crypto (`crypto.subtle`) | OpenZeppelin sorted-pair Keccak-256 Merkle proofs; SHA-256 scope hashes | Client-side deterministic, audited parity |
 | OpenZeppelin `MerkleProof.sol` | On-chain Merkle inclusion verification | Industry-standard, audited |
 | Arc pEVM Enclave SDK | View Key derivation, ciphertext decryption | Circle-maintained, TEE-backed |
 

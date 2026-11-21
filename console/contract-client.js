@@ -16,7 +16,7 @@ export const TIER_FEES = {
   partner: 150_000_000n    // $150 USDC (6 decimals)
 };
 
-export const PROTOCOL_FEE = 5_000_000n; // $5 USDC (6 decimals)
+export const PROTOCOL_FEE = 0n; // Default fallback; live fee is read dynamically from protocolFee()
 
 // Selectors
 export const SELECTORS = {
@@ -25,7 +25,12 @@ export const SELECTORS = {
   commitAuditProof: '0x6cdc2c15',
   authorizeAuditor: '0x6f5ca4d2',
   approve: '0x095ea7b3',
-  allowance: '0xdd62ed3e'
+  allowance: '0xdd62ed3e',
+  protocolFee: '0xb0e21e8a',
+  getCommitmentCount: '0xb536148f',
+  getAuditCommitments: '0x583a5fa3',
+  verifyTransactionInclusion: '0xe5ee75a7',
+  verifyBatchInclusion: '0x30c6a97f'
 };
 
 // ABI Encoding Helpers
@@ -44,6 +49,92 @@ export function padBytes32(hex) {
   if (!hex) return '0'.repeat(64);
   const clean = hex.replace(/^0x/, '');
   return clean.padEnd(64, '0').slice(0, 64);
+}
+
+export function encodeVerifyTransactionInclusion(orgAddress, proofId, leafHash, merkleProof = []) {
+  const proof = Array.isArray(merkleProof) ? merkleProof : [];
+  return SELECTORS.verifyTransactionInclusion +
+    padAddress(orgAddress) +
+    padUint256(proofId) +
+    padBytes32(leafHash) +
+    padUint256(128) +
+    padUint256(proof.length) +
+    proof.map(padBytes32).join('');
+}
+
+export function encodeVerifyBatchInclusion(orgAddress, proofId, leafHashes = [], merkleProofs = []) {
+  const leaves = Array.isArray(leafHashes) ? leafHashes : [];
+  const proofs = Array.isArray(merkleProofs) ? merkleProofs : [];
+  const offsetLeafHashes = 128;
+  const offsetMerkleProofs = 128 + 32 * (1 + leaves.length);
+
+  let relOffset = 32 * proofs.length;
+  const proofOffsets = [];
+  const proofBodies = [];
+  for (const p of proofs) {
+    const arr = Array.isArray(p) ? p : [];
+    proofOffsets.push(padUint256(relOffset));
+    proofBodies.push(padUint256(arr.length) + arr.map(padBytes32).join(''));
+    relOffset += 32 * (1 + arr.length);
+  }
+
+  return SELECTORS.verifyBatchInclusion +
+    padAddress(orgAddress) +
+    padUint256(proofId) +
+    padUint256(offsetLeafHashes) +
+    padUint256(offsetMerkleProofs) +
+    padUint256(leaves.length) +
+    leaves.map(padBytes32).join('') +
+    padUint256(proofs.length) +
+    proofOffsets.join('') +
+    proofBodies.join('');
+}
+
+export function decodeAuditCommitments(hexResult, startOffset = 0) {
+  if (!hexResult || typeof hexResult !== 'string' || hexResult === '0x') return [];
+  const clean = hexResult.replace(/^0x/i, '');
+  if (clean.length < 128) return [];
+  const offsetWords = Number(BigInt('0x' + clean.slice(0, 64)) / 32n);
+  const countStart = offsetWords * 64;
+  if (clean.length < countStart + 64) return [];
+  const count = Number(BigInt('0x' + clean.slice(countStart, countStart + 64)));
+  const itemsStart = countStart + 64;
+  const STRUCT_HEX_LEN = 7 * 64;
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const base = itemsStart + i * STRUCT_HEX_LEN;
+    if (clean.length < base + STRUCT_HEX_LEN) break;
+    const chunk = clean.slice(base, base + STRUCT_HEX_LEN);
+    out.push({
+      proofId: startOffset + i,
+      auditRootHash: '0x' + chunk.slice(0, 64).toLowerCase(),
+      periodStart: Number(BigInt('0x' + chunk.slice(64, 128))),
+      periodEnd: Number(BigInt('0x' + chunk.slice(128, 192))),
+      transactionCount: Number(BigInt('0x' + chunk.slice(192, 256))),
+      metadataHash: '0x' + chunk.slice(256, 320).toLowerCase(),
+      timestamp: Number(BigInt('0x' + chunk.slice(320, 384))),
+      submitter: '0x' + chunk.slice(384 + 24, 448).toLowerCase()
+    });
+  }
+  return out;
+}
+
+export function decodeBoolArray(hexResult) {
+  if (!hexResult || typeof hexResult !== 'string' || hexResult === '0x') return [];
+  const clean = hexResult.replace(/^0x/i, '');
+  if (clean.length < 128) return [];
+  const offsetWords = Number(BigInt('0x' + clean.slice(0, 64)) / 32n);
+  const countStart = offsetWords * 64;
+  if (clean.length < countStart + 64) return [];
+  const count = Number(BigInt('0x' + clean.slice(countStart, countStart + 64)));
+  const itemsStart = countStart + 64;
+  const results = [];
+  for (let i = 0; i < count; i++) {
+    const start = itemsStart + i * 64;
+    if (clean.length < start + 64) break;
+    results.push(BigInt('0x' + clean.slice(start, start + 64)) === 1n);
+  }
+  return results;
 }
 
 // Low-level JSON-RPC caller
@@ -205,25 +296,83 @@ export async function executeSubscribeOnChain(provider, tierCode, months = 1) {
   return txHash;
 }
 
-// On-Chain Merkle Proof Anchoring (Approve 5 USDC fee + commitAuditProof)
+// Read current protocol fee dynamically from VeyroqRegistry.protocolFee()
+export async function fetchProtocolFee() {
+  try {
+    const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data: SELECTORS.protocolFee }, 'latest']);
+    if (!result || result === '0x') return PROTOCOL_FEE;
+    return BigInt(result);
+  } catch {
+    return PROTOCOL_FEE;
+  }
+}
+
+export async function fetchCommitmentCount(orgAddress) {
+  if (!orgAddress || !orgAddress.startsWith('0x')) return 0;
+  const data = SELECTORS.getCommitmentCount + padAddress(orgAddress);
+  const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data }, 'latest']);
+  if (!result || result === '0x') return 0;
+  return Number(BigInt(result));
+}
+
+export async function fetchAuditCommitments(orgAddress, offset = 0, limit = 50) {
+  if (!orgAddress || !orgAddress.startsWith('0x')) return [];
+  const data = SELECTORS.getAuditCommitments + padAddress(orgAddress) + padUint256(offset) + padUint256(limit);
+  const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data }, 'latest']);
+  return decodeAuditCommitments(result, offset);
+}
+
+export async function resolveLatestProofId(orgAddress, auditRootHash) {
+  if (!orgAddress || !auditRootHash) return null;
+  const count = await fetchCommitmentCount(orgAddress);
+  if (count <= 0) return null;
+  const limit = Math.min(20, count);
+  const offset = Math.max(0, count - limit);
+  const commitments = await fetchAuditCommitments(orgAddress, offset, limit);
+  const target = auditRootHash.toLowerCase();
+  for (let i = commitments.length - 1; i >= 0; i--) {
+    if (commitments[i].auditRootHash.toLowerCase() === target) {
+      return { proofId: commitments[i].proofId, commitment: commitments[i] };
+    }
+  }
+  return null;
+}
+
+export async function verifyTransactionInclusionOnChain(orgAddress, proofId, leafHash, merkleProof = []) {
+  const data = encodeVerifyTransactionInclusion(orgAddress, proofId, leafHash, merkleProof);
+  const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data }, 'latest']);
+  return Boolean(result && result !== '0x' && BigInt(result) === 1n);
+}
+
+export async function verifyBatchInclusionOnChain(orgAddress, proofId, leafHashes = [], merkleProofs = []) {
+  if (!Array.isArray(leafHashes) || leafHashes.length === 0) return [];
+  const data = encodeVerifyBatchInclusion(orgAddress, proofId, leafHashes, merkleProofs);
+  const result = await arcRpcCall('eth_call', [{ to: REGISTRY_ADDRESS, data }, 'latest']);
+  return decodeBoolArray(result);
+}
+
+// On-Chain Merkle Proof Anchoring (reads dynamic protocolFee(); skips USDC.approve when fee === 0)
 export async function executeCommitProofOnChain(provider, orgAddress, auditRootHash, periodStart, periodEnd, txCount) {
   await ensureArcNetwork(provider);
   const accounts = await provider.request({ method: 'eth_accounts' });
   const user = accounts[0];
   if (!user) throw new Error('No connected wallet account found.');
 
-  // 1. Check & approve 5 USDC protocol fee
-  const allowanceData = SELECTORS.allowance + padAddress(user) + padAddress(REGISTRY_ADDRESS);
-  const currentAllowanceHex = await arcRpcCall('eth_call', [{ to: USDC_ADDRESS, data: allowanceData }, 'latest']);
-  const currentAllowance = BigInt(currentAllowanceHex || '0');
+  // 1. Check live protocolFee() and approve only if fee > 0
+  const fee = await fetchProtocolFee();
+  if (fee > 0n) {
+    const allowanceData = SELECTORS.allowance + padAddress(user) + padAddress(REGISTRY_ADDRESS);
+    const currentAllowanceHex = await arcRpcCall('eth_call', [{ to: USDC_ADDRESS, data: allowanceData }, 'latest']);
+    const currentAllowance = BigInt(currentAllowanceHex || '0');
 
-  if (currentAllowance < PROTOCOL_FEE) {
-    const approveData = SELECTORS.approve + padAddress(REGISTRY_ADDRESS) + padUint256(PROTOCOL_FEE);
-    const approveTx = await provider.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: user, to: USDC_ADDRESS, data: approveData, value: '0x0' }]
-    });
-    await waitForTxReceipt(approveTx);
+    if (currentAllowance < fee) {
+      const approveData = SELECTORS.approve + padAddress(REGISTRY_ADDRESS) + padUint256(fee);
+      const approveTx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: user, to: USDC_ADDRESS, data: approveData, value: '0x0' }]
+      });
+      await waitForTxReceipt(approveTx);
+    }
   }
 
   // 2. Call commitAuditProof(orgAddress, auditRootHash, periodStart, periodEnd, txCount, metadataHash)

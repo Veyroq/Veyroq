@@ -12,7 +12,8 @@ const mockTransactions = [
     plainCounterparty: 'Dr. Elena Rostova',
     grossAmount: 35000.00,
     asset: 'USDC',
-    leafHash: '0x97f4f49fabcde123'
+    leafHash: '0x' + '11'.repeat(32),
+    merkleProof: ['0x' + '22'.repeat(32)]
   },
   {
     id: 'tx-02',
@@ -23,7 +24,8 @@ const mockTransactions = [
     plainCounterparty: 'Lambda Compute Corp',
     grossAmount: 48500.00,
     asset: 'USDC',
-    leafHash: '0x82e19110abcde456'
+    leafHash: '0x' + '22'.repeat(32),
+    merkleProof: ['0x' + '11'.repeat(32)]
   }
 ];
 
@@ -69,7 +71,11 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
     '0xdd5bbd937c60b17c9fab8384b38b1ccfc3db2ba89719b9c14f43e8e3f03860b2',
     '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec',
     '2026-Q3',
-    'Circle Arc L1'
+    'Circle Arc L1',
+    {
+      disclosureScope: 'full',
+      commitment: { txHash: '0x' + 'aa'.repeat(32), proofId: 3, anchoredAt: '2026-08-12T00:00:00Z' }
+    }
   );
 
   assert.equal(cert.protocol, 'Veyroq Institutional Audit Protocol');
@@ -77,10 +83,14 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
   assert.equal(cert.certificate.zeroCustodyGuarantee, true);
   assert.equal(cert.organization.address, '0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec');
   assert.equal(cert.organization.network, 'Circle Arc L1');
+  assert.equal(cert.verification.hashAlgorithm, 'keccak256-openzeppelin-sorted');
+  assert.equal(cert.verification.disclosureScope, 'full');
   assert.equal(cert.verification.totalTransactions, 2);
   assert.equal(cert.verification.grossVolumeUSDC, 83500);
   assert.equal(cert.verification.reconciliationStatus, 'COMPLETE_MATCH');
+  assert.equal(cert.onChainCommitment.proofId, 3);
   assert.equal(cert.leafCommitments.length, 2);
+  assert.deepEqual(cert.leafCommitments[0].merkleProof, ['0x' + '22'.repeat(32)]);
   assert.equal(cert.leafCommitments[0].inclusionStatus, 'MERKLE_VERIFIED');
 });
 
