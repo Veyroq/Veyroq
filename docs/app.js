@@ -54,8 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (crumbCat && pageMeta) crumbCat.textContent = pageMeta.category;
     if (crumbTitle && pageMeta) crumbTitle.textContent = pageMeta.title;
 
-    // 4. Update Document Title
+    // 4. Update Document Title & Self-Referencing Canonical
     document.title = `${pageMeta.title} — Veyroq Documentation`;
+    const canonicalEl = document.getElementById('docs-canonical');
+    if (canonicalEl) {
+      canonicalEl.href = pageId === 'overview'
+        ? 'https://docs.veyroq.xyz/'
+        : `https://docs.veyroq.xyz/docs/${pageId}`;
+    }
 
     // 5. Update Previous / Next Pagination Cards (Tower Exchange Style)
     const prevBtn = document.getElementById('pagination-prev');
