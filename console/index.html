@@ -198,9 +198,6 @@
           <div class="field-group">
             <label class="field-label" for="period-select">Accounting Period Scope</label>
             <select class="field-control" id="period-select">
-              <option value="2026-Q3">FY 2026 - Q3 (July - Sept)</option>
-              <option value="2026-Q2">FY 2026 - Q2 (Apr - June)</option>
-              <option value="2026-Q1">FY 2026 - Q1 (Jan - Mar)</option>
               <option value="ALL">All Available History</option>
             </select>
           </div>
@@ -727,19 +724,24 @@
       <div class="field-group">
         <label class="field-label" for="tag-category-select">Tax and accounting category</label>
         <select class="field-control" id="tag-category-select">
+          <option value="Treasury Inflow">Treasury Inflow / Client Revenue</option>
+          <option value="Grant / Funding">Grant / Ecosystem Funding</option>
           <option value="Officer Compensation (W-2)">Officer Compensation (W-2)</option>
           <option value="Contractor Payroll">Contractor Payroll</option>
           <option value="Supplier Settlement">Supplier Settlement (SaaS / Cloud)</option>
           <option value="Treasury Yield Sweep">Treasury Yield Sweep</option>
           <option value="Legal &amp; Compliance">Legal &amp; Regulatory Compliance</option>
+          <option value="Tax &amp; Statutory Payment">Tax &amp; Statutory Payment</option>
           <option value="Capital Expenditure">Capital Expenditure</option>
-          <option value="General Operating">General Operating Expense</option>
+          <option value="Operating Expense">General Operating Expense</option>
+          <option value="Other">Other (Custom Category)</option>
         </select>
+        <input type="text" class="field-control" id="tag-custom-category-input" placeholder="Specify custom category (e.g. Conference Sponsorship)" style="display:none; margin-top:8px;">
       </div>
 
       <div class="field-group">
-        <label class="field-label" for="tag-notes-input">Internal audit scope notes</label>
-        <input type="text" class="field-control" id="tag-notes-input" placeholder="e.g. Q3 bonus grant approved under Board Resolution 42">
+        <label class="field-label" for="tag-notes-input">Internal audit memo / justification</label>
+        <input type="text" class="field-control" id="tag-notes-input" placeholder="e.g. Invoice #408 — Q4 cloud infra or Board Resolution 42">
       </div>
 
       <button class="btn btn-primary btn-block" id="btn-save-tag" style="margin-top:16px; padding:10px;">
@@ -770,7 +772,7 @@
 
       <div class="field-group">
         <label class="field-label" for="auditor-expiry-input">Authorization Expiration Date</label>
-        <input type="date" class="field-control" id="auditor-expiry-input" value="2026-12-31">
+        <input type="date" class="field-control" id="auditor-expiry-input">
       </div>
 
       <div class="field-group">
@@ -795,14 +797,7 @@
           Active Authorized Auditors
         </span>
         <div class="auditor-list" id="auditor-list-container">
-          <div class="auditor-item">
-            <div class="auditor-meta">
-              <strong>Deloitte &amp; Touche Digital Asset Practice</strong>
-              <span class="font-mono text-cyan" style="font-size:11px;">0xa742...9902</span>
-              <small>Scope: ALL_TRANSACTIONS · Valid until 2026-12-31</small>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="revokeAuditorMock(this, 'Deloitte')">Revoke</button>
-          </div>
+          <div class="history-empty" id="auditor-empty-state">No delegated auditors authorized in this session yet.</div>
         </div>
       </div>
 
@@ -981,27 +976,28 @@
         }
       });
 
-      document.getElementById('table-search-input')?.addEventListener('input', e => {
-        const term = e.target.value.toLowerCase();
+      function applyTableFilters() {
+        const term = (document.getElementById('table-search-input')?.value || '').trim().toLowerCase();
+        const activePill = document.querySelector('.cat-pill.active');
+        const cat = (activePill?.textContent || 'all').trim().toLowerCase();
         const rows = document.querySelectorAll('#table-body tr');
         rows.forEach(r => {
-          r.style.display = r.textContent.toLowerCase().includes(term) ? '' : 'none';
+          if (r.querySelector('td[colspan]')) return;
+          const hay = ((r.textContent || '') + ' ' + (r.dataset?.search || '')).toLowerCase();
+          const matchesTerm = !term || hay.includes(term);
+          const matchesCat = cat === 'all' || hay.includes(cat);
+          r.style.display = (matchesTerm && matchesCat) ? '' : 'none';
         });
-      });
+      }
+      window.applyTableFilters = applyTableFilters;
+
+      document.getElementById('table-search-input')?.addEventListener('input', applyTableFilters);
 
       document.querySelectorAll('.cat-pill').forEach(pill => {
         pill.addEventListener('click', () => {
           document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
           pill.classList.add('active');
-          const cat = pill.textContent.trim().toLowerCase();
-          const rows = document.querySelectorAll('#table-body tr');
-          rows.forEach(r => {
-            if (cat === 'all') {
-              r.style.display = '';
-            } else {
-              r.style.display = r.textContent.toLowerCase().includes(cat) ? '' : 'none';
-            }
-          });
+          applyTableFilters();
         });
       });
     }

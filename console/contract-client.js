@@ -24,6 +24,7 @@ export const SELECTORS = {
   subscribe: '0x3a04bc0c',
   commitAuditProof: '0x6cdc2c15',
   authorizeAuditor: '0x6f5ca4d2',
+  revokeAuditor: '0xb402980b',
   approve: '0x095ea7b3',
   allowance: '0xdd62ed3e',
   protocolFee: '0xb0e21e8a',
@@ -418,6 +419,28 @@ export async function executeAuthorizeAuditorOnChain(provider, auditorAddress, v
       from: user,
       to: REGISTRY_ADDRESS,
       data: authData,
+      value: '0x0'
+    }]
+  });
+  await waitForTxReceipt(txHash);
+
+  return txHash;
+}
+
+// On-Chain Auditor Revocation
+export async function executeRevokeAuditorOnChain(provider, auditorAddress) {
+  await ensureArcNetwork(provider);
+  const accounts = await provider.request({ method: 'eth_accounts' });
+  const user = accounts[0];
+  if (!user) throw new Error('No connected wallet account found.');
+
+  const revokeData = SELECTORS.revokeAuditor + padAddress(auditorAddress);
+  const txHash = await provider.request({
+    method: 'eth_sendTransaction',
+    params: [{
+      from: user,
+      to: REGISTRY_ADDRESS,
+      data: revokeData,
       value: '0x0'
     }]
   });

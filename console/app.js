@@ -33,7 +33,8 @@ import {
   verifyBatchInclusionOnChain,
   executeSubscribeOnChain,
   executeCommitProofOnChain,
-  executeAuthorizeAuditorOnChain
+  executeAuthorizeAuditorOnChain,
+  executeRevokeAuditorOnChain
 } from './contract-client.js';
 import {
   keccak256Utf8,
@@ -157,7 +158,8 @@ export function prepareExportTransactions(transactions, scope) {
     const genericType = (tx.type || tx.category || 'TRANSACTION').replace(/_/g, ' ');
     return {
       ...tx,
-      plainCounterparty: `[REDACTED] ${genericType} [${shortLeaf}]`
+      plainCounterparty: `[REDACTED] ${genericType} [${shortLeaf}]`,
+      notes: ''
     };
   });
 }
@@ -249,8 +251,83 @@ if (typeof document !== 'undefined') {
   }
   if (typeof window !== 'undefined') window.showToast = showToast;
 
+  let allFetchedTransactions = [];
   let loadedTransactions = [];
   let calculatedMerkleRoot = "";
+
+  const QUARTER_MONTH_LABELS = ['Jan - Mar', 'Apr - June', 'July - Sept', 'Oct - Dec'];
+
+  function populateAccountingPeriods() {
+    const sel = $('period-select');
+    if (!sel) return;
+    const now = new Date();
+    let y = now.getUTCFullYear();
+    let q = Math.floor(now.getUTCMonth() / 3) + 1;
+    const options = [{ value: 'ALL', label: 'All Available History' }];
+    for (let i = 0; i < 4; i++) {
+      options.push({
+        value: `${y}-Q${q}`,
+        label: `FY ${y} - Q${q} (${QUARTER_MONTH_LABELS[q - 1]})`
+      });
+      q -= 1;
+      if (q === 0) { q = 4; y -= 1; }
+    }
+    sel.innerHTML = options.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+    sel.value = 'ALL';
+  }
+
+  function parseTxTimestampSec(tx) {
+    const raw = String(tx?.date || '').trim();
+    if (!raw) return null;
+    const iso = raw.endsWith('UTC') ? raw.replace(' UTC', 'Z').replace(' ', 'T') : raw;
+    const ms = Date.parse(iso);
+    return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+  }
+
+  function getPeriodBounds(periodValue, txs = []) {
+    const m = /^(\d{4})-Q([1-4])$/.exec(String(periodValue || ''));
+    if (m) {
+      const year = Number(m[1]);
+      const quarter = Number(m[2]);
+      const startMonth = (quarter - 1) * 3;
+      const startMs = Date.UTC(year, startMonth, 1, 0, 0, 0);
+      const endMs = Date.UTC(year, startMonth + 3, 0, 23, 59, 59);
+      return { periodStart: Math.floor(startMs / 1000), periodEnd: Math.floor(endMs / 1000) };
+    }
+    const timestamps = (txs || []).map(parseTxTimestampSec).filter(t => t !== null);
+    const now = Math.floor(Date.now() / 1000);
+    if (timestamps.length > 0) {
+      return {
+        periodStart: Math.min(...timestamps),
+        periodEnd: Math.max(...timestamps)
+      };
+    }
+    return { periodStart: now - (90 * 86400), periodEnd: now };
+  }
+
+  function applyActivePeriodFilter() {
+    const periodVal = $('period-select')?.value || 'ALL';
+    if (periodVal === 'ALL') {
+      loadedTransactions = [...allFetchedTransactions];
+      return;
+    }
+    const { periodStart, periodEnd } = getPeriodBounds(periodVal);
+    loadedTransactions = allFetchedTransactions.filter(tx => {
+      const ts = parseTxTimestampSec(tx);
+      if (ts === null) return true;
+      return ts >= periodStart && ts <= periodEnd;
+    });
+  }
+
+  function initAuditorExpiryDefault() {
+    const input = $('auditor-expiry-input');
+    if (!input) return;
+    const today = new Date();
+    const minStr = today.toISOString().slice(0, 10);
+    const defDate = new Date(today.getTime() + (90 * 86400 * 1000));
+    input.min = minStr;
+    if (!input.value) input.value = defDate.toISOString().slice(0, 10);
+  }
   let lastCommitment = null;
   let currentProtocolFee = PROTOCOL_FEE;
   let activeScope = 'full';
@@ -701,6 +778,7 @@ if (typeof document !== 'undefined') {
       badge.className = 'plan-badge none';
     }
     updateTierButtons('none');
+    allFetchedTransactions = [];
     loadedTransactions = [];
     lastCommitment = null;
     if ($('commit-receipt-box')) $('commit-receipt-box').style.display = 'none';
@@ -750,8 +828,20 @@ if (typeof document !== 'undefined') {
       $('tag-modal-tx-meta').textContent = `Tx: ${txHash.slice(0, 14)}... · Amount: $${tx.grossAmount.toFixed(2)} USDC`;
     }
     if ($('tag-name-input')) $('tag-name-input').value = existingTag.tag || tx.plainCounterparty || '';
-    if ($('tag-category-select')) $('tag-category-select').value = existingTag.category || tx.category || 'Payroll';
-    if ($('tag-notes-input')) $('tag-notes-input').value = existingTag.notes || '';
+    const catSelect = $('tag-category-select');
+    const customInput = $('tag-custom-category-input');
+    const currentCat = (existingTag.category || tx.category || 'Operating Expense').trim();
+    if (catSelect) {
+      const hasOption = Array.from(catSelect.options).some(opt => opt.value === currentCat && opt.value !== 'Other');
+      if (hasOption) {
+        catSelect.value = currentCat;
+        if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
+      } else {
+        catSelect.value = 'Other';
+        if (customInput) { customInput.style.display = 'block'; customInput.value = currentCat; }
+      }
+    }
+    if ($('tag-notes-input')) $('tag-notes-input').value = existingTag.notes || tx.notes || '';
 
     if ($('tag-modal')) $('tag-modal').style.display = 'flex';
   }
@@ -793,7 +883,12 @@ if (typeof document !== 'undefined') {
         ? `<a href="${escapeHtml(validExplorerUrl)}" target="_blank" rel="noopener noreferrer" class="table-tx-link">#${safeBlock} ↗</a>`
         : `#${safeBlock}`;
 
-      return `<tr>
+      // Zero-leak search index: omit plain counterparty/notes when Redacted Client scope is active
+      const searchIndex = activeScope === 'full'
+        ? `${txHash} ${tx.rawCounterparty || ''} ${tx.counterparty || ''} ${currentLabel} ${currentCategory} ${tagInfo.notes || tx.notes || ''} ${safeBlock}`
+        : `${txHash} ${currentCategory} ${safeBlock}`;
+
+      return `<tr data-search="${escapeHtml(searchIndex)}">
         <td>${escapeHtml(tx.date)}</td>
         <td class="font-mono">${explorerLink}</td>
         <td>${counterpartyHtml}</td>
@@ -807,6 +902,7 @@ if (typeof document !== 'undefined') {
         </td>
       </tr>`;
     }).join('');
+    if (window.applyTableFilters) window.applyTableFilters();
   }
 
   let isSubscribingInFlight = false;
@@ -1344,19 +1440,52 @@ if (typeof document !== 'undefined') {
     updateVaultTierUI();
     syncOnChainSubscription();
 
-    // Tag Save Action
+    // Custom Category Toggle & Tag Save Action
+    $('tag-category-select')?.addEventListener('change', (e) => {
+      const customInput = $('tag-custom-category-input');
+      if (!customInput) return;
+      if (e.target.value === 'Other') {
+        customInput.style.display = 'block';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+      }
+    });
+
     $('btn-save-tag')?.addEventListener('click', () => {
       const hash = $('tag-target-hash')?.value;
-      const tag = $('tag-name-input')?.value || '';
-      const category = $('tag-category-select')?.value || 'General';
-      const notes = $('tag-notes-input')?.value || '';
+      const tag = $('tag-name-input')?.value?.trim() || '';
+      const selectedCat = $('tag-category-select')?.value || 'Operating Expense';
+      const customCat = $('tag-custom-category-input')?.value?.trim() || '';
+      if (selectedCat === 'Other' && !customCat) {
+        showToast('Enter a custom accounting category name.', 'warning');
+        $('tag-custom-category-input')?.focus();
+        return;
+      }
+      const category = selectedCat === 'Other' ? customCat : selectedCat;
+      const notes = $('tag-notes-input')?.value?.trim() || '';
 
       if (hash) {
         saveTransactionTag(hash, tag, category, notes);
+        const match = allFetchedTransactions.find(t => (t.hash || t.id) === hash);
+        if (match) {
+          if (tag) match.plainCounterparty = tag;
+          match.category = category;
+          match.notes = notes;
+          match.isTagged = Boolean(tag);
+        }
+        applyActivePeriodFilter();
         if ($('tag-modal')) $('tag-modal').style.display = 'none';
         renderTable();
         calculateCompleteness();
+        showToast('Transaction tag saved locally.', 'success');
       }
+    });
+
+    $('period-select')?.addEventListener('change', async () => {
+      applyActivePeriodFilter();
+      renderTable();
+      await calculateCompleteness();
     });
 
     // Real On-Chain RPC Ingestion
@@ -1387,12 +1516,14 @@ if (typeof document !== 'undefined') {
 
       try {
         const liveTxs = await fetchLiveTransactions(addr, netKey);
-        loadedTransactions = liveTxs || [];
+        allFetchedTransactions = liveTxs || [];
+        applyActivePeriodFilter();
         if (loadedTransactions.length === 0) {
           if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="status-verified-text">0 on-chain events found</span>`;
         }
       } catch (e) {
         console.warn('RPC fetch failed:', e);
+        allFetchedTransactions = [];
         loadedTransactions = [];
         showToast(formatUserError(e, `Failed to fetch transactions from ${netKey} RPC`), 'error');
       }
@@ -1406,7 +1537,7 @@ if (typeof document !== 'undefined') {
 
     function buildCurrentSessionCertificate() {
       if (loadedTransactions.length === 0 || !window.VeyroqExporter?.buildAuditCertificate) return null;
-      const period = $('period-select')?.value || '2026-Q3';
+      const period = $('period-select')?.value || 'ALL';
       const org = $('org-address')?.value?.trim() || connectedAddress || 'Unassigned';
       const data = prepareExportTransactions(loadedTransactions, activeScope);
       return window.VeyroqExporter.buildAuditCertificate(data, calculatedMerkleRoot, org, period, getNetFullName(), {
@@ -1445,7 +1576,7 @@ if (typeof document !== 'undefined') {
     Object.entries(exportMap).forEach(([id, fn]) => {
       $(id)?.addEventListener('click', () => {
         if (loadedTransactions.length === 0) return;
-        const period = $('period-select')?.value || '2026-Q3';
+        const period = $('period-select')?.value || 'ALL';
         const org = $('org-address')?.value?.trim() || connectedAddress || 'Unassigned';
         fn(prepareExportTransactions(loadedTransactions, activeScope), org, period);
       });
@@ -1495,6 +1626,7 @@ if (typeof document !== 'undefined') {
     function prependAuthorizedAuditor(addr, txHash, scope, dateVal) {
       const list = $('auditor-list-container');
       if (!list) return;
+      $('auditor-empty-state')?.remove();
       const validHash = safeTxHash(txHash);
       const explorerLink = validHash
         ? `<a href="${escapeHtml(ARC_EXPLORER_TX + validHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline; font-size:11px; margin-left:6px;">Tx ↗</a>`
@@ -1502,8 +1634,42 @@ if (typeof document !== 'undefined') {
       const item = document.createElement('div');
       item.className = 'auditor-item';
       item.innerHTML = `<div class="auditor-meta"><strong>Authorized Auditor (Active On-Chain)</strong><span class="font-mono text-cyan" style="font-size:11px;">${escapeHtml(addr.slice(0, 6))}...${escapeHtml(addr.slice(-4))}${explorerLink}</span><small>Scope: ${escapeHtml(scope)} · Valid until ${escapeHtml(dateVal)}</small></div><button class="btn btn-secondary btn-sm" type="button">Revoke</button>`;
-      item.querySelector('button')?.addEventListener('click', (e) => window.revokeAuditorMock(e.currentTarget, 'Auditor'));
+      item.querySelector('button')?.addEventListener('click', (e) => revokeAuthorizedAuditorOnChain(e.currentTarget, addr));
       list.prepend(item);
+    }
+
+    async function revokeAuthorizedAuditorOnChain(btn, auditorAddr) {
+      let signer;
+      try {
+        signer = await resolveActiveSigner();
+      } catch (err) {
+        showToast(formatUserError(err), 'warning');
+        return;
+      }
+      const shortSigning = signer.address ? `${signer.address.slice(0, 6)}...${signer.address.slice(-4)}` : signer.label;
+      const ok = await showConfirmModal({
+        title: 'Revoke Auditor Authorization',
+        message: `Revoke on-chain audit authorization for ${auditorAddr.slice(0, 6)}...${auditorAddr.slice(-4)} on VeyroqRegistry?`,
+        walletLabel: `${signer.label} (${shortSigning})`,
+        networkLabel: 'Arc Testnet',
+        confirmLabel: 'Revoke On-Chain'
+      });
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Revoking...';
+      try {
+        await executeRevokeAuditorOnChain(signer.provider, auditorAddr);
+        const item = btn.closest('.auditor-item');
+        if (item) item.style.opacity = '0.4';
+        btn.textContent = 'Revoked';
+        showToast(`Auditor ${auditorAddr.slice(0, 6)}...${auditorAddr.slice(-4)} revoked on Arc.`, 'success');
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Revoke';
+        const msg = formatUserError(err, 'Auditor revocation failed');
+        showToast(msg, msg === 'Request cancelled in your wallet.' ? 'warning' : 'error');
+      }
     }
 
     function renderCommitReceiptBox(commitment) {
@@ -1753,9 +1919,8 @@ if (typeof document !== 'undefined') {
       }
 
       const orgAddress = connectedAddress || $('org-address')?.value?.trim();
-      const now = Math.floor(Date.now() / 1000);
-      const periodStart = now - (90 * 86400);
-      const periodEnd = now;
+      const selectedPeriod = $('period-select')?.value || 'ALL';
+      const { periodStart, periodEnd } = getPeriodBounds(selectedPeriod, loadedTransactions);
       const count = loadedTransactions.length;
 
       let signer;
@@ -1812,7 +1977,7 @@ if (typeof document !== 'undefined') {
       }
 
       const addr = $('auditor-addr-input')?.value?.trim();
-      const dateVal = $('auditor-expiry-input')?.value || '2026-12-31';
+      const dateVal = $('auditor-expiry-input')?.value?.trim() || '';
       const scope = $('auditor-scope-input')?.value || 'ALL_TRANSACTIONS';
       const feedback = $('policy-tx-feedback');
       const btn = $('btn-submit-policy');
@@ -1825,6 +1990,15 @@ if (typeof document !== 'undefined') {
         return;
       }
 
+      const expiryMs = Date.parse(`${dateVal}T23:59:59Z`);
+      const expiryTimestamp = Number.isFinite(expiryMs) ? Math.floor(expiryMs / 1000) : 0;
+      if (!dateVal || expiryTimestamp <= Math.floor(Date.now() / 1000)) {
+        if (feedback) feedback.innerHTML = `<span style="color:#B45309;">Select an expiration date in the future.</span>`;
+        showToast('Select an expiration date in the future.', 'warning');
+        $('auditor-expiry-input')?.focus();
+        return;
+      }
+
       let signer;
       try {
         signer = await resolveActiveSigner();
@@ -1833,14 +2007,13 @@ if (typeof document !== 'undefined') {
         return;
       }
 
-      const expiryTimestamp = Math.floor(new Date(dateVal).getTime() / 1000);
       const signingAddr = signer.address;
       const shortSigning = signingAddr ? `${signingAddr.slice(0, 6)}...${signingAddr.slice(-4)}` : signer.label;
       const ok = await showConfirmModal({
         title: 'Authorize Delegated Auditor',
         message: `Grant scoped audit access to ${addr.slice(0, 6)}...${addr.slice(-4)} until ${dateVal}.`,
         walletLabel: `${signer.label} (${shortSigning})`,
-        networkLabel: 'Circle Arc Testnet',
+        networkLabel: 'Arc Testnet',
         confirmLabel: 'Authorize On-Chain'
       });
       if (!ok) return;
@@ -1910,6 +2083,8 @@ if (typeof document !== 'undefined') {
       }
     }
 
+    populateAccountingPeriods();
+    initAuditorExpiryDefault();
     refreshProtocolFeeUI();
     renderTable();
     calculateCompleteness();
@@ -1921,22 +2096,4 @@ if (typeof document !== 'undefined') {
   } else {
     initApp();
   }
-
-  window.revokeAuditorMock = async function(btn, name) {
-    const ok = await showConfirmModal({
-      title: 'Revoke Auditor Authorization',
-      message: `Revoke on-chain audit authorization for ${name}?`,
-      walletLabel: connectedAddress ? `${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : 'Active Session',
-      networkLabel: getNetFullName(),
-      confirmLabel: 'Revoke Access'
-    });
-    if (ok) {
-      const item = btn.closest('.auditor-item');
-      if (item) {
-        item.style.opacity = '0.35';
-        btn.disabled = true;
-        btn.innerText = "Revoked";
-      }
-    }
-  };
 }

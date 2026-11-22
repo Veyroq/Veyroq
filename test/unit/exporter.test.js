@@ -113,3 +113,25 @@ test('Unit: CSV exporters neutralize formula injection (CWE-1236) and escape quo
   assert.equal(xero.includes('"\'+SUM(1,2)"'), true);
 });
 
+test('Unit: CSV and Audit Certificate include custom categories and audit notes', () => {
+  const txs = [{
+    id: 'tx-custom-1',
+    date: '2026-11-15 10:00:00 UTC',
+    block: 70001,
+    type: 'OUTGOING_PAYMENT',
+    category: 'Conference Sponsorship',
+    plainCounterparty: 'Arc Summit',
+    notes: 'Invoice #408 - Abuja meetup',
+    grossAmount: 1500,
+    leafHash: '0x' + 'aa'.repeat(32),
+    merkleProof: []
+  }];
+  const qb = VeyroqExporter.generateQuickBooksCSV(txs, '0x71C8...', '2026-Q4');
+  const xero = VeyroqExporter.generateXeroCSV(txs, '0x71C8...', '2026-Q4');
+  const cert = VeyroqExporter.buildAuditCertificate(txs, '0x' + 'bb'.repeat(32), '0x71C8...', '2026-Q4', 'Arc Testnet');
+  assert.equal(qb.includes('General & Administrative:Conference Sponsorship'), true);
+  assert.equal(qb.includes('Invoice #408 - Abuja meetup'), true);
+  assert.equal(xero.includes('Invoice #408 - Abuja meetup'), true);
+  assert.equal(cert.leafCommitments[0].auditNotes, 'Invoice #408 - Abuja meetup');
+});
+
