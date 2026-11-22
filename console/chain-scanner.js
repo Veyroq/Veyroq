@@ -171,140 +171,169 @@ export async function rpcCall(rpcUrl, method, params = [], timeoutMs = 8000) {
   }
 }
 
-// Pull real on-chain transactions for an address
-export async function fetchLiveTransactions(address, networkKey = 'Arc') {
+export function dedupeAndSortTransactions(existing = [], incoming = []) {
+  const merged = [];
+  const seen = new Set();
+  const keyOf = (t) => {
+    const hash = String(t?.hash || t?.id || '').toLowerCase();
+    if (hash && t?.logIndex !== undefined && t?.logIndex !== null && Number.isFinite(Number(t.logIndex))) {
+      return `${hash}#${Number(t.logIndex)}`;
+    }
+    return `${hash}:${t?.block || 0}:${t?.grossAmount || 0}:${String(t?.rawCounterparty || '').toLowerCase()}`;
+  };
+  for (const list of [existing, incoming]) {
+    if (!Array.isArray(list)) continue;
+    for (const tx of list) {
+      const k = keyOf(tx);
+      if (!seen.has(k)) {
+        seen.add(k);
+        merged.push(tx);
+      }
+    }
+  }
+  merged.sort((a, b) => ((b.block || 0) - (a.block || 0)) || ((Number(b.logIndex) || 0) - (Number(a.logIndex) || 0)));
+  return merged;
+}
+
+// Fetch paginated real USDC transfer history (Arc Explorer cursor + live RPC merge)
+export async function fetchLiveTransactionsPage(address, networkKey = 'Arc', { cursor = null, maxPages = 2 } = {}) {
   if (!address || !address.startsWith('0x')) {
     throw new Error('Invalid EVM address');
   }
 
   const network = NETWORKS[networkKey] || NETWORKS['Arc'];
   const rpcUrl = network.rpcUrl;
+  const tags = getStoredTags();
+  let rpcTransactions = [];
 
   try {
-    // 1. Get latest block number
-    const latestBlockHex = await rpcCall(rpcUrl, 'eth_blockNumber', []);
-    const latestBlock = parseInt(latestBlockHex, 16);
+    // 1. On initial load (cursor === null), scan recent ERC-20 USDC Transfer logs via RPC
+    if (!cursor) {
+      const latestBlockHex = await rpcCall(rpcUrl, 'eth_blockNumber', []);
+      const latestBlock = parseInt(latestBlockHex, 16);
+      const fromBlock = '0x' + Math.max(0, latestBlock - 9000).toString(16);
+      const topicAddr = addressToTopic(address);
+      const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+      const contractFilter = network.usdcAddress ? { address: network.usdcAddress } : {};
 
-    // 2. Query recent ERC-20 USDC transfer events (filtered strictly by chain USDC contract when configured)
-    const fromBlock = '0x' + Math.max(0, latestBlock - 9000).toString(16);
-    const topicAddr = addressToTopic(address);
+      const [sentLogs, receivedLogs] = await Promise.all([
+        rpcCall(rpcUrl, 'eth_getLogs', [{
+          fromBlock,
+          toBlock: 'latest',
+          ...contractFilter,
+          topics: [TRANSFER_TOPIC, topicAddr]
+        }]).catch(() => []),
+        rpcCall(rpcUrl, 'eth_getLogs', [{
+          fromBlock,
+          toBlock: 'latest',
+          ...contractFilter,
+          topics: [TRANSFER_TOPIC, null, topicAddr]
+        }]).catch(() => [])
+      ]);
 
-    // ERC-20 Transfer(address,address,uint256) signature
-    const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-    const contractFilter = network.usdcAddress ? { address: network.usdcAddress } : {};
+      const seenLogs = new Set();
+      const combined = [...sentLogs, ...receivedLogs].filter(log => {
+        if (network.usdcAddress && log.address && log.address.toLowerCase() !== network.usdcAddress.toLowerCase()) {
+          return false;
+        }
+        const key = `${(log.transactionHash || '').toLowerCase()}:${log.logIndex || ''}`;
+        if (log.transactionHash && log.logIndex != null) {
+          if (seenLogs.has(key)) return false;
+          seenLogs.add(key);
+        }
+        return true;
+      });
 
-    // Query outgoing & incoming USDC transfers in parallel
-    const [sentLogs, receivedLogs] = await Promise.all([
-      rpcCall(rpcUrl, 'eth_getLogs', [{
-        fromBlock,
-        toBlock: 'latest',
-        ...contractFilter,
-        topics: [TRANSFER_TOPIC, topicAddr]
-      }]).catch(() => []),
-      rpcCall(rpcUrl, 'eth_getLogs', [{
-        fromBlock,
-        toBlock: 'latest',
-        ...contractFilter,
-        topics: [TRANSFER_TOPIC, null, topicAddr]
-      }]).catch(() => [])
-    ]);
+      rpcTransactions = combined.map((log, idx) => {
+        const isOutgoing = (log.topics[1] || '').toLowerCase() === topicAddr.toLowerCase();
+        const rawCounterpartyTopic = isOutgoing ? log.topics[2] : log.topics[1];
+        const counterparty = rawCounterpartyTopic ? '0x' + rawCounterpartyTopic.slice(26) : '0x00';
+        const blockNum = parseInt(log.blockNumber, 16);
+        const logIndex = log.logIndex != null ? parseInt(log.logIndex, 16) : null;
+        const grossAmount = formatUnitsUSDC(log.data || '0x0');
+        const txHash = log.transactionHash || `tx-${networkKey}-${blockNum}-${idx}`;
+        const tsMs = log.blockTimestamp ? parseInt(log.blockTimestamp, 16) * 1000 : Date.now();
+        const dateStr = new Date(tsMs).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 
-    // Deduplicate identical log emissions and drop non-USDC 18-decimal native duplicate logs
-    const seenLogs = new Set();
-    const combined = [...sentLogs, ...receivedLogs].filter(log => {
-      if (network.usdcAddress && log.address && log.address.toLowerCase() !== network.usdcAddress.toLowerCase()) {
-        return false;
-      }
-      const key = `${(log.transactionHash || '').toLowerCase()}:${log.logIndex || ''}`;
-      if (log.transactionHash && log.logIndex != null) {
-        if (seenLogs.has(key)) return false;
-        seenLogs.add(key);
-      }
-      return true;
-    });
-    const tags = getStoredTags();
+        const tagInfo = tags[txHash.toLowerCase()] || {};
+        const plainCounterparty = tagInfo.tag || (isOutgoing ? `Transfer to ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}` : `Received from ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`);
+        const category = tagInfo.category || (isOutgoing ? 'Operating Expense' : 'Treasury Inflow');
 
-    // Map logs to clean transaction records
-    const transactions = combined.map((log, idx) => {
-      const isOutgoing = (log.topics[1] || '').toLowerCase() === topicAddr.toLowerCase();
-      const rawCounterpartyTopic = isOutgoing ? log.topics[2] : log.topics[1];
-      const counterparty = rawCounterpartyTopic ? '0x' + rawCounterpartyTopic.slice(26) : '0x00';
-      const blockNum = parseInt(log.blockNumber, 16);
-      const grossAmount = formatUnitsUSDC(log.data || '0x0');
-      const txHash = log.transactionHash || `tx-${networkKey}-${blockNum}-${idx}`;
-      const tsMs = log.blockTimestamp ? parseInt(log.blockTimestamp, 16) * 1000 : Date.now();
-      const dateStr = new Date(tsMs).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+        return {
+          id: txHash,
+          hash: txHash,
+          logIndex: Number.isFinite(logIndex) ? logIndex : null,
+          date: dateStr,
+          block: blockNum,
+          type: isOutgoing ? 'OUTGOING_PAYMENT' : 'INCOMING_TRANSFER',
+          category,
+          counterparty: `${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`,
+          rawCounterparty: counterparty,
+          plainCounterparty,
+          grossAmount,
+          asset: 'USDC',
+          explorerLink: `${network.explorerTxUrl}${txHash}`,
+          isTagged: Boolean(tagInfo.tag),
+          notes: tagInfo.notes || ''
+        };
+      });
+    }
 
-      const tagInfo = tags[txHash.toLowerCase()] || {};
-      const plainCounterparty = tagInfo.tag || (isOutgoing ? `Transfer to ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}` : `Received from ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`);
-      const category = tagInfo.category || (isOutgoing ? 'Operating Expense' : 'Treasury Inflow');
-
-      return {
-        id: txHash,
-        hash: txHash,
-        date: dateStr,
-        block: blockNum,
-        type: isOutgoing ? 'OUTGOING_PAYMENT' : 'INCOMING_TRANSFER',
-        category,
-        counterparty: `${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`,
-        rawCounterparty: counterparty,
-        plainCounterparty,
-        grossAmount,
-        asset: 'USDC',
-        explorerLink: `${network.explorerTxUrl}${txHash}`,
-        isTagged: Boolean(tagInfo.tag),
-        notes: tagInfo.notes || ''
-      };
-    });
-
-    // 3. Query Arc Explorer Indexer API with pagination (follows next_page_params up to 500 transfers)
-    // and merge/deduplicate with recent RPC eth_getLogs so wallets with >50 transfers load full multi-month history.
+    // 2. Query Arc Explorer Indexer API with token filter & cursor pagination (exact 1:1 parity with Arc Explorer)
     if (networkKey === 'Arc') {
       try {
         const usdcLower = (network.usdcAddress || '').toLowerCase();
         const baseExpUrl = `https://explorer.testnet.arc.io/api/v2/addresses/${address}/token-transfers`;
-        const maxPages = 10;
-        let nextParams = null;
+        const pageBudget = Math.max(1, Math.min(20, Number(maxPages) || 2));
+        let nextParams = cursor && typeof cursor === 'object' ? { ...cursor } : null;
         const explorerItems = [];
         const seenCursors = new Set();
+        let explorerSucceeded = false;
 
-        for (let page = 0; page < maxPages; page++) {
-          let pageUrl = baseExpUrl;
+        for (let page = 0; page < pageBudget; page++) {
+          const qs = new URLSearchParams();
+          if (network.usdcAddress) qs.set('token', network.usdcAddress);
           if (nextParams && typeof nextParams === 'object') {
-            const qs = new URLSearchParams();
             for (const [k, v] of Object.entries(nextParams)) {
               if (v !== undefined && v !== null) qs.set(k, String(v));
             }
-            const qsStr = qs.toString();
-            if (!qsStr || seenCursors.has(qsStr)) break;
-            seenCursors.add(qsStr);
-            pageUrl = `${baseExpUrl}?${qsStr}`;
           }
+          const qsStr = qs.toString();
+          if (page > 0 && seenCursors.has(qsStr)) {
+            nextParams = null;
+            break;
+          }
+          seenCursors.add(qsStr);
+          const pageUrl = qsStr ? `${baseExpUrl}?${qsStr}` : baseExpUrl;
 
           const expRes = await fetch(pageUrl);
           if (!expRes || typeof expRes.json !== 'function') break;
           const expData = await expRes.json();
-          const pageItems = Array.isArray(expData?.items) ? expData.items : [];
-          if (pageItems.length === 0) break;
+          if (!expData || !Array.isArray(expData.items)) break;
+          explorerSucceeded = true;
 
-          for (const item of pageItems) {
+          for (const item of expData.items) {
             const tokAddr = (item.token?.address_hash || item.token?.address || '').toLowerCase();
             if (!usdcLower || !tokAddr || tokAddr === usdcLower) {
               explorerItems.push(item);
             }
           }
 
-          if (!expData?.next_page_params) break;
+          if (!expData.next_page_params || typeof expData.next_page_params !== 'object') {
+            nextParams = null;
+            break;
+          }
           nextParams = expData.next_page_params;
         }
 
-        if (explorerItems.length > 0) {
+        if (explorerSucceeded) {
           const explorerTxs = explorerItems.map((item, idx) => {
             const fromHash = item.from?.hash || '0x00';
             const toHash = item.to?.hash || '0x00';
             const isOutgoing = fromHash.toLowerCase() === address.toLowerCase();
             const counterparty = isOutgoing ? toHash : fromHash;
             const blockNum = item.block_number || 0;
+            const logIndex = item.log_index != null ? Number(item.log_index) : null;
             const grossAmount = formatUnitsUSDC(item.total?.value || '0');
             const txHash = item.transaction_hash || `tx-Arc-${blockNum}-${idx}`;
             const dateStr = item.timestamp
@@ -318,6 +347,7 @@ export async function fetchLiveTransactions(address, networkKey = 'Arc') {
             return {
               id: txHash,
               hash: txHash,
+              logIndex: Number.isFinite(logIndex) ? logIndex : null,
               date: dateStr,
               block: blockNum,
               type: isOutgoing ? 'OUTGOING_PAYMENT' : 'INCOMING_TRANSFER',
@@ -333,28 +363,37 @@ export async function fetchLiveTransactions(address, networkKey = 'Arc') {
             };
           });
 
-          // Merge RPC logs + paginated Explorer items without losing multi-transfer txs or duplicating identical ones
-          const merged = [...transactions];
-          const existingKeys = new Set(
-            transactions.map(t => `${(t.hash || '').toLowerCase()}:${t.block}:${t.grossAmount}:${(t.rawCounterparty || '').toLowerCase()}`)
-          );
-          for (const tx of explorerTxs) {
-            const key = `${(tx.hash || '').toLowerCase()}:${tx.block}:${tx.grossAmount}:${(tx.rawCounterparty || '').toLowerCase()}`;
-            if (!existingKeys.has(key)) {
-              existingKeys.add(key);
-              merged.push(tx);
-            }
-          }
-          merged.sort((a, b) => (b.block || 0) - (a.block || 0));
-          return merged;
+          const merged = dedupeAndSortTransactions(rpcTransactions, explorerTxs);
+          return {
+            transactions: merged,
+            nextCursor: nextParams,
+            hasMore: Boolean(nextParams),
+            explorerSynced: true
+          };
         }
       } catch {}
     }
 
-    return transactions;
+    return {
+      transactions: rpcTransactions,
+      nextCursor: null,
+      hasMore: false,
+      explorerSynced: false
+    };
   } catch (err) {
     console.warn(`RPC lookup error on ${network.name}:`, err.message);
-    return [];
+    return {
+      transactions: [],
+      nextCursor: null,
+      hasMore: false,
+      explorerSynced: false
+    };
   }
+}
+
+// Pull real on-chain transactions for an address (backward-compatible array wrapper)
+export async function fetchLiveTransactions(address, networkKey = 'Arc') {
+  const page = await fetchLiveTransactionsPage(address, networkKey, { cursor: null, maxPages: 10 });
+  return page.transactions;
 }
 
