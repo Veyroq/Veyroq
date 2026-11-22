@@ -40,13 +40,16 @@ const VeyroqExporter = (() => {
       const dateFormatted = formatDateISO(tx.date);
 
       // Debit line (expense side)
+      const memoWithNotes = tx.notes
+        ? `${tx.plainCounterparty} — ${tx.category} (${tx.notes})`
+        : `${tx.plainCounterparty} — ${tx.category}`;
       rows.push([
         csvCell(`VQ-${period}-${String(lineNo).padStart(4, '0')}`),
         dateFormatted,
         csvCell(mapCategoryToAccount(tx.category, 'debit')),
         tx.grossAmount.toFixed(2),
         '',
-        csvCell(`${tx.plainCounterparty} — ${tx.category}`),
+        csvCell(memoWithNotes),
         csvCell(tx.type),
         tx.block,
         tx.leafHash || '',
@@ -95,9 +98,12 @@ const VeyroqExporter = (() => {
       const ref = `VQ-BLK-${tx.block}`;
 
       // Debit
+      const xeroDesc = tx.notes
+        ? `${tx.plainCounterparty} — ${tx.category} (${tx.notes})`
+        : `${tx.plainCounterparty} — ${tx.category}`;
       rows.push([
         dateFormatted,
-        csvCell(`${tx.plainCounterparty} — ${tx.category}`),
+        csvCell(xeroDesc),
         mapCategoryToXeroCode(tx.category),
         'NO GST',
         tx.grossAmount.toFixed(2),
@@ -153,7 +159,7 @@ const VeyroqExporter = (() => {
         csvCell(mapCategoryToAccount(tx.category, 'debit')),
         tx.grossAmount.toFixed(2),
         '',
-        csvCell(tx.plainCounterparty),
+        csvCell(tx.notes ? `${tx.plainCounterparty} (${tx.notes})` : tx.plainCounterparty),
         csvCell(tx.type),
         tx.block,
         tx.leafHash || ''
@@ -232,6 +238,7 @@ const VeyroqExporter = (() => {
         amountUSDC: tx.grossAmount,
         counterparty: tx.plainCounterparty,
         classification: tx.category,
+        ...(tx.notes ? { auditNotes: tx.notes } : {}),
         leafHash: tx.leafHash,
         merkleProof: Array.isArray(tx.merkleProof) ? tx.merkleProof : [],
         inclusionStatus: 'MERKLE_VERIFIED'
@@ -305,33 +312,51 @@ const VeyroqExporter = (() => {
 
   function mapCategoryToAccount(category, side) {
     const map = {
+      'Treasury Inflow': 'Revenue:Treasury Inflows & Settlements',
+      'Grant / Funding': 'Other Income:Grants & Ecosystem Funding',
       'Payroll': 'Payroll Expenses:Officer Compensation',
       'Officer Compensation (W-2)': 'Payroll Expenses:Officer Compensation',
+      'Contractor Payroll': 'Payroll Expenses:Contractors',
       'Cloud GPU Compute Cluster': 'Technology Expenses:Cloud Infrastructure',
       'Software & Cloud Infrastructure': 'Technology Expenses:Cloud Infrastructure',
       'Yield Sweep to BlackRock BUIDL': 'Investments:Treasury Instruments',
       'Treasury Sweep': 'Investments:Treasury Instruments',
+      'Treasury Yield Sweep': 'Investments:Treasury Instruments',
       'Engineering Payroll Batch B': 'Payroll Expenses:Engineering Contractors',
       'Supplier Settlement': 'Vendor Expenses:Supplier Settlements',
       'Smart Contract Audit Retainer': 'Professional Services:Security Audits',
       'Professional Services': 'Professional Services:Legal & Audit',
+      'Legal & Compliance': 'Professional Services:Legal & Regulatory Compliance',
+      'Tax & Statutory Payment': 'Taxes & Licenses:Statutory Tax Payments',
+      'Capital Expenditure': 'Fixed Assets:Capital Expenditure',
+      'Operating Expense': 'General & Administrative:Operating Expenses',
+      'General Operating': 'General & Administrative:Operating Expenses',
       'Validator & RPC Infrastructure': 'Technology Expenses:Infrastructure & RPC'
     };
-    return map[category] || 'General & Administrative:Uncategorized';
+    return map[category] || (category ? `General & Administrative:${category}` : 'General & Administrative:Uncategorized');
   }
 
   function mapCategoryToXeroCode(category) {
     const map = {
+      'Treasury Inflow': '200',
+      'Grant / Funding': '260',
       'Payroll': '477',
       'Officer Compensation (W-2)': '477',
+      'Contractor Payroll': '478',
       'Cloud GPU Compute Cluster': '420',
       'Software & Cloud Infrastructure': '420',
       'Yield Sweep to BlackRock BUIDL': '621',
       'Treasury Sweep': '621',
+      'Treasury Yield Sweep': '621',
       'Engineering Payroll Batch B': '477',
       'Supplier Settlement': '412',
       'Smart Contract Audit Retainer': '412',
       'Professional Services': '412',
+      'Legal & Compliance': '412',
+      'Tax & Statutory Payment': '505',
+      'Capital Expenditure': '720',
+      'Operating Expense': '400',
+      'General Operating': '400',
       'Validator & RPC Infrastructure': '420'
     };
     return map[category] || '400';

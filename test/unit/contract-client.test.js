@@ -29,7 +29,8 @@ import {
   verifyBatchInclusionOnChain,
   executeSubscribeOnChain,
   executeCommitProofOnChain,
-  executeAuthorizeAuditorOnChain
+  executeAuthorizeAuditorOnChain,
+  executeRevokeAuditorOnChain
 } from '../../console/contract-client.js';
 
 test('Unit: Contract constants are configured correctly for Circle Arc Testnet', () => {
@@ -342,6 +343,32 @@ test('Unit: On-chain proof readers (fetchCommitmentCount, resolveLatestProofId, 
     assert.equal(await verifyTransactionInclusionOnChain(org, 1, root, []), true);
     assert.deepEqual(await verifyBatchInclusionOnChain(org, 1, [root, root], [[], []]), [true, true]);
     assert.deepEqual(await verifyBatchInclusionOnChain(org, 1, [], []), []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Unit: executeRevokeAuditorOnChain sends exact revokeAuditor(address) selector', async () => {
+  assert.equal(SELECTORS.revokeAuditor, ethers.id('revokeAuditor(address)').slice(0, 10));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ json: async () => ({ result: { status: '0x1' } }) });
+  let sentTx = null;
+  const mockProvider = {
+    request: async ({ method, params }) => {
+      if (method === 'eth_chainId') return ARC_CHAIN_ID_HEX;
+      if (method === 'eth_accounts') return ['0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec'];
+      if (method === 'eth_sendTransaction') {
+        sentTx = params[0];
+        return '0x' + 'ab'.repeat(32);
+      }
+      return null;
+    }
+  };
+  try {
+    const txHash = await executeRevokeAuditorOnChain(mockProvider, '0x2793309a81D4111b8a5FEDb9A16a1DdE49D3bfeA');
+    assert.equal(txHash, '0x' + 'ab'.repeat(32));
+    assert.equal(sentTx.to, REGISTRY_ADDRESS);
+    assert.equal(sentTx.data.startsWith(SELECTORS.revokeAuditor), true);
   } finally {
     globalThis.fetch = originalFetch;
   }

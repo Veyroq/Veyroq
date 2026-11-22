@@ -214,3 +214,58 @@ test('Unit: fetchLiveTransactions filters eth_getLogs by USDC contract and drops
   }
 });
 
+test('Unit: fetchLiveTransactions paginates Arc Explorer next_page_params past 50 items', async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls = [];
+  try {
+    globalThis.fetch = async (url, opts) => {
+      const urlStr = String(url);
+      if (opts && opts.body) {
+        const body = JSON.parse(opts.body);
+        if (body.method === 'eth_blockNumber') return { json: async () => ({ result: '0x5000' }) };
+        return { json: async () => ({ result: [] }) };
+      }
+      requestedUrls.push(urlStr);
+      if (!urlStr.includes('block_number=')) {
+        return {
+          json: async () => ({
+            items: Array.from({ length: 50 }, (_, i) => ({
+              from: { hash: '0x71c8b46b08639f70efa4c34db895c989c7fa22ec' },
+              to: { hash: '0x2793309a81d4111b8a5fedb9a16a1dde49d3bfea' },
+              block_number: 50000 - i,
+              total: { value: '1000000' },
+              transaction_hash: `0xpage1_${i}`,
+              timestamp: '2026-11-20T12:00:00.000000Z',
+              token: { address_hash: NETWORKS['Arc'].usdcAddress, symbol: 'USDC' }
+            })),
+            next_page_params: { index: 5, block_number: 49950 }
+          })
+        };
+      }
+      return {
+        json: async () => ({
+          items: Array.from({ length: 15 }, (_, i) => ({
+            from: { hash: '0x2793309a81d4111b8a5fedb9a16a1dde49d3bfea' },
+            to: { hash: '0x71c8b46b08639f70efa4c34db895c989c7fa22ec' },
+            block_number: 49000 - i,
+            total: { value: '2000000' },
+            transaction_hash: `0xpage2_${i}`,
+            timestamp: '2026-10-15T12:00:00.000000Z',
+            token: { address_hash: NETWORKS['Arc'].usdcAddress, symbol: 'USDC' }
+          })),
+          next_page_params: null
+        })
+      };
+    };
+
+    const txs = await fetchLiveTransactions('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc');
+    assert.equal(requestedUrls.length, 2);
+    assert.equal(requestedUrls[1].includes('block_number=49950'), true);
+    assert.equal(txs.length, 65);
+    assert.equal(txs[0].block, 50000);
+    assert.equal(txs[64].block, 48986);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

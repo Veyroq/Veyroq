@@ -257,59 +257,96 @@ export async function fetchLiveTransactions(address, networkKey = 'Arc') {
       };
     });
 
-    if (transactions.length > 0) {
-      return transactions;
-    }
-
-    // 3. Fallback to Circle Arc Explorer Indexer API for full historical block depth
+    // 3. Query Arc Explorer Indexer API with pagination (follows next_page_params up to 500 transfers)
+    // and merge/deduplicate with recent RPC eth_getLogs so wallets with >50 transfers load full multi-month history.
     if (networkKey === 'Arc') {
       try {
-        const expUrl = `https://explorer.testnet.arc.io/api/v2/addresses/${address}/token-transfers`;
-        const expRes = await fetch(expUrl);
-        if (expRes && typeof expRes.json === 'function') {
-          const expData = await expRes.json();
-          const usdcLower = (network.usdcAddress || '').toLowerCase();
-          const items = Array.isArray(expData?.items)
-            ? expData.items.filter(item => {
-                const tokAddr = (item.token?.address_hash || item.token?.address || '').toLowerCase();
-                return !usdcLower || !tokAddr || tokAddr === usdcLower;
-              })
-            : [];
-          if (items.length > 0) {
-            return items.map((item, idx) => {
-              const fromHash = item.from?.hash || '0x00';
-              const toHash = item.to?.hash || '0x00';
-              const isOutgoing = fromHash.toLowerCase() === address.toLowerCase();
-              const counterparty = isOutgoing ? toHash : fromHash;
-              const blockNum = item.block_number || 0;
-              const grossAmount = formatUnitsUSDC(item.total?.value || '0');
-              const txHash = item.transaction_hash || `tx-Arc-${blockNum}-${idx}`;
-              const dateStr = item.timestamp
-                ? item.timestamp.replace('T', ' ').slice(0, 19) + ' UTC'
-                : new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+        const usdcLower = (network.usdcAddress || '').toLowerCase();
+        const baseExpUrl = `https://explorer.testnet.arc.io/api/v2/addresses/${address}/token-transfers`;
+        const maxPages = 10;
+        let nextParams = null;
+        const explorerItems = [];
+        const seenCursors = new Set();
 
-              const tagInfo = tags[txHash.toLowerCase()] || {};
-              const plainCounterparty = tagInfo.tag || (isOutgoing ? `Transfer to ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}` : `Received from ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`);
-              const category = tagInfo.category || (isOutgoing ? 'Operating Expense' : 'Treasury Inflow');
-
-              return {
-                id: txHash,
-                hash: txHash,
-                date: dateStr,
-                block: blockNum,
-                type: isOutgoing ? 'OUTGOING_PAYMENT' : 'INCOMING_TRANSFER',
-                category,
-                counterparty: `${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`,
-                rawCounterparty: counterparty,
-                plainCounterparty,
-                grossAmount,
-                asset: item.token?.symbol || 'USDC',
-                explorerLink: `${network.explorerTxUrl}${txHash}`,
-                isTagged: Boolean(tagInfo.tag),
-                notes: tagInfo.notes || ''
-              };
-            });
+        for (let page = 0; page < maxPages; page++) {
+          let pageUrl = baseExpUrl;
+          if (nextParams && typeof nextParams === 'object') {
+            const qs = new URLSearchParams();
+            for (const [k, v] of Object.entries(nextParams)) {
+              if (v !== undefined && v !== null) qs.set(k, String(v));
+            }
+            const qsStr = qs.toString();
+            if (!qsStr || seenCursors.has(qsStr)) break;
+            seenCursors.add(qsStr);
+            pageUrl = `${baseExpUrl}?${qsStr}`;
           }
+
+          const expRes = await fetch(pageUrl);
+          if (!expRes || typeof expRes.json !== 'function') break;
+          const expData = await expRes.json();
+          const pageItems = Array.isArray(expData?.items) ? expData.items : [];
+          if (pageItems.length === 0) break;
+
+          for (const item of pageItems) {
+            const tokAddr = (item.token?.address_hash || item.token?.address || '').toLowerCase();
+            if (!usdcLower || !tokAddr || tokAddr === usdcLower) {
+              explorerItems.push(item);
+            }
+          }
+
+          if (!expData?.next_page_params) break;
+          nextParams = expData.next_page_params;
+        }
+
+        if (explorerItems.length > 0) {
+          const explorerTxs = explorerItems.map((item, idx) => {
+            const fromHash = item.from?.hash || '0x00';
+            const toHash = item.to?.hash || '0x00';
+            const isOutgoing = fromHash.toLowerCase() === address.toLowerCase();
+            const counterparty = isOutgoing ? toHash : fromHash;
+            const blockNum = item.block_number || 0;
+            const grossAmount = formatUnitsUSDC(item.total?.value || '0');
+            const txHash = item.transaction_hash || `tx-Arc-${blockNum}-${idx}`;
+            const dateStr = item.timestamp
+              ? item.timestamp.replace('T', ' ').slice(0, 19) + ' UTC'
+              : new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+
+            const tagInfo = tags[txHash.toLowerCase()] || {};
+            const plainCounterparty = tagInfo.tag || (isOutgoing ? `Transfer to ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}` : `Received from ${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`);
+            const category = tagInfo.category || (isOutgoing ? 'Operating Expense' : 'Treasury Inflow');
+
+            return {
+              id: txHash,
+              hash: txHash,
+              date: dateStr,
+              block: blockNum,
+              type: isOutgoing ? 'OUTGOING_PAYMENT' : 'INCOMING_TRANSFER',
+              category,
+              counterparty: `${counterparty.slice(0, 6)}...${counterparty.slice(-4)}`,
+              rawCounterparty: counterparty,
+              plainCounterparty,
+              grossAmount,
+              asset: item.token?.symbol || 'USDC',
+              explorerLink: `${network.explorerTxUrl}${txHash}`,
+              isTagged: Boolean(tagInfo.tag),
+              notes: tagInfo.notes || ''
+            };
+          });
+
+          // Merge RPC logs + paginated Explorer items without losing multi-transfer txs or duplicating identical ones
+          const merged = [...transactions];
+          const existingKeys = new Set(
+            transactions.map(t => `${(t.hash || '').toLowerCase()}:${t.block}:${t.grossAmount}:${(t.rawCounterparty || '').toLowerCase()}`)
+          );
+          for (const tx of explorerTxs) {
+            const key = `${(tx.hash || '').toLowerCase()}:${tx.block}:${tx.grossAmount}:${(tx.rawCounterparty || '').toLowerCase()}`;
+            if (!existingKeys.has(key)) {
+              existingKeys.add(key);
+              merged.push(tx);
+            }
+          }
+          merged.sort((a, b) => (b.block || 0) - (a.block || 0));
+          return merged;
         }
       } catch {}
     }
