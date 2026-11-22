@@ -949,7 +949,10 @@
         if (exportBtn && !exportBtn.disabled) {
           exportBtn.click();
         } else {
-          alert('No on-chain transactions loaded. Enter a treasury address and fetch real history first.');
+          if (window.showToast) {
+            window.showToast('Load on-chain history first — enter a treasury address and click Fetch Real On-Chain History.', 'warning');
+          }
+          document.getElementById('org-address')?.focus();
         }
       });
 
@@ -1010,5 +1013,6 @@
     }
   </script>
 
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 </body>
 </html>

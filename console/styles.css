@@ -1713,4 +1713,105 @@ body {
   .verifier-history-bar {
     flex-direction: column;
   }
+  .toast-region {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    max-width: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   11. INSTITUTIONAL TOAST NOTIFICATIONS (Replaces native browser alert())
+   -------------------------------------------------------------------------- */
+.toast-region {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 390px;
+  width: calc(100vw - 40px);
+  pointer-events: none;
+}
+
+.veyroq-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--cream-surface);
+  color: var(--ink-primary);
+  border: 1px solid var(--sage-dark);
+  border-left: 4px solid var(--burgundy);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(21, 23, 22, 0.16);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.45;
+  animation: veyroqToastIn 0.18s ease-out;
+}
+
+.veyroq-toast.toast-success { border-left-color: #15803D; }
+.veyroq-toast.toast-warning { border-left-color: #B45309; }
+.veyroq-toast.toast-error { border-left-color: #B91C1C; }
+.veyroq-toast.toast-info { border-left-color: var(--burgundy); }
+
+.veyroq-toast.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.veyroq-toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+}
+
+.veyroq-toast.toast-success .veyroq-toast-icon { color: #15803D; }
+.veyroq-toast.toast-warning .veyroq-toast-icon { color: #B45309; }
+.veyroq-toast.toast-error .veyroq-toast-icon { color: #B91C1C; }
+.veyroq-toast.toast-info .veyroq-toast-icon { color: var(--burgundy); }
+
+.veyroq-toast-body {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.veyroq-toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  margin: -2px -4px 0 0;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.veyroq-toast-close:hover,
+.veyroq-toast-close:focus-visible {
+  background: var(--cream-light);
+  color: var(--ink-primary);
+}
+
+@keyframes veyroqToastIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veyroq-toast,
+  .veyroq-toast.is-leaving {
+    animation: none;
+    transition: none;
+  }
 }

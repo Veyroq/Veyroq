@@ -181,6 +181,74 @@ if (typeof document !== 'undefined') {
     return /^(0x)?[0-9a-fA-F]{64}$/.test(clean) ? clean : '';
   }
 
+  function formatUserError(err, prefix = '') {
+    const code = err?.code ?? err?.info?.error?.code;
+    const raw = String(err?.shortMessage || err?.reason || err?.message || err || 'Unexpected error').trim();
+    const isRejected = code === 4001 || code === 'ACTION_REJECTED' || /user rejected|user denied|rejected the request/i.test(raw);
+    if (isRejected) return 'Request cancelled in your wallet.';
+    const cleaned = raw.replace(/\s*\(action=[\s\S]*\)\s*$/, '').trim();
+    return prefix ? `${prefix}: ${cleaned}` : cleaned;
+  }
+
+  const TOAST_ICONS = {
+    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+    warning: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+    info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+  };
+
+  function showToast(message, type = 'info', durationMs = 4500) {
+    let region = $('toast-region');
+    if (!region && document.body) {
+      region = document.createElement('div');
+      region.id = 'toast-region';
+      region.className = 'toast-region';
+      region.setAttribute('aria-live', 'polite');
+      document.body.appendChild(region);
+    }
+    if (!region) return;
+
+    const kind = TOAST_ICONS[type] ? type : 'info';
+    while (region.children.length >= 3) {
+      region.firstElementChild?.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `veyroq-toast toast-${kind}`;
+    toast.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+
+    const icon = document.createElement('span');
+    icon.className = 'veyroq-toast-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = TOAST_ICONS[kind];
+
+    const body = document.createElement('div');
+    body.className = 'veyroq-toast-body';
+    body.textContent = String(message || '');
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'veyroq-toast-close';
+    closeBtn.setAttribute('aria-label', 'Dismiss notification');
+    closeBtn.textContent = '×';
+
+    let timer = null;
+    const dismiss = () => {
+      if (timer) clearTimeout(timer);
+      toast.classList.add('is-leaving');
+      setTimeout(() => toast.remove(), 160);
+    };
+
+    closeBtn.addEventListener('click', dismiss);
+    toast.addEventListener('mouseenter', () => { if (timer) clearTimeout(timer); });
+    toast.addEventListener('mouseleave', () => { timer = setTimeout(dismiss, 2200); });
+
+    toast.append(icon, body, closeBtn);
+    region.appendChild(toast);
+    timer = setTimeout(dismiss, durationMs);
+  }
+  if (typeof window !== 'undefined') window.showToast = showToast;
+
   let loadedTransactions = [];
   let calculatedMerkleRoot = "";
   let lastCommitment = null;
@@ -293,14 +361,14 @@ if (typeof document !== 'undefined') {
   async function openVerifyModal() {
     const addr = $('org-address')?.value?.trim();
     if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
-      alert('Please enter a valid 42-character EVM address (0x...) in Treasury Wallet Address.');
+      showToast('Enter a valid 42-character EVM address (0x...) in Treasury Wallet Address.', 'warning');
       $('org-address')?.focus();
       return;
     }
 
     if (connectedAddress && connectedAddress.toLowerCase() === addr.toLowerCase()) {
       setVaultVerified(addr, { verifiedAt: new Date().toISOString(), method: connectedMethod || 'Session' });
-      alert(`Vault ${addr.slice(0, 6)}...${addr.slice(-4)} is actively verified through your connected ${connectedMethod || 'wallet'} session.`);
+      showToast(`Vault ${addr.slice(0, 6)}...${addr.slice(-4)} verified via your connected ${connectedMethod || 'wallet'} session.`, 'success');
       updateVaultTierUI(addr);
       return;
     }
@@ -921,7 +989,7 @@ if (typeof document !== 'undefined') {
       return;
     }
     if (currentTierCode > 0) {
-      alert('An active 30-day subscription is already in progress on-chain for this wallet. Renewal unlocks automatically once the 30-day period completes.');
+      showToast('An active 30-day subscription is already in progress on-chain for this wallet. Renewal unlocks once the current cycle completes.', 'info');
       return;
     }
 
@@ -935,7 +1003,7 @@ if (typeof document !== 'undefined') {
       signer = await resolveActiveSigner();
       await ensureArcUsdcBalance(signer.address || userAddr, requiredFee, tierLabel);
     } catch (err) {
-      alert(err.message || err);
+      showToast(formatUserError(err), 'warning');
       return;
     }
 
@@ -967,7 +1035,8 @@ if (typeof document !== 'undefined') {
     } catch (err) {
       console.error('On-chain subscription failed:', err);
       await syncOnChainSubscription(signingAddr || userAddr);
-      alert(`On-chain subscription failed: ${err.message || err}`);
+      const msg = formatUserError(err, 'On-chain subscription failed');
+      showToast(msg, msg === 'Request cancelled in your wallet.' ? 'warning' : 'error');
     } finally {
       isSubscribingInFlight = false;
     }
@@ -1141,11 +1210,19 @@ if (typeof document !== 'undefined') {
 
     // Connect via Browser Extension
     $('btn-connect-injected')?.addEventListener('click', async () => {
+      const statusEl = $('privy-auth-status');
       try {
+        if (statusEl) { statusEl.style.color = ''; statusEl.textContent = 'Awaiting wallet approval...'; }
         const address = await connectInjectedWallet();
+        if (statusEl) statusEl.textContent = '';
         applyConnectedWallet(address, 'Web3');
       } catch (err) {
-        alert(err.message);
+        const msg = formatUserError(err);
+        if (statusEl) {
+          statusEl.style.color = '#B91C1C';
+          statusEl.textContent = msg;
+        }
+        showToast(msg, msg === 'Request cancelled in your wallet.' ? 'warning' : 'error');
       }
     });
 
@@ -1154,9 +1231,15 @@ if (typeof document !== 'undefined') {
       const email = $('privy-email-input')?.value?.trim();
       const statusEl = $('privy-auth-status');
       if (!email || !email.includes('@')) {
-        alert('Please enter a valid email address.');
+        if (statusEl) {
+          statusEl.style.color = '#B91C1C';
+          statusEl.textContent = 'Please enter a valid email address.';
+        }
+        $('privy-email-input')?.focus();
+        showToast('Please enter a valid email address.', 'warning');
         return;
       }
+      if (statusEl) statusEl.style.color = '';
 
       try {
         if (statusEl) statusEl.textContent = 'Sending authentication code...';
@@ -1293,7 +1376,7 @@ if (typeof document !== 'undefined') {
       const btn = $('btn-run-decryption');
 
       if (!addr || !addr.startsWith('0x')) {
-        alert('Please enter or connect a valid EVM wallet address (0x...)');
+        showToast('Enter or connect a valid 42-character EVM wallet address (0x...).', 'warning');
         $('org-address')?.focus();
         return;
       }
@@ -1311,7 +1394,7 @@ if (typeof document !== 'undefined') {
       } catch (e) {
         console.warn('RPC fetch failed:', e);
         loadedTransactions = [];
-        alert(`Failed to fetch transactions from ${netKey} RPC: ${e.message || e}`);
+        showToast(formatUserError(e, `Failed to fetch transactions from ${netKey} RPC`), 'error');
       }
 
       renderTable();
@@ -1610,7 +1693,8 @@ if (typeof document !== 'undefined') {
     $('btn-verifier-load-session')?.addEventListener('click', () => {
       const cert = buildCurrentSessionCertificate();
       if (!cert) {
-        alert('Load and classify transactions first to export a session certificate.');
+        renderVerifierResult({ error: 'Load and classify transactions first to export a session certificate.', totalCount: 0 });
+        showToast('Fetch transactions first to load a session certificate.', 'warning');
         return;
       }
       if ($('verifier-json-input')) $('verifier-json-input').value = JSON.stringify(cert, null, 2);
@@ -1663,7 +1747,8 @@ if (typeof document !== 'undefined') {
       const btnText = $('anchor-btn-text');
 
       if (!calculatedMerkleRoot) {
-        alert('Please fetch transactions first to generate a Merkle root proof.');
+        if (feedback) feedback.innerHTML = `<span style="color:#B45309;">Fetch on-chain transactions first to generate a Merkle root proof.</span>`;
+        showToast('Fetch on-chain transactions first to generate a Merkle root proof.', 'warning');
         return;
       }
 
@@ -1734,7 +1819,8 @@ if (typeof document !== 'undefined') {
       const btnText = $('btn-submit-policy-text');
 
       if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
-        alert("Please enter a valid 20-byte EVM address (0x...).");
+        if (feedback) feedback.innerHTML = `<span style="color:#B45309;">Enter a valid 42-character EVM address (0x...).</span>`;
+        showToast('Enter a valid 42-character EVM address (0x...).', 'warning');
         $('auditor-addr-input')?.focus();
         return;
       }
