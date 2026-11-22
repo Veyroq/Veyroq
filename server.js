@@ -141,6 +141,35 @@ function buildSessionCookieHeader(req, token, maxAgeSec = 86400) {
   return parts.join('; ');
 }
 
+export function resolveSiweDomain(req) {
+  const trustedHosts = new Set(['app.veyroq.xyz', 'veyroq.xyz', 'docs.veyroq.xyz', 'localhost', '127.0.0.1']);
+  for (const raw of (process.env.ALLOWED_ORIGINS || '').split(',')) {
+    try {
+      const h = new URL(raw.trim()).hostname.toLowerCase();
+      if (h) trustedHosts.add(h);
+    } catch {}
+  }
+  const originHost = (() => {
+    try { return req.headers.origin ? new URL(req.headers.origin).hostname.toLowerCase() : ''; } catch { return ''; }
+  })();
+  const candidates = [
+    req.headers['x-veyroq-host'],
+    req.headers['x-forwarded-host'],
+    originHost,
+    req.headers.host
+  ];
+  for (const raw of candidates) {
+    if (!raw || typeof raw !== 'string') continue;
+    const hostOnly = raw.split(',')[0].trim().split(':')[0].toLowerCase();
+    if (hostOnly && trustedHosts.has(hostOnly)) return hostOnly;
+  }
+  const rawHost = String(req.headers.host || '').split(':')[0].toLowerCase();
+  if (!rawHost || rawHost.endsWith('.up.railway.app') || rawHost === 'api.veyroq.xyz') {
+    return 'app.veyroq.xyz';
+  }
+  return rawHost;
+}
+
 export function getCorsHeaders(req) {
   const origin = req.headers.origin;
   if (!origin) return {};
@@ -687,7 +716,7 @@ const server = http.createServer(async (req, res) => {
     }
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost:3000'}`);
     const address = parsedUrl.searchParams.get('address') || '';
-    const domain = (req.headers.host || 'veyroq.xyz').split(':')[0];
+    const domain = resolveSiweDomain(req);
     const { nonce, expiresAt } = generateSiweNonce(address, domain);
     return sendJson(req, res, 200, { success: true, nonce, expiresAt, domain });
   }
@@ -707,7 +736,7 @@ const server = http.createServer(async (req, res) => {
         message,
         signature,
         expectedAddress: address,
-        expectedDomain: req.headers.host
+        expectedDomain: resolveSiweDomain(req)
       });
 
       if (!verification.valid) {

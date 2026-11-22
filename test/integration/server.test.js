@@ -155,6 +155,24 @@ test('Integration: Server SIWE API generates nonce and verifies signed challenge
   assert.equal(nonceData.success, true);
   assert.ok(nonceData.nonce);
 
+  // 1b. Proxy forwarding resolves public app.veyroq.xyz domain, never internal Railway host or spoofed host
+  const proxiedNonce = await fetchUrl('/api/auth/siwe/nonce', {
+    Host: 'veyroq-production.up.railway.app',
+    'x-veyroq-host': 'app.veyroq.xyz'
+  });
+  assert.equal(JSON.parse(proxiedNonce.body).domain, 'app.veyroq.xyz');
+
+  const fallbackNonce = await fetchUrl('/api/auth/siwe/nonce', {
+    Host: 'veyroq-production.up.railway.app'
+  });
+  assert.equal(JSON.parse(fallbackNonce.body).domain, 'app.veyroq.xyz');
+
+  const spoofedNonce = await fetchUrl('/api/auth/siwe/nonce', {
+    Host: 'veyroq-production.up.railway.app',
+    'x-veyroq-host': 'evil.example.com'
+  });
+  assert.equal(JSON.parse(spoofedNonce.body).domain, 'app.veyroq.xyz');
+
   // 2. Reject verification with missing parameters
   const postData = JSON.stringify({ message: '', signature: '' });
   const res = await new Promise((resolve, reject) => {

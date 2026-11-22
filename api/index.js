@@ -41,7 +41,10 @@ async function proxyToBackend(req, res, backendBase) {
       if (!v || HOP_BY_HOP_REQ.has(k.toLowerCase())) continue;
       headers.set(k, Array.isArray(v) ? v.join(', ') : v);
     }
-    if (req.headers?.host) headers.set('x-forwarded-host', req.headers.host);
+    if (req.headers?.host) {
+      headers.set('x-forwarded-host', req.headers.host);
+      headers.set('x-veyroq-host', req.headers.host);
+    }
 
     const body = await readRawBody(req);
     const upstream = await fetch(target.toString(), {
