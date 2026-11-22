@@ -327,7 +327,7 @@ body {
   box-shadow: var(--shadow-bento);
   display: flex;
   flex-direction: column;
-  height: 420px; /* Equal calibrated height */
+  height: 448px; /* Equal calibrated height with clean breathing room for pagination footer */
   overflow: hidden;
   transition: border-color 0.15s ease;
 }
@@ -520,10 +520,58 @@ body {
 
 .table-scroll-area {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   border: 1px solid var(--sage-dark);
-  border-radius: 9px;
+  border-radius: 12px;
   background: var(--cream-light);
+}
+
+@supports (-moz-appearance: none) {
+  .table-scroll-area,
+  .card-inner-body,
+  .modal-card {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(125, 128, 118, 0.55) transparent;
+  }
+}
+
+.table-scroll-area::-webkit-scrollbar,
+.card-inner-body::-webkit-scrollbar,
+.modal-card::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-scroll-area::-webkit-scrollbar-track,
+.card-inner-body::-webkit-scrollbar-track,
+.modal-card::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+  border-radius: 999px;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb,
+.card-inner-body::-webkit-scrollbar-thumb,
+.modal-card::-webkit-scrollbar-thumb {
+  background: rgba(125, 128, 118, 0.45);
+  border-radius: 999px;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb:hover,
+.card-inner-body::-webkit-scrollbar-thumb:hover,
+.modal-card::-webkit-scrollbar-thumb:hover {
+  background: var(--burgundy);
+}
+
+.table-scroll-area::-webkit-scrollbar-button,
+.card-inner-body::-webkit-scrollbar-button,
+.modal-card::-webkit-scrollbar-button {
+  display: none;
+}
+
+.table-scroll-area::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .ledger-table {
@@ -540,9 +588,14 @@ body {
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: left;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-bottom: 1px solid var(--sage-dark);
   z-index: 2;
+}
+
+.ledger-table th:last-child,
+.ledger-table td:last-child {
+  padding-right: 14px;
 }
 
 .ledger-table td {
@@ -1734,9 +1787,12 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
-  border-top: 1px solid var(--sage-hairline);
-  background: var(--cream-light);
+  margin-top: 10px;
+  padding: 9px 14px;
+  border: 1px solid var(--sage-dark);
+  border-radius: 10px;
+  background: var(--cream-surface);
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
