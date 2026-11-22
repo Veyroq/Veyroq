@@ -10,6 +10,8 @@ import {
   getExplorerAddressUrl,
   rpcCall,
   fetchLiveTransactions,
+  fetchLiveTransactionsPage,
+  dedupeAndSortTransactions,
   fetchUsdcBalance
 } from '../../console/chain-scanner.js';
 
@@ -264,6 +266,83 @@ test('Unit: fetchLiveTransactions paginates Arc Explorer next_page_params past 5
     assert.equal(txs.length, 65);
     assert.equal(txs[0].block, 50000);
     assert.equal(txs[64].block, 48986);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Unit: fetchLiveTransactionsPage supports Load More cursors until end of history and preserves multi-logIndex transfers', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, opts) => {
+      const urlStr = String(url);
+      if (opts && opts.body) {
+        const body = JSON.parse(opts.body);
+        if (body.method === 'eth_blockNumber') return { json: async () => ({ result: '0x5000' }) };
+        return { json: async () => ({ result: [] }) };
+      }
+      assert.equal(urlStr.includes(`token=${NETWORKS['Arc'].usdcAddress}`), true);
+      if (!urlStr.includes('block_number=49950')) {
+        return {
+          json: async () => ({
+            items: [
+              {
+                from: { hash: '0x71c8b46b08639f70efa4c34db895c989c7fa22ec' },
+                to: { hash: '0x2793309a81d4111b8a5fedb9a16a1dde49d3bfea' },
+                block_number: 50001,
+                log_index: 2,
+                total: { value: '1000000' },
+                transaction_hash: '0xbatchtx',
+                timestamp: '2026-11-21T10:00:00.000000Z',
+                token: { address_hash: NETWORKS['Arc'].usdcAddress, symbol: 'USDC' }
+              },
+              {
+                from: { hash: '0x71c8b46b08639f70efa4c34db895c989c7fa22ec' },
+                to: { hash: '0x2793309a81d4111b8a5fedb9a16a1dde49d3bfea' },
+                block_number: 50001,
+                log_index: 5,
+                total: { value: '1000000' },
+                transaction_hash: '0xbatchtx',
+                timestamp: '2026-11-21T10:00:00.000000Z',
+                token: { address_hash: NETWORKS['Arc'].usdcAddress, symbol: 'USDC' }
+              }
+            ],
+            next_page_params: { index: 5, block_number: 49950 }
+          })
+        };
+      }
+      return {
+        json: async () => ({
+          items: [{
+            from: { hash: '0x2793309a81d4111b8a5fedb9a16a1dde49d3bfea' },
+            to: { hash: '0x71c8b46b08639f70efa4c34db895c989c7fa22ec' },
+            block_number: 49900,
+            log_index: 1,
+            total: { value: '5000000' },
+            transaction_hash: '0xoldtx',
+            timestamp: '2026-09-10T10:00:00.000000Z',
+            token: { address_hash: NETWORKS['Arc'].usdcAddress, symbol: 'USDC' }
+          }],
+          next_page_params: null
+        })
+      };
+    };
+
+    const p1 = await fetchLiveTransactionsPage('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc', { cursor: null, maxPages: 1 });
+    assert.equal(p1.transactions.length, 2); // Both log_index 2 and 5 in same batch tx preserved!
+    assert.equal(p1.hasMore, true);
+    assert.equal(p1.explorerSynced, true);
+    assert.deepEqual(p1.nextCursor, { index: 5, block_number: 49950 });
+
+    const p2 = await fetchLiveTransactionsPage('0x71C8b46B08639f70efA4C34Db895C989C7Fa22Ec', 'Arc', { cursor: p1.nextCursor, maxPages: 1 });
+    assert.equal(p2.transactions.length, 1);
+    assert.equal(p2.hasMore, false);
+    assert.equal(p2.nextCursor, null);
+
+    const all = dedupeAndSortTransactions(p1.transactions, p2.transactions);
+    assert.equal(all.length, 3);
+    assert.equal(all[0].logIndex, 5);
+    assert.equal(all[2].hash, '0xoldtx');
   } finally {
     globalThis.fetch = originalFetch;
   }

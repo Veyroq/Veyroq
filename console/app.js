@@ -1,7 +1,7 @@
 // Veyroq Institutional Audit & Real On-Chain Transaction Engine
 // Supports Privy Auth, Injected Web3, Live RPC Ingestion & Persistent Tagging.
 
-import { NETWORKS, fetchLiveTransactions, fetchUsdcBalance, saveTransactionTag, getTransactionTag, getExplorerAddressUrl } from './chain-scanner.js';
+import { NETWORKS, fetchLiveTransactions, fetchLiveTransactionsPage, dedupeAndSortTransactions, fetchUsdcBalance, saveTransactionTag, getTransactionTag, getExplorerAddressUrl } from './chain-scanner.js';
 import { 
   connectInjectedWallet, 
   initPrivy, 
@@ -254,6 +254,58 @@ if (typeof document !== 'undefined') {
   let allFetchedTransactions = [];
   let loadedTransactions = [];
   let calculatedMerkleRoot = "";
+  let historyNextCursor = null;
+  let historyHasMore = false;
+  let historyExplorerSynced = false;
+  let historyScannedAddress = '';
+  let historyScannedNetwork = '';
+  let hasCompletedScan = false;
+  let isLoadingMoreHistory = false;
+
+  function renderHistoryPaginationBar() {
+    const bar = $('ledger-pagination-bar');
+    const statusEl = $('ledger-history-status');
+    const moreBtn = $('btn-load-more-txs');
+    if (!bar || !statusEl || !moreBtn) return;
+
+    if (!hasCompletedScan) {
+      bar.style.display = 'none';
+      return;
+    }
+
+    bar.style.display = 'flex';
+    const total = allFetchedTransactions.length;
+    const shown = loadedTransactions.length;
+    const periodVal = $('period-select')?.value || 'ALL';
+    const addrUrl = historyScannedAddress
+      ? (historyScannedNetwork === 'Arc'
+        ? `https://explorer.testnet.arc.io/address/${encodeURIComponent(historyScannedAddress)}?tab=token_transfers`
+        : getExplorerAddressUrl(historyScannedNetwork, historyScannedAddress))
+      : '';
+    const explorerVerifyHtml = addrUrl && /^https:\/\//i.test(addrUrl)
+      ? `<a class="ledger-explorer-verify" href="${escapeHtml(addrUrl)}" target="_blank" rel="noopener noreferrer">Verify on Explorer ↗</a>`
+      : '';
+
+    const periodPrefix = periodVal !== 'ALL'
+      ? `<strong>${shown}</strong> in ${escapeHtml(periodVal)} (${total} loaded) · `
+      : `<strong>${total}</strong> USDC transaction${total === 1 ? '' : 's'} found · `;
+
+    if (historyHasMore) {
+      statusEl.classList.remove('end-reached');
+      statusEl.innerHTML = `<span class="ledger-history-dot" aria-hidden="true"></span><span>${periodPrefix}More older transactions available</span>${explorerVerifyHtml}`;
+      moreBtn.style.display = 'inline-flex';
+      moreBtn.disabled = isLoadingMoreHistory;
+      moreBtn.textContent = isLoadingMoreHistory ? 'Loading older transactions...' : 'Load Older Transactions';
+    } else {
+      statusEl.classList.add('end-reached');
+      moreBtn.style.display = 'none';
+      const endText = historyExplorerSynced
+        ? `End of transaction history — all ${total} USDC transaction${total === 1 ? '' : 's'} loaded (matches Explorer)`
+        : `Showing ${total} recent USDC transfer${total === 1 ? '' : 's'} (last 9,000 RPC blocks)`;
+      const filteredSuffix = periodVal !== 'ALL' ? ` · <strong>${shown}</strong> in ${escapeHtml(periodVal)}` : '';
+      statusEl.innerHTML = `<span class="ledger-history-dot" aria-hidden="true"></span><span>${endText}${filteredSuffix}</span>${explorerVerifyHtml}`;
+    }
+  }
 
   const QUARTER_MONTH_LABELS = ['Jan - Mar', 'Apr - June', 'July - Sept', 'Oct - Dec'];
 
@@ -780,7 +832,14 @@ if (typeof document !== 'undefined') {
     updateTierButtons('none');
     allFetchedTransactions = [];
     loadedTransactions = [];
+    historyNextCursor = null;
+    historyHasMore = false;
+    historyExplorerSynced = false;
+    historyScannedAddress = '';
+    historyScannedNetwork = '';
+    hasCompletedScan = false;
     lastCommitment = null;
+    if ($('ledger-pagination-bar')) $('ledger-pagination-bar').style.display = 'none';
     if ($('commit-receipt-box')) $('commit-receipt-box').style.display = 'none';
     renderTable();
     calculateCompleteness();
@@ -1485,10 +1544,11 @@ if (typeof document !== 'undefined') {
     $('period-select')?.addEventListener('change', async () => {
       applyActivePeriodFilter();
       renderTable();
+      renderHistoryPaginationBar();
       await calculateCompleteness();
     });
 
-    // Real On-Chain RPC Ingestion
+    // Real On-Chain RPC & Explorer Paginated Ingestion
     $('btn-run-decryption')?.addEventListener('click', async () => {
       if (currentTierCode === 0) {
         if ($('plan-modal')) $('plan-modal').style.display = 'flex';
@@ -1515,8 +1575,14 @@ if (typeof document !== 'undefined') {
       if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="text-cyan">Connecting to ${netKey} RPC...</span>`;
 
       try {
-        const liveTxs = await fetchLiveTransactions(addr, netKey);
-        allFetchedTransactions = liveTxs || [];
+        const page = await fetchLiveTransactionsPage(addr, netKey, { cursor: null, maxPages: 2 });
+        allFetchedTransactions = page.transactions || [];
+        historyNextCursor = page.nextCursor || null;
+        historyHasMore = Boolean(page.hasMore);
+        historyExplorerSynced = Boolean(page.explorerSynced);
+        historyScannedAddress = addr;
+        historyScannedNetwork = netKey;
+        hasCompletedScan = true;
         applyActivePeriodFilter();
         if (loadedTransactions.length === 0) {
           if ($('merkle-status')) $('merkle-status').innerHTML = `<span class="status-verified-text">0 on-chain events found</span>`;
@@ -1525,14 +1591,51 @@ if (typeof document !== 'undefined') {
         console.warn('RPC fetch failed:', e);
         allFetchedTransactions = [];
         loadedTransactions = [];
+        historyNextCursor = null;
+        historyHasMore = false;
+        historyExplorerSynced = false;
+        hasCompletedScan = false;
         showToast(formatUserError(e, `Failed to fetch transactions from ${netKey} RPC`), 'error');
       }
 
       renderTable();
+      renderHistoryPaginationBar();
       await calculateCompleteness();
 
       btn.disabled = false;
       btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Refresh On-Chain History</span>`;
+    });
+
+    $('btn-load-more-txs')?.addEventListener('click', async () => {
+      if (isLoadingMoreHistory || !historyHasMore || !historyNextCursor || !historyScannedAddress) return;
+      isLoadingMoreHistory = true;
+      renderHistoryPaginationBar();
+
+      try {
+        const page = await fetchLiveTransactionsPage(historyScannedAddress, historyScannedNetwork, {
+          cursor: historyNextCursor,
+          maxPages: 2
+        });
+        const prevCount = allFetchedTransactions.length;
+        allFetchedTransactions = dedupeAndSortTransactions(allFetchedTransactions, page.transactions || []);
+        historyNextCursor = page.nextCursor || null;
+        historyHasMore = Boolean(page.hasMore);
+        applyActivePeriodFilter();
+
+        const added = allFetchedTransactions.length - prevCount;
+        if (!historyHasMore) {
+          showToast(`End of transaction history — all ${allFetchedTransactions.length} USDC transactions loaded.`, 'success');
+        } else if (added > 0) {
+          showToast(`Loaded ${added} older USDC transactions (${allFetchedTransactions.length} total).`, 'info', 3000);
+        }
+      } catch (err) {
+        showToast(formatUserError(err, 'Failed to load older transactions'), 'error');
+      } finally {
+        isLoadingMoreHistory = false;
+        renderTable();
+        renderHistoryPaginationBar();
+        await calculateCompleteness();
+      }
     });
 
     function buildCurrentSessionCertificate() {
