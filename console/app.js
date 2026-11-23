@@ -1669,8 +1669,8 @@ if (typeof document !== 'undefined') {
       try {
         currentProtocolFee = await fetchProtocolFee();
         note.textContent = currentProtocolFee === 0n
-          ? 'Commit fee: Included with active subscription (Arc gas only)'
-          : `On-chain protocol fee: $${(Number(currentProtocolFee) / 1e6).toFixed(2)} USDC + Arc gas`;
+          ? 'Commit fee: Included with active subscription (gas only)'
+          : `On-chain protocol fee: $${(Number(currentProtocolFee) / 1e6).toFixed(2)} USDC + gas`;
       } catch {
         note.textContent = 'Commit fee synced with VeyroqRegistry';
       }
@@ -1766,13 +1766,34 @@ if (typeof document !== 'undefined') {
         const item = btn.closest('.auditor-item');
         if (item) item.style.opacity = '0.4';
         btn.textContent = 'Revoked';
-        showToast(`Auditor ${auditorAddr.slice(0, 6)}...${auditorAddr.slice(-4)} revoked on Arc.`, 'success');
+        showToast(`Auditor ${auditorAddr.slice(0, 6)}...${auditorAddr.slice(-4)} revoked on-chain.`, 'success');
       } catch (err) {
         btn.disabled = false;
         btn.textContent = 'Revoke';
         const msg = formatUserError(err, 'Auditor revocation failed');
         showToast(msg, msg === 'Request cancelled in your wallet.' ? 'warning' : 'error');
       }
+    }
+
+    const ARC_EXPLORER_ADDRESS = 'https://explorer.testnet.arc.io/address/';
+    const REGISTRY_READ_URL = `${ARC_EXPLORER_ADDRESS}${REGISTRY_ADDRESS}?tab=read_contract`;
+
+    function buildVerifierShareUrl(org, proofId) {
+      const base = `${window.location.origin}/?verify=1`;
+      const parts = [];
+      if (/^0x[0-9a-fA-F]{40}$/.test(org || '')) parts.push(`org=${encodeURIComponent(org)}`);
+      if (proofId !== null && proofId !== undefined && String(proofId) !== '') {
+        parts.push(`proofId=${encodeURIComponent(String(proofId))}`);
+      }
+      return parts.length ? `${base}&${parts.join('&')}` : base;
+    }
+
+    function formatShortHash(val) {
+      const s = String(val || '').trim();
+      if (/^0x[0-9a-fA-F]{20,}$/.test(s)) {
+        return `${s.slice(0, 10)}...${s.slice(-6)}`;
+      }
+      return s;
     }
 
     function renderCommitReceiptBox(commitment) {
@@ -1787,7 +1808,10 @@ if (typeof document !== 'undefined') {
       const validHash = safeTxHash(commitment.txHash);
       if ($('receipt-tx-link') && validHash) {
         $('receipt-tx-link').href = ARC_EXPLORER_TX + validHash;
-        $('receipt-tx-link').textContent = `Tx ${validHash.slice(0, 10)}...${validHash.slice(-6)} ↗`;
+        $('receipt-tx-link').textContent = `Commit Tx ${validHash.slice(0, 10)}...${validHash.slice(-6)} ↗`;
+      }
+      if ($('receipt-contract-link')) {
+        $('receipt-contract-link').href = REGISTRY_READ_URL;
       }
       box.style.display = 'flex';
     }
@@ -1800,49 +1824,102 @@ if (typeof document !== 'undefined') {
       if ($('verifier-pane-history')) $('verifier-pane-history').style.display = isCert ? 'none' : 'block';
     }
 
-    function applyParsedCertificateInputs(cert) {
+    function applyParsedCertificateInputs(cert, { force = false } = {}) {
       if (!cert || typeof cert !== 'object') return;
-      if (cert.organization?.address && /^0x[0-9a-fA-F]{40}$/.test(cert.organization.address) && $('verifier-org-input')) {
-        $('verifier-org-input').value = cert.organization.address;
+      const committedOrg = cert.onChainCommitment?.organizationAddress;
+      const sessionAnchoredOrg = (lastCommitment?.rootHash && lastCommitment.rootHash === cert.verification?.merkleRootHash)
+        ? lastCommitment.orgAddress
+        : '';
+      const bestOrg = [committedOrg, sessionAnchoredOrg, cert.organization?.address]
+        .find(addr => addr && /^0x[0-9a-fA-F]{40}$/.test(addr));
+      const orgInput = $('verifier-org-input');
+      if (bestOrg && orgInput && (force || !orgInput.value.trim())) {
+        orgInput.value = bestOrg;
       }
-      if (cert.onChainCommitment?.proofId !== undefined && cert.onChainCommitment?.proofId !== null && $('verifier-proof-id-input')) {
-        $('verifier-proof-id-input').value = String(cert.onChainCommitment.proofId);
+      const proofInput = $('verifier-proof-id-input');
+      if (
+        cert.onChainCommitment?.proofId !== undefined &&
+        cert.onChainCommitment?.proofId !== null &&
+        proofInput &&
+        (force || proofInput.value.trim() === '')
+      ) {
+        proofInput.value = String(cert.onChainCommitment.proofId);
       }
     }
 
-    function renderVerifierResult(res, onChainError = null) {
+    function renderVerifierResult(res, opts = null) {
       const box = $('verifier-result-box');
       if (!box) return;
+      const meta = (typeof opts === 'string') ? { onChainError: opts } : (opts || {});
+      const {
+        onChainError = null,
+        commitmentNotFound = false,
+        org = '',
+        proofId = '',
+        commitTxHash = null
+      } = meta;
+
       box.style.display = 'block';
       if (res.error && res.totalCount === 0) {
         box.innerHTML = `<div class="verify-summary-header"><span class="verify-pill fail">INVALID CERTIFICATE</span></div><div class="verify-check-detail">${escapeHtml(res.error)}</div>`;
         return;
       }
 
-      const verifiedOnArc = res.valid && res.rootMatchesOnChain === true && res.onChainInclusionValid === true && !onChainError;
-      const statusBadge = !res.valid
-        ? '<span class="verify-pill fail">VERIFICATION FAILED / TAMPERED</span>'
-        : (verifiedOnArc
-          ? '<span class="verify-pill pass">VERIFIED ON ARC</span>'
-          : (onChainError
-            ? '<span class="verify-pill pass">LOCAL PROOF VALID (ARC RPC ERROR)</span>'
-            : '<span class="verify-pill pass">LOCAL MERKLE PROOF VALID</span>'));
+      const localIntegrityOk = Boolean(res.localProofsValid && (res.scope !== 'full' || res.fieldsIntact));
+      const verifiedOnChain = res.valid && res.rootMatchesOnChain === true && res.onChainInclusionValid === true && !onChainError;
+      const notFoundOnly = commitmentNotFound && localIntegrityOk && !onChainError;
+
+      const statusBadge = verifiedOnChain
+        ? '<span class="verify-pill pass">VERIFIED ON-CHAIN</span>'
+        : (notFoundOnly
+          ? '<span class="verify-pill warn">PROOF NOT FOUND ON-CHAIN</span>'
+          : (!res.valid
+            ? '<span class="verify-pill fail">VERIFICATION FAILED / TAMPERED</span>'
+            : (onChainError
+              ? '<span class="verify-pill warn">LOCAL PROOF VALID (RPC ERROR)</span>'
+              : '<span class="verify-pill pass">LOCAL MERKLE PROOF VALID</span>')));
+
       const rootLine = res.rootMatchesOnChain === null
-        ? 'Local Merkle check only (enter Org + Proof ID to compare against Arc)'
-        : (res.rootMatchesOnChain ? 'Matches VeyroqRegistry root on Arc Testnet' : `Mismatch against Arc root (${escapeHtml(String(res.onChainRoot || 'missing'))})`);
+        ? 'Local Merkle check only (enter Committed Organization Address + Proof ID to compare on-chain)'
+        : (res.rootMatchesOnChain
+          ? 'Matches anchored root in VeyroqRegistry'
+          : (notFoundOnly
+            ? `No Proof #${escapeHtml(String(proofId))} found under ${escapeHtml(formatShortHash(org))} — check Committed Organization Address or open On-Chain Org History.`
+            : `Mismatch against VeyroqRegistry root (${escapeHtml(String(res.onChainRoot || 'missing'))})`));
+
       const fieldLine = res.scope === 'redacted'
         ? 'Redacted disclosure scope (counterparties masked cleanly)'
         : (res.fieldsIntact ? 'All decrypted amounts & counterparties match leaf hashes' : `Tampered fields detected at row(s): ${res.tamperedFieldIndices.map(i => i + 1).join(', ')}`);
+
       const contractLine = onChainError
         ? `On-chain RPC error: ${escapeHtml(onChainError)}`
         : (res.onChainInclusionValid === null
-          ? 'Skipped (provide Org + Proof ID to query verifyBatchInclusion)'
-          : (res.onChainInclusionValid ? 'Smart contract verifyBatchInclusion() returned true for all rows' : `Contract rejected row(s): ${res.failedOnChainIndices.map(i => i + 1).join(', ')}`));
+          ? (notFoundOnly
+            ? 'Skipped (no matching commitment at that Organization Address + Proof ID)'
+            : 'Skipped (provide Org + Proof ID to query verifyBatchInclusion)')
+          : (res.onChainInclusionValid ? 'VeyroqRegistry verifyBatchInclusion() returned true for all rows' : `Registry rejected row(s): ${res.failedOnChainIndices.map(i => i + 1).join(', ')}`));
+
+      const validCommitTx = safeTxHash(commitTxHash);
+      const hasShareParams = /^0x[0-9a-fA-F]{40}$/.test(org) && proofId !== '';
+      const explorerLinksHtml = `
+        <div class="verify-explorer-links">
+          ${validCommitTx ? `<a class="verify-link-chip" href="${escapeHtml(ARC_EXPLORER_TX + validCommitTx)}" target="_blank" rel="noopener noreferrer">Commit Tx Logs ↗</a>` : ''}
+          <a class="verify-link-chip" href="${escapeHtml(REGISTRY_READ_URL)}" target="_blank" rel="noopener noreferrer">Read Contract on Explorer ↗</a>
+          ${hasShareParams ? `<button type="button" class="verify-link-chip" id="btn-result-copy-auditor-link">Copy Auditor Link</button>` : ''}
+        </div>
+      `;
 
       const rowsHtml = res.rows.map(r => {
         const rowOk = r.proofValid && (res.scope !== 'full' || r.fieldMatch) && (r.onChainIncluded !== false);
         const pill = rowOk ? '<span class="row-status-ok">PASS</span>' : '<span class="row-status-fail">FAIL</span>';
-        return `<div class="verify-tx-row"><div><strong>${escapeHtml(r.transactionId || `Row ${r.index + 1}`)}</strong> · <span>$${Number(r.amountUSDC || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC</span></div><div>${pill}</div></div>`;
+        const rawId = r.transactionId || `Row ${r.index + 1}`;
+        const shortId = formatShortHash(rawId);
+        const validRowHash = safeTxHash(rawId);
+        const hashHtml = validRowHash
+          ? `<a class="verify-tx-hash" href="${escapeHtml(ARC_EXPLORER_TX + validRowHash)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(rawId)}">${escapeHtml(shortId)}</a>`
+          : `<span class="verify-tx-hash" title="${escapeHtml(rawId)}">${escapeHtml(shortId)}</span>`;
+        const amountStr = `$${Number(r.amountUSDC || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
+        return `<div class="verify-tx-row"><div class="verify-tx-meta">${hashHtml}<span class="verify-tx-sep">·</span><span class="verify-tx-amount">${escapeHtml(amountStr)}</span></div>${pill}</div>`;
       }).join('');
 
       box.innerHTML = `
@@ -1850,10 +1927,21 @@ if (typeof document !== 'undefined') {
         <div class="verify-checks-list">
           <div class="verify-check-item"><strong>On-Chain Root:</strong> ${rootLine}</div>
           <div class="verify-check-item"><strong>Field Integrity:</strong> ${escapeHtml(fieldLine)}</div>
-          <div class="verify-check-item"><strong>Arc Contract Call:</strong> ${contractLine}</div>
+          <div class="verify-check-item"><strong>Registry Call:</strong> ${contractLine}</div>
         </div>
+        ${explorerLinksHtml}
         <div class="verify-tx-list">${rowsHtml}</div>
       `;
+
+      const copyLinkBtn = $('btn-result-copy-auditor-link');
+      if (copyLinkBtn && hasShareParams) {
+        copyLinkBtn.addEventListener('click', () => {
+          copyToClipboard(buildVerifierShareUrl(org, proofId));
+          copyLinkBtn.textContent = 'Auditor Link Copied ✓';
+          showToast('Public auditor link copied — no wallet or subscription required.', 'success');
+          setTimeout(() => { copyLinkBtn.textContent = 'Copy Auditor Link'; }, 1800);
+        });
+      }
     }
 
     async function runOnChainCertificateVerification() {
@@ -1869,40 +1957,77 @@ if (typeof document !== 'undefined') {
         renderVerifierResult({ error: 'Invalid JSON format in Audit Certificate field.', totalCount: 0 });
         return;
       }
-      applyParsedCertificateInputs(cert);
+      applyParsedCertificateInputs(cert, { force: false });
 
-      const org = $('verifier-org-input')?.value?.trim() || '';
+      let org = $('verifier-org-input')?.value?.trim() || '';
       const proofIdStr = $('verifier-proof-id-input')?.value?.trim() || '';
       let onChainRoot = null;
       let onChainBatchResults = null;
       let onChainError = null;
+      let commitmentNotFound = false;
 
       if (/^0x[0-9a-fA-F]{40}$/.test(org) && proofIdStr !== '') {
         const proofId = Number(proofIdStr);
         if (Number.isInteger(proofId) && proofId >= 0) {
           const btn = $('btn-run-onchain-verify');
-          if (btn) { btn.disabled = true; btn.textContent = 'Querying VeyroqRegistry on Arc...'; }
+          if (btn) { btn.disabled = true; btn.textContent = 'Querying VeyroqRegistry...'; }
           try {
-            const list = await fetchAuditCommitments(org, proofId, 1);
+            let resolvedOrg = org;
+            let list = await fetchAuditCommitments(resolvedOrg, proofId, 1);
+
+            if (!list.length) {
+              const fallbackOrgs = [
+                cert.onChainCommitment?.organizationAddress,
+                lastCommitment?.orgAddress,
+                connectedAddress
+              ].filter((addr, idx, arr) =>
+                addr &&
+                /^0x[0-9a-fA-F]{40}$/.test(addr) &&
+                addr.toLowerCase() !== resolvedOrg.toLowerCase() &&
+                arr.findIndex(a => a && a.toLowerCase() === addr.toLowerCase()) === idx
+              );
+
+              const certRootLower = String(cert.verification?.merkleRootHash || '').toLowerCase();
+              for (const candidate of fallbackOrgs) {
+                const candidateList = await fetchAuditCommitments(candidate, proofId, 1);
+                if (candidateList.length && (!certRootLower || String(candidateList[0].auditRootHash || '').toLowerCase() === certRootLower)) {
+                  resolvedOrg = candidate;
+                  list = candidateList;
+                  org = candidate;
+                  if ($('verifier-org-input')) $('verifier-org-input').value = candidate;
+                  break;
+                }
+              }
+            }
+
             if (!list.length) {
               onChainRoot = 'Not found on-chain';
+              commitmentNotFound = true;
             } else {
               onChainRoot = list[0].auditRootHash;
               const items = Array.isArray(cert.leafCommitments) ? cert.leafCommitments : [];
               const leafHashes = items.map(it => it?.leafHash || ('0x' + '0'.repeat(64)));
               const merkleProofs = items.map(it => (Array.isArray(it?.merkleProof) ? it.merkleProof : []));
-              onChainBatchResults = await verifyBatchInclusionOnChain(org, proofId, leafHashes, merkleProofs);
+              onChainBatchResults = await verifyBatchInclusionOnChain(resolvedOrg, proofId, leafHashes, merkleProofs);
             }
           } catch (err) {
             onChainError = err.message || 'RPC verification error';
           } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Verify Against VeyroqRegistry on Arc'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Verify Against VeyroqRegistry'; }
           }
         }
       }
 
       const summary = verifyCertificatePayload(cert, { onChainRoot, onChainBatchResults });
-      renderVerifierResult(summary, onChainError);
+      const commitTxHash = cert.onChainCommitment?.commitTxHash ||
+        (lastCommitment?.rootHash === cert.verification?.merkleRootHash ? lastCommitment?.txHash : null);
+      renderVerifierResult(summary, {
+        onChainError,
+        commitmentNotFound,
+        org,
+        proofId: proofIdStr,
+        commitTxHash
+      });
     }
 
     async function loadOrgCommitmentsHistory(targetOrg) {
@@ -1913,7 +2038,7 @@ if (typeof document !== 'undefined') {
         listEl.innerHTML = '<div class="history-empty">Enter a valid 42-character EVM organization address (0x...).</div>';
         return;
       }
-      listEl.innerHTML = '<div class="history-empty">Querying VeyroqRegistry on Arc Testnet...</div>';
+      listEl.innerHTML = '<div class="history-empty">Querying VeyroqRegistry...</div>';
       try {
         const total = await fetchCommitmentCount(org);
         if (total === 0) {
@@ -1953,7 +2078,7 @@ if (typeof document !== 'undefined') {
 
     $('btn-open-comp-top')?.addEventListener('click', refreshProtocolFeeUI);
     $('btn-open-verifier-modal')?.addEventListener('click', () => {
-      const activeOrg = $('org-address')?.value?.trim() || connectedAddress || '';
+      const activeOrg = lastCommitment?.orgAddress || connectedAddress || $('org-address')?.value?.trim() || '';
       if (activeOrg && $('verifier-org-input') && !$('verifier-org-input').value) $('verifier-org-input').value = activeOrg;
       if (activeOrg && $('history-org-input') && !$('history-org-input').value) $('history-org-input').value = activeOrg;
     });
@@ -1967,17 +2092,17 @@ if (typeof document !== 'undefined') {
         return;
       }
       if ($('verifier-json-input')) $('verifier-json-input').value = JSON.stringify(cert, null, 2);
-      applyParsedCertificateInputs(cert);
+      applyParsedCertificateInputs(cert, { force: true });
     });
     $('verifier-file-input')?.addEventListener('change', async (e) => {
       const file = e.target?.files?.[0];
       if (!file) return;
       const text = await file.text();
       if ($('verifier-json-input')) $('verifier-json-input').value = text;
-      try { applyParsedCertificateInputs(JSON.parse(text)); } catch {}
+      try { applyParsedCertificateInputs(JSON.parse(text), { force: true }); } catch {}
     });
     $('verifier-json-input')?.addEventListener('input', () => {
-      try { applyParsedCertificateInputs(JSON.parse($('verifier-json-input').value)); } catch {}
+      try { applyParsedCertificateInputs(JSON.parse($('verifier-json-input').value), { force: false }); } catch {}
     });
     $('btn-run-onchain-verify')?.addEventListener('click', runOnChainCertificateVerification);
     $('btn-load-org-history')?.addEventListener('click', () => loadOrgCommitmentsHistory());
@@ -1991,6 +2116,17 @@ if (typeof document !== 'undefined') {
         setTimeout(() => { btn.textContent = 'Copy Root'; }, 1600);
       }
     });
+    $('btn-copy-verifier-link')?.addEventListener('click', () => {
+      const shareOrg = lastCommitment?.orgAddress || connectedAddress || $('org-address')?.value?.trim() || '';
+      const shareProofId = lastCommitment?.proofId ?? '';
+      copyToClipboard(buildVerifierShareUrl(shareOrg, shareProofId));
+      const btn = $('btn-copy-verifier-link');
+      if (btn) {
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = 'Copy Auditor Link'; }, 1800);
+      }
+      showToast('Public auditor link copied — no wallet or subscription required.', 'success');
+    });
     $('btn-receipt-download-cert')?.addEventListener('click', () => $('btn-export-cert')?.click());
     $('btn-receipt-verify-now')?.addEventListener('click', async () => {
       const cert = buildCurrentSessionCertificate();
@@ -1999,7 +2135,7 @@ if (typeof document !== 'undefined') {
       setVerifierTab('cert');
       if (cert && $('verifier-json-input')) {
         $('verifier-json-input').value = JSON.stringify(cert, null, 2);
-        applyParsedCertificateInputs(cert);
+        applyParsedCertificateInputs(cert, { force: true });
       }
       await runOnChainCertificateVerification();
     });
@@ -2122,7 +2258,7 @@ if (typeof document !== 'undefined') {
       if (!ok) return;
 
       if (btn) btn.disabled = true;
-      if (btnText) btnText.textContent = 'Authorizing on Arc Testnet...';
+      if (btnText) btnText.textContent = 'Authorizing on-chain...';
       if (feedback) feedback.innerHTML = `<span style="color:var(--burgundy);">Signing transaction via ${escapeHtml(signer.label)}...</span>`;
 
       try {
@@ -2134,7 +2270,7 @@ if (typeof document !== 'undefined') {
         if (feedback) {
           const validHash = safeTxHash(txHash);
           feedback.innerHTML = validHash
-            ? `<span style="color:var(--green-verified); font-weight:600;">✓ Auditor authorized on Arc!</span> <a href="${escapeHtml(ARC_EXPLORER_TX + validHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline;">Tx on Explorer ↗</a>`
+            ? `<span style="color:var(--green-verified); font-weight:600;">✓ Auditor authorized on-chain!</span> <a href="${escapeHtml(ARC_EXPLORER_TX + validHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--burgundy); text-decoration:underline;">Tx on Explorer ↗</a>`
             : `<span style="color:var(--green-verified); font-weight:600;">✓ Auditor policy registered!</span>`;
         }
       } catch (err) {
@@ -2142,7 +2278,7 @@ if (typeof document !== 'undefined') {
         if (feedback) feedback.innerHTML = `<span style="color:#C93B2B;">Failed: ${escapeHtml(err.message || err)}</span>`;
       } finally {
         if (btn) btn.disabled = false;
-        if (btnText) btnText.textContent = 'Authorize Auditor Policy on Arc Testnet';
+        if (btnText) btnText.textContent = 'Authorize Auditor Policy';
       }
     });
 

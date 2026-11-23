@@ -530,7 +530,10 @@ body {
 @supports (-moz-appearance: none) {
   .table-scroll-area,
   .card-inner-body,
-  .modal-card {
+  .modal-card,
+  .verifier-result-box,
+  .verifier-textarea,
+  .history-results-list {
     scrollbar-width: thin;
     scrollbar-color: rgba(125, 128, 118, 0.55) transparent;
   }
@@ -538,14 +541,20 @@ body {
 
 .table-scroll-area::-webkit-scrollbar,
 .card-inner-body::-webkit-scrollbar,
-.modal-card::-webkit-scrollbar {
+.modal-card::-webkit-scrollbar,
+.verifier-result-box::-webkit-scrollbar,
+.verifier-textarea::-webkit-scrollbar,
+.history-results-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 .table-scroll-area::-webkit-scrollbar-track,
 .card-inner-body::-webkit-scrollbar-track,
-.modal-card::-webkit-scrollbar-track {
+.modal-card::-webkit-scrollbar-track,
+.verifier-result-box::-webkit-scrollbar-track,
+.verifier-textarea::-webkit-scrollbar-track,
+.history-results-list::-webkit-scrollbar-track {
   background: transparent;
   margin: 8px 0;
   border-radius: 999px;
@@ -553,24 +562,36 @@ body {
 
 .table-scroll-area::-webkit-scrollbar-thumb,
 .card-inner-body::-webkit-scrollbar-thumb,
-.modal-card::-webkit-scrollbar-thumb {
+.modal-card::-webkit-scrollbar-thumb,
+.verifier-result-box::-webkit-scrollbar-thumb,
+.verifier-textarea::-webkit-scrollbar-thumb,
+.history-results-list::-webkit-scrollbar-thumb {
   background: rgba(125, 128, 118, 0.45);
   border-radius: 999px;
 }
 
 .table-scroll-area::-webkit-scrollbar-thumb:hover,
 .card-inner-body::-webkit-scrollbar-thumb:hover,
-.modal-card::-webkit-scrollbar-thumb:hover {
+.modal-card::-webkit-scrollbar-thumb:hover,
+.verifier-result-box::-webkit-scrollbar-thumb:hover,
+.verifier-textarea::-webkit-scrollbar-thumb:hover,
+.history-results-list::-webkit-scrollbar-thumb:hover {
   background: var(--burgundy);
 }
 
 .table-scroll-area::-webkit-scrollbar-button,
 .card-inner-body::-webkit-scrollbar-button,
-.modal-card::-webkit-scrollbar-button {
+.modal-card::-webkit-scrollbar-button,
+.verifier-result-box::-webkit-scrollbar-button,
+.verifier-textarea::-webkit-scrollbar-button,
+.history-results-list::-webkit-scrollbar-button {
   display: none;
 }
 
-.table-scroll-area::-webkit-scrollbar-corner {
+.table-scroll-area::-webkit-scrollbar-corner,
+.verifier-result-box::-webkit-scrollbar-corner,
+.verifier-textarea::-webkit-scrollbar-corner,
+.history-results-list::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -1458,7 +1479,9 @@ body {
 .receipt-links-row {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .receipt-actions-row {
@@ -1480,6 +1503,7 @@ body {
   line-height: 1.45;
   resize: vertical;
   min-height: 92px;
+  border-radius: 10px;
 }
 
 .verifier-inputs-grid {
@@ -1492,10 +1516,11 @@ body {
   margin-top: 12px;
   background: var(--cream-light);
   border: 1px solid var(--sage-dark);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px;
-  max-height: 240px;
+  max-height: 260px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .verify-summary-header {
@@ -1510,7 +1535,7 @@ body {
 .verify-pill {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   letter-spacing: 0.3px;
 }
@@ -1519,6 +1544,12 @@ body {
   background: var(--green-tint);
   color: var(--green-verified);
   border: 1px solid #B8DEC3;
+}
+
+.verify-pill.warn {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
 }
 
 .verify-pill.fail {
@@ -1543,10 +1574,41 @@ body {
   border-bottom: 1px solid var(--sage-hairline);
 }
 
+.verify-explorer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sage-hairline);
+}
+
+.verify-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--burgundy);
+  background: var(--cream-surface);
+  border: 1px solid var(--sage-dark);
+  border-radius: 999px;
+  padding: 3px 9px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.verify-link-chip:hover {
+  background: var(--burgundy-tint);
+  border-color: var(--burgundy);
+}
+
 .verify-tx-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   margin-top: 8px;
 }
 
@@ -1554,24 +1616,81 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   font-size: 11.5px;
   background: var(--cream-surface);
   border: 1px solid var(--sage-hairline);
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  min-width: 0;
+}
+
+.verify-tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.verify-tx-hash {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.verify-tx-hash:hover {
+  color: var(--burgundy);
+  text-decoration: underline;
+}
+
+.verify-tx-sep {
+  color: var(--ink-secondary);
+  flex-shrink: 0;
+}
+
+.verify-tx-amount {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .row-status-ok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--green-tint);
   color: var(--green-verified);
+  border: 1px solid #B8DEC3;
 }
 
 .row-status-fail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #FEE2E2;
   color: #B91C1C;
+  border: 1px solid #FECACA;
 }
 
 .verifier-history-bar {
@@ -1586,6 +1705,8 @@ body {
   gap: 8px;
   max-height: 290px;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
 }
 
 .history-empty {

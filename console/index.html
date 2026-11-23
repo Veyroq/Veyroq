@@ -377,7 +377,7 @@
 
         <div id="commit-receipt-box" class="commit-receipt-box" style="display:none;">
           <div class="receipt-top-row">
-            <span class="receipt-status-pill">Anchored On-Chain (Arc Testnet)</span>
+            <span class="receipt-status-pill">Anchored On-Chain</span>
             <span class="receipt-proof-id font-mono">Proof ID: #<span id="receipt-proof-id">—</span></span>
           </div>
           <div class="receipt-hash-row">
@@ -385,7 +385,11 @@
             <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-receipt-root">Copy Root</button>
           </div>
           <div class="receipt-links-row">
-            <a id="receipt-tx-link" href="https://explorer.testnet.arc.io" target="_blank" rel="noopener noreferrer" class="doc-link" style="padding:0; font-size:11px;">Explorer Tx ↗</a>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <a id="receipt-tx-link" href="https://explorer.testnet.arc.io" target="_blank" rel="noopener noreferrer" class="doc-link" style="padding:0; font-size:11px;">Commit Tx Logs ↗</a>
+              <a id="receipt-contract-link" href="https://explorer.testnet.arc.io/address/0x8A1D55E8E07fa49edF4c0a420b8B033ad03B37B3?tab=read_contract" target="_blank" rel="noopener noreferrer" class="doc-link" style="padding:0; font-size:11px;">Read Contract ↗</a>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-verifier-link" style="font-size:11px; padding:3px 9px;">Copy Auditor Link</button>
           </div>
           <div class="receipt-actions-row">
             <button type="button" class="btn btn-secondary btn-sm" id="btn-receipt-download-cert">Download Certificate JSON</button>
@@ -794,7 +798,7 @@
       <div style="margin-top: 16px;">
         <button class="btn btn-primary" id="btn-submit-policy" type="button" style="width: 100%; justify-content: center; padding: 10px 16px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span id="btn-submit-policy-text">Authorize Auditor Policy on Arc Testnet</span>
+          <span id="btn-submit-policy-text">Authorize Auditor Policy</span>
         </button>
         <div id="policy-tx-feedback" style="font-size:11px; margin-top:6px; text-align:center; min-height:16px;"></div>
       </div>
@@ -823,7 +827,7 @@
       </div>
 
       <p class="modal-desc" style="font-size: 12.5px; margin-bottom: 12px;">
-        Independently verify an exported Audit Certificate JSON or inspect anchored audit commitments on Arc Testnet without connecting a wallet.
+        Independently verify an exported Audit Certificate JSON or inspect anchored roots — no wallet or subscription required.
       </p>
 
       <div class="view-segmented-toggle" style="margin-bottom: 12px;">
@@ -846,8 +850,8 @@
 
         <div class="verifier-inputs-grid">
           <div class="field-group" style="margin-bottom:0;">
-            <label class="field-label" for="verifier-org-input">Organization Address</label>
-            <input type="text" id="verifier-org-input" class="field-control font-mono" placeholder="0x..." spellcheck="false">
+            <label class="field-label" for="verifier-org-input">Committed Organization Address</label>
+            <input type="text" id="verifier-org-input" class="field-control font-mono" placeholder="0x... (anchoring wallet)" spellcheck="false">
           </div>
           <div class="field-group" style="margin-bottom:0;">
             <label class="field-label" for="verifier-proof-id-input">On-Chain Proof ID</label>
@@ -856,7 +860,7 @@
         </div>
 
         <button type="button" class="btn btn-primary btn-block" id="btn-run-onchain-verify" style="margin-top: 12px; justify-content: center; padding: 10px;">
-          Verify Against VeyroqRegistry on Arc
+          Verify Against VeyroqRegistry
         </button>
 
         <div id="verifier-result-box" class="verifier-result-box" style="display:none;"></div>
