@@ -74,7 +74,12 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
     'Circle Arc L1',
     {
       disclosureScope: 'full',
-      commitment: { txHash: '0x' + 'aa'.repeat(32), proofId: 3, anchoredAt: '2026-08-12T00:00:00Z' }
+      commitment: {
+        orgAddress: '0x5548eBA3ab3d515e1111111111111111111104De',
+        txHash: '0x' + 'aa'.repeat(32),
+        proofId: 3,
+        anchoredAt: '2026-08-12T00:00:00Z'
+      }
     }
   );
 
@@ -88,6 +93,7 @@ test('Unit: buildAuditCertificate returns compliant cryptographic payload', () =
   assert.equal(cert.verification.totalTransactions, 2);
   assert.equal(cert.verification.grossVolumeUSDC, 83500);
   assert.equal(cert.verification.reconciliationStatus, 'COMPLETE_MATCH');
+  assert.equal(cert.onChainCommitment.organizationAddress, '0x5548eBA3ab3d515e1111111111111111111104De');
   assert.equal(cert.onChainCommitment.proofId, 3);
   assert.equal(cert.leafCommitments.length, 2);
   assert.deepEqual(cert.leafCommitments[0].merkleProof, ['0x' + '22'.repeat(32)]);

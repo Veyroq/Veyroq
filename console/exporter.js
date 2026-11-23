@@ -226,6 +226,7 @@ const VeyroqExporter = (() => {
       onChainCommitment: commitment ? {
         registryAddress,
         chainId,
+        organizationAddress: commitment.orgAddress || null,
         commitTxHash: commitment.txHash || null,
         proofId: commitment.proofId ?? null,
         anchoredAt: commitment.anchoredAt || null
