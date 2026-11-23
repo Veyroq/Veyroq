@@ -1865,7 +1865,7 @@ if (typeof document !== 'undefined') {
         return;
       }
 
-      const localIntegrityOk = Boolean(res.localProofsValid && (res.scope !== 'full' || res.fieldsIntact));
+      const localIntegrityOk = Boolean(res.localProofsValid && res.completenessValid !== false && (res.scope !== 'full' || res.fieldsIntact));
       const verifiedOnChain = res.valid && res.rootMatchesOnChain === true && res.onChainInclusionValid === true && !onChainError;
       const notFoundOnly = commitmentNotFound && localIntegrityOk && !onChainError;
 
@@ -1886,6 +1886,10 @@ if (typeof document !== 'undefined') {
           : (notFoundOnly
             ? `No Proof #${escapeHtml(String(proofId))} found under ${escapeHtml(formatShortHash(org))} — check Committed Organization Address or open On-Chain Org History.`
             : `Mismatch against VeyroqRegistry root (${escapeHtml(String(res.onChainRoot || 'missing'))})`));
+
+      const completenessLine = res.completenessValid !== false
+        ? `All ${res.totalCount} records accounted for (full Merkle tree & totals match)`
+        : (res.completenessIssues?.length ? res.completenessIssues.join('; ') : 'Certificate completeness check failed');
 
       const fieldLine = res.scope === 'redacted'
         ? 'Redacted disclosure scope (counterparties masked cleanly)'
@@ -1926,6 +1930,7 @@ if (typeof document !== 'undefined') {
         <div class="verify-summary-header">${statusBadge}<span class="font-mono" style="font-size:11px; color:var(--ink-secondary);">${res.verifiedCount}/${res.totalCount} items verified</span></div>
         <div class="verify-checks-list">
           <div class="verify-check-item"><strong>On-Chain Root:</strong> ${rootLine}</div>
+          <div class="verify-check-item"><strong>Completeness:</strong> ${escapeHtml(completenessLine)}</div>
           <div class="verify-check-item"><strong>Field Integrity:</strong> ${escapeHtml(fieldLine)}</div>
           <div class="verify-check-item"><strong>Registry Call:</strong> ${contractLine}</div>
         </div>
@@ -1962,6 +1967,7 @@ if (typeof document !== 'undefined') {
       let org = $('verifier-org-input')?.value?.trim() || '';
       const proofIdStr = $('verifier-proof-id-input')?.value?.trim() || '';
       let onChainRoot = null;
+      let onChainTxCount = null;
       let onChainBatchResults = null;
       let onChainError = null;
       let commitmentNotFound = false;
@@ -2005,6 +2011,7 @@ if (typeof document !== 'undefined') {
               commitmentNotFound = true;
             } else {
               onChainRoot = list[0].auditRootHash;
+              onChainTxCount = list[0].transactionCount ?? null;
               const items = Array.isArray(cert.leafCommitments) ? cert.leafCommitments : [];
               const leafHashes = items.map(it => it?.leafHash || ('0x' + '0'.repeat(64)));
               const merkleProofs = items.map(it => (Array.isArray(it?.merkleProof) ? it.merkleProof : []));
@@ -2018,7 +2025,7 @@ if (typeof document !== 'undefined') {
         }
       }
 
-      const summary = verifyCertificatePayload(cert, { onChainRoot, onChainBatchResults });
+      const summary = verifyCertificatePayload(cert, { onChainRoot, onChainTxCount, onChainBatchResults });
       const commitTxHash = cert.onChainCommitment?.commitTxHash ||
         (lastCommitment?.rootHash === cert.verification?.merkleRootHash ? lastCommitment?.txHash : null);
       renderVerifierResult(summary, {

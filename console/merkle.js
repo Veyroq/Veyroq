@@ -241,16 +241,23 @@ export function verifyMerkleProofLocal(leaf, proof, root) {
   }
 }
 
-export function verifyCertificatePayload(cert, { onChainRoot = null, onChainBatchResults = null } = {}) {
+export function verifyCertificatePayload(cert, { onChainRoot = null, onChainTxCount = null, onChainBatchResults = null } = {}) {
   const emptyFail = (error) => ({
     valid: false,
     error,
     scope: 'full',
     certRoot: null,
+    reconstructedRoot: null,
     onChainRoot,
     rootMatchesOnChain: null,
     fieldsIntact: false,
     localProofsValid: false,
+    treeComplete: false,
+    declaredCountMatch: null,
+    onChainCountMatch: null,
+    grossVolumeMatch: null,
+    completenessValid: false,
+    completenessIssues: [],
     onChainInclusionValid: null,
     totalCount: 0,
     verifiedCount: 0,
@@ -343,6 +350,48 @@ export function verifyCertificatePayload(cert, { onChainRoot = null, onChainBatc
   const totalCount = rows.length;
   const fieldsIntact = scope !== 'full' ? null : tamperedFieldIndices.length === 0;
   const localProofsValid = totalCount > 0 && invalidLocalProofIndices.length === 0;
+
+  const allLeavesNormalized = totalCount > 0 && rows.every(r => Boolean(r.leafHash));
+  const reconstructedRoot = allLeavesNormalized
+    ? computeMerkleRoot(rows.map(r => r.leafHash))
+    : null;
+  const treeComplete = Boolean(reconstructedRoot && reconstructedRoot === certRoot);
+
+  const declaredTotal = cert.verification?.totalTransactions;
+  const declaredCountMatch = (declaredTotal !== undefined && declaredTotal !== null)
+    ? Number(declaredTotal) === totalCount
+    : null;
+
+  const onChainCountMatch = (onChainTxCount !== null && onChainTxCount !== undefined)
+    ? Number(onChainTxCount) === totalCount
+    : null;
+
+  const declaredGross = cert.verification?.grossVolumeUSDC;
+  const computedGross = rows.reduce((sum, r) => sum + Number(r.amountUSDC || 0), 0);
+  const grossVolumeMatch = (declaredGross !== undefined && declaredGross !== null)
+    ? (Number.isFinite(Number(declaredGross)) && Math.abs(computedGross - Number(declaredGross)) <= 1e-5)
+    : null;
+
+  const completenessIssues = [];
+  if (!treeComplete) {
+    completenessIssues.push('Recomputed Merkle root does not match certificate root (missing, added, reordered, or altered rows)');
+  }
+  if (onChainCountMatch === false) {
+    completenessIssues.push(`Row count mismatch: ${totalCount} rows in file vs ${Number(onChainTxCount)} anchored on-chain`);
+  }
+  if (declaredCountMatch === false) {
+    completenessIssues.push(`Row count mismatch: ${totalCount} rows in file vs ${Number(declaredTotal)} declared in certificate`);
+  }
+  if (grossVolumeMatch === false) {
+    completenessIssues.push(`Gross volume mismatch: rows sum to $${computedGross.toFixed(2)} USDC vs $${Number(declaredGross).toFixed(2)} USDC declared`);
+  }
+  const completenessValid = Boolean(
+    treeComplete &&
+    declaredCountMatch !== false &&
+    onChainCountMatch !== false &&
+    grossVolumeMatch !== false
+  );
+
   const onChainInclusionValid = hasBatch
     ? (onChainBatchResults.length === totalCount && failedOnChainIndices.length === 0)
     : null;
@@ -350,6 +399,7 @@ export function verifyCertificatePayload(cert, { onChainRoot = null, onChainBatc
   const valid = Boolean(
     totalCount > 0 &&
     localProofsValid &&
+    completenessValid &&
     (scope !== 'full' || fieldsIntact) &&
     (normOnChainRoot === null || rootMatchesOnChain) &&
     (!hasBatch || onChainInclusionValid)
@@ -366,10 +416,17 @@ export function verifyCertificatePayload(cert, { onChainRoot = null, onChainBatc
     error: null,
     scope,
     certRoot,
+    reconstructedRoot,
     onChainRoot: normOnChainRoot,
     rootMatchesOnChain,
     fieldsIntact,
     localProofsValid,
+    treeComplete,
+    declaredCountMatch,
+    onChainCountMatch,
+    grossVolumeMatch,
+    completenessValid,
+    completenessIssues,
     onChainInclusionValid,
     totalCount,
     verifiedCount,
