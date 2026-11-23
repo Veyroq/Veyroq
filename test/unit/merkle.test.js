@@ -183,4 +183,48 @@ test('Unit: verifyCertificatePayload detects valid, tampered, redacted, and on-c
   // Malformed payload
   assert.equal(verifyCertificatePayload(null).valid, false);
   assert.equal(verifyCertificatePayload({ verification: { merkleRootHash: 'zz' }, leafCommitments: [{}] }).valid, false);
+
+  // Deleting a row (omission attack) fails completeness even if remaining rows pass Merkle inclusion
+  const deletedRowCert = structuredClone(cert);
+  deletedRowCert.leafCommitments.pop();
+  const deletedRes = verifyCertificatePayload(deletedRowCert, {
+    onChainRoot: tree.root,
+    onChainTxCount: 3,
+    onChainBatchResults: [true, true]
+  });
+  assert.equal(deletedRes.valid, false);
+  assert.equal(deletedRes.treeComplete, false);
+  assert.equal(deletedRes.onChainCountMatch, false);
+  assert.equal(deletedRes.declaredCountMatch, false);
+  assert.equal(deletedRes.completenessValid, false);
+
+  // Even if attacker also forges totalTransactions & grossVolumeUSDC after deleting a row, Merkle root reconstruction catches it
+  const forgedCountCert = structuredClone(deletedRowCert);
+  forgedCountCert.verification.totalTransactions = 2;
+  forgedCountCert.verification.grossVolumeUSDC = forgedCountCert.leafCommitments.reduce((s, r) => s + r.amountUSDC, 0);
+  const forgedCountRes = verifyCertificatePayload(forgedCountCert, {
+    onChainRoot: tree.root,
+    onChainTxCount: 3,
+    onChainBatchResults: [true, true]
+  });
+  assert.equal(forgedCountRes.valid, false);
+  assert.equal(forgedCountRes.treeComplete, false);
+  assert.equal(forgedCountRes.onChainCountMatch, false);
+
+  // Editing declared grossVolumeUSDC without touching rows fails completeness
+  const tamperedGrossCert = structuredClone(cert);
+  tamperedGrossCert.verification.grossVolumeUSDC = 1;
+  const tamperedGrossRes = verifyCertificatePayload(tamperedGrossCert);
+  assert.equal(tamperedGrossRes.valid, false);
+  assert.equal(tamperedGrossRes.grossVolumeMatch, false);
+
+  // Flipping a hex char in verification.merkleRootHash fails root, tree, and row proofs
+  const tamperedRootCert = structuredClone(cert);
+  const lastHex = tree.root.endsWith('0') ? '1' : '0';
+  tamperedRootCert.verification.merkleRootHash = tree.root.slice(0, -1) + lastHex;
+  const tamperedRootRes = verifyCertificatePayload(tamperedRootCert, { onChainRoot: tree.root, onChainTxCount: 3 });
+  assert.equal(tamperedRootRes.valid, false);
+  assert.equal(tamperedRootRes.rootMatchesOnChain, false);
+  assert.equal(tamperedRootRes.treeComplete, false);
+  assert.equal(tamperedRootRes.verifiedCount, 0);
 });
